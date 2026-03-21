@@ -1,0 +1,210 @@
+<!-- 新建课表 -->
+<view class="sf-page">
+
+  <!-- 步骤条 -->
+  <view class="steps">
+    <view class="step {{step === 1 ? 'step--active' : 'step--done'}}">
+      <view class="step-icon">📅</view>
+      <text class="step-label">创建课表</text>
+    </view>
+    <view class="step-line"></view>
+    <view class="step {{step === 2 ? 'step--active' : 'step--inactive'}}">
+      <view class="step-icon {{step === 2 ? '' : 'step-icon--inactive'}}">📋</view>
+      <text class="step-label {{step === 2 ? '' : 'step-label--inactive'}}">添加课程</text>
+    </view>
+  </view>
+
+  <block wx:if="{{step === 1}}">
+    <!-- 基础信息 -->
+    <view class="section">
+    <!-- 学年选择 -->
+    <picker
+      mode="selector"
+      range="{{semesterLabels}}"
+      value="{{semesterIndex}}"
+      bindchange="onSemesterChange"
+    >
+      <view class="list-item">
+        <text class="list-label">选择学年</text>
+        <view class="list-right">
+          <text class="list-value">{{semesterLabels[semesterIndex]}}</text>
+          <text class="list-arrow">›</text>
+        </view>
+      </view>
+    </picker>
+
+    <view class="divider"></view>
+
+    <!-- 本学期周数 -->
+    <view class="list-item">
+      <text class="list-label">本学期周数</text>
+      <view class="stepper">
+        <view class="stepper-btn {{totalWeeks <= 1 ? 'stepper-btn--disabled' : ''}}" bindtap="onTotalWeeksMinus">
+          <text>－</text>
+        </view>
+        <text class="stepper-val">{{totalWeeks}}</text>
+        <view class="stepper-btn {{totalWeeks >= 52 ? 'stepper-btn--disabled' : ''}}" bindtap="onTotalWeeksPlus">
+          <text>＋</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="divider"></view>
+
+    <!-- 归属学生 -->
+    <picker
+      mode="selector"
+      range="{{studentLabels}}"
+      value="{{studentIndex}}"
+      bindchange="onStudentChange"
+    >
+      <view class="list-item">
+        <text class="list-label">归属学生</text>
+        <view class="list-right">
+          <text class="list-value">{{studentLabels[studentIndex] || '请选择'}}</text>
+          <text class="list-arrow">›</text>
+        </view>
+      </view>
+    </picker>
+  </view>
+
+  <!-- 设置时间 -->
+  <view class="section-title">设置时间</view>
+  <view class="section">
+
+    <!-- 上午 -->
+    <view class="list-item">
+      <view class="session-tag session-tag--morning">
+        <text>☀</text>
+      </view>
+      <text class="list-label">上午课程节数</text>
+      <view class="stepper">
+        <view class="stepper-btn {{morningCount <= 1 ? 'stepper-btn--disabled' : ''}}" bindtap="onMorningMinus">
+          <text>－</text>
+        </view>
+        <text class="stepper-val">{{morningCount}}</text>
+        <view class="stepper-btn" bindtap="onMorningPlus">
+          <text>＋</text>
+        </view>
+      </view>
+    </view>
+
+    <view
+      class="period-row"
+      wx:for="{{morningPeriods}}"
+      wx:key="index"
+    >
+      <text class="period-label">{{item.label}}</text>
+      <text class="period-time">{{item.startTime}}-{{item.endTime}}</text>
+      <text class="period-arrow">›</text>
+    </view>
+
+    <view class="divider"></view>
+
+    <!-- 下午 -->
+    <view class="list-item">
+      <view class="session-tag session-tag--afternoon">
+        <text>🌤</text>
+      </view>
+      <text class="list-label">下午课程节数</text>
+      <view class="stepper">
+        <view class="stepper-btn {{afternoonCount <= 1 ? 'stepper-btn--disabled' : ''}}" bindtap="onAfternoonMinus">
+          <text>－</text>
+        </view>
+        <text class="stepper-val">{{afternoonCount}}</text>
+        <view class="stepper-btn" bindtap="onAfternoonPlus">
+          <text>＋</text>
+        </view>
+      </view>
+    </view>
+
+    <view
+      class="period-row"
+      wx:for="{{afternoonPeriods}}"
+      wx:key="index"
+    >
+      <text class="period-label">{{item.label}}</text>
+      <text class="period-time">{{item.startTime}}-{{item.endTime}}</text>
+      <text class="period-arrow">›</text>
+    </view>
+
+    <view class="divider"></view>
+
+    <!-- 晚上 -->
+    <view class="list-item">
+      <view class="session-tag session-tag--evening">
+        <text>🌙</text>
+      </view>
+      <text class="list-label">晚上课程节数</text>
+      <view class="stepper">
+        <view class="stepper-btn {{eveningCount <= 0 ? 'stepper-btn--disabled' : ''}}" bindtap="onEveningMinus">
+          <text>－</text>
+        </view>
+        <text class="stepper-val">{{eveningCount}}</text>
+        <view class="stepper-btn" bindtap="onEveningPlus">
+          <text>＋</text>
+        </view>
+      </view>
+    </view>
+
+    <view
+      class="period-row"
+      wx:for="{{eveningPeriods}}"
+      wx:key="index"
+    >
+      <text class="period-label">{{item.label}}</text>
+      <text class="period-time">{{item.startTime}}-{{item.endTime}}</text>
+      <text class="period-arrow">›</text>
+    </view>
+
+  </view>
+
+  <!-- 保存按钮 -->
+    <view class="footer">
+      <button class="save-btn {{loading ? 'save-btn--loading' : ''}}" bindtap="onSave" disabled="{{loading}}">
+        {{loading ? '创建中...' : '保存'}}
+      </button>
+    </view>
+  </block>
+
+  <block wx:if="{{step === 2}}">
+    <view class="step2-title">选择添加课程方式</view>
+    <view class="section">
+      <view class="list-item" bindtap="onTapOcr">
+        <text class="list-label">照片</text>
+        <view class="list-right">
+          <text class="list-value">OCR识别</text>
+          <text class="list-arrow">›</text>
+        </view>
+      </view>
+      <view class="divider"></view>
+      <view class="list-item" bindtap="onTapExcel">
+        <text class="list-label">Excel</text>
+        <view class="list-right">
+          <text class="list-value">AI识别</text>
+          <text class="list-arrow">›</text>
+        </view>
+      </view>
+      <view class="divider"></view>
+      <view class="list-item" bindtap="onTapCopy">
+        <text class="list-label">复制课表</text>
+        <view class="list-right">
+          <text class="list-value">输入口令复制</text>
+          <text class="list-arrow">›</text>
+        </view>
+      </view>
+      <view class="divider"></view>
+      <view class="list-item" bindtap="onTapManual">
+        <text class="list-label">手动添加课程</text>
+        <view class="list-right">
+          <text class="list-arrow">›</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="step2-footer">
+      <text class="add-later-text" bindtap="onAddLater">稍后再添加</text>
+    </view>
+  </block>
+
+</view>

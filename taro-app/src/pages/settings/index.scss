@@ -1,0 +1,50 @@
+.settings-page {
+  min-height: 100vh;
+  background: #F5F5F5;
+  padding: 24px 24px 60px;
+  box-sizing: border-box;
+}
+.user-card {
+  display: flex;
+  align-items: center;
+  background: #FFFFFF;
+  border-radius: 20px;
+  padding: 36px 28px;
+  margin-bottom: 24px;
+  gap: 24px;
+}
+.user-avatar {
+  width: 96px; height: 96px; border-radius: 48px;
+  background: #00C853;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.user-avatar-text { font-size: 36px; color: #FFFFFF; font-weight: bold; }
+.user-info { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+.user-name { font-size: 34px; font-weight: 600; color: #222222; }
+.user-sub { font-size: 26px; color: #999999; }
+.user-card-arrow { font-size: 40px; color: #CCCCCC; font-weight: 300; }
+.menu-list {
+  background: #FFFFFF;
+  border-radius: 20px;
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+.menu-item {
+  display: flex; align-items: center;
+  justify-content: space-between;
+  padding: 0 28px; height: 104px;
+  border-bottom: 1px solid #F5F5F5;
+}
+.menu-item:last-child { border-bottom: none; }
+.menu-item-left { display: flex; align-items: center; gap: 20px; }
+.menu-icon-wrap {
+  width: 72px; height: 72px; border-radius: 20px;
+  background: #F0FFF5;
+  display: flex; align-items: center; justify-content: center;
+}
+.menu-icon { font-size: 36px; }
+.menu-label { font-size: 32px; color: #333333; font-weight: 500; }
+.menu-arrow { font-size: 40px; color: #CCCCCC; font-weight: 300; }
+.version-area { display: flex; justify-content: center; padding: 32px 0; }
+.version-text { font-size: 24px; color: #CCCCCC; }

@@ -1,0 +1,44 @@
+.container { min-height: 100vh; background: #F5F5F5; padding-bottom: 160px; }
+.header { background: #fff; padding: 40px 32px 32px; border-bottom: 1px solid #EEEEEE; }
+.title { display: block; font-size: 36px; font-weight: 600; color: #333; }
+.subtitle { display: block; font-size: 24px; color: #999; margin-top: 8px; }
+.loading, .empty {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 120px 0; color: #999;
+}
+.empty-icon { font-size: 100px; margin-bottom: 24px; }
+.empty-text { font-size: 28px; }
+.member-list { margin-top: 16px; }
+.member-item {
+  display: flex; align-items: center;
+  background: #fff; padding: 28px 32px;
+  border-bottom: 1px solid #EEEEEE;
+}
+.avatar-img { width: 88px; height: 88px; border-radius: 50%; }
+.avatar-placeholder {
+  width: 88px; height: 88px; border-radius: 50%;
+  background: #00C853; display: flex;
+  align-items: center; justify-content: center;
+  color: #fff; font-size: 32px; font-weight: 600;
+}
+.member-info { flex: 1; margin-left: 24px; }
+.member-name { display: block; font-size: 30px; color: #333; }
+.role-tag {
+  display: inline-block; margin-top: 8px;
+  padding: 4px 16px; border-radius: 20px; font-size: 22px;
+}
+.role-owner { background: #E8F5E9; color: #00C853; }
+.role-edit { background: #E3F2FD; color: #1976D2; }
+.role-view { background: #F5F5F5; color: #999; }
+.remove-btn { font-size: 26px; color: #FF5252; padding: 12px 0 12px 24px; }
+.bottom-bar {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: #fff; padding: 24px 32px;
+  box-shadow: 0 -2px 12px rgba(0,0,0,0.06);
+}
+.invite-btn {
+  background: #00C853; color: #fff;
+  border-radius: 16px; font-size: 32px;
+  font-weight: 600; height: 96px; line-height: 96px;
+}

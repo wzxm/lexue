@@ -1,0 +1,73 @@
+.login-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  height: 100vh;
+  background: #FFFFFF;
+  padding: 0 60px;
+  padding-top: 200px;
+  padding-bottom: calc(80px + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+.brand-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.logo-circle {
+  width: 160px;
+  height: 160px;
+  border-radius: 80px;
+  background: #00C853;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 36px;
+  box-shadow: 0 8px 32px rgba(0, 200, 83, 0.3);
+}
+.logo-emoji { font-size: 72px; line-height: 1; }
+.app-name {
+  font-size: 48px;
+  font-weight: bold;
+  color: #222222;
+  margin-bottom: 20px;
+  letter-spacing: 4px;
+}
+.slogan {
+  font-size: 28px;
+  color: #666666;
+  text-align: center;
+  line-height: 1.6;
+}
+.login-area {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.btn-login {
+  width: 100%;
+  height: 96px;
+  background: #00C853;
+  color: #FFFFFF;
+  border-radius: 48px;
+  font-size: 34px;
+  font-weight: 600;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 28px;
+  box-shadow: 0 6px 24px rgba(0, 200, 83, 0.35);
+}
+.btn-login::after { border: none; }
+.btn-icon { font-size: 32px; }
+.btn-text { font-size: 34px; font-weight: 600; }
+.privacy-tip {
+  font-size: 24px;
+  color: #BBBBBB;
+  text-align: center;
+  line-height: 1.6;
+}

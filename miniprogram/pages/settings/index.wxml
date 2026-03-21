@@ -1,0 +1,39 @@
+<view class="settings-page">
+
+  <!-- 用户信息卡片 -->
+  <view class="user-card">
+    <view class="user-avatar">
+      <text class="user-avatar-text">我</text>
+    </view>
+    <view class="user-info">
+      <text class="user-name">我的课表</text>
+      <text class="user-sub">管理家人与学生信息</text>
+    </view>
+    <text class="user-card-arrow">›</text>
+  </view>
+
+  <!-- 菜单列表 -->
+  <view class="menu-list">
+    <view
+      class="menu-item"
+      wx:for="{{menuItems}}"
+      wx:key="label"
+      data-route="{{item.route}}"
+      bind:tap="onNavigate"
+    >
+      <view class="menu-item-left">
+        <view class="menu-icon-wrap">
+          <text class="menu-icon">{{item.icon}}</text>
+        </view>
+        <text class="menu-label">{{item.label}}</text>
+      </view>
+      <text class="menu-arrow">›</text>
+    </view>
+  </view>
+
+  <!-- 底部版本号 -->
+  <view class="version-area">
+    <text class="version-text">乐学课表 v1.0.0</text>
+  </view>
+
+</view>

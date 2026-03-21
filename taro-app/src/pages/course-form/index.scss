@@ -1,0 +1,84 @@
+page { background: #F4F7FB; }
+.page {
+  min-height: 100vh; display: flex; flex-direction: column;
+  background: linear-gradient(180deg, #08C25E 0px, #DDF5E8 280px, #F4F7FB 560px);
+}
+.page-scroll { flex: 1; padding: 24px 24px 0; box-sizing: border-box; }
+.hero-card {
+  padding: 36px 32px; border-radius: 32px;
+  background: linear-gradient(135deg, #12D66C 0%, #08C25E 100%);
+  color: #FFFFFF; box-shadow: 0 16px 40px rgba(8, 194, 94, 0.22); margin-bottom: 24px;
+}
+.hero-badge {
+  display: inline-flex; padding: 8px 18px; border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18); font-size: 22px; margin-bottom: 18px;
+}
+.hero-title { display: block; font-size: 40px; line-height: 1.3; font-weight: 700; }
+.hero-desc { display: block; margin-top: 12px; font-size: 26px; line-height: 1.7; color: rgba(255,255,255,0.92); }
+.section-card {
+  background: #FFFFFF; border-radius: 28px; margin-bottom: 24px;
+  box-shadow: 0 10px 32px rgba(15, 23, 42, 0.05); overflow: hidden;
+}
+.section-head { display: flex; align-items: center; justify-content: space-between; padding: 28px 28px 12px; }
+.section-title { font-size: 30px; font-weight: 700; color: #1F2937; }
+.section-tip { font-size: 24px; color: #94A3B8; }
+.field-row {
+  min-height: 108px; padding: 0 28px; display: flex;
+  align-items: center; justify-content: space-between; box-sizing: border-box;
+}
+.field-row--column {
+  min-height: auto; padding-top: 8px; padding-bottom: 24px;
+  flex-direction: column; align-items: flex-start;
+}
+.border-bottom { border-bottom: 1px solid #EEF2F7; }
+.field-label-wrap { display: flex; align-items: center; gap: 8px; }
+.field-label { font-size: 30px; color: #1F2937; font-weight: 500; flex-shrink: 0; }
+.field-required { color: #FF5A5F; font-size: 28px; }
+.field-input { flex: 1; min-width: 0; text-align: right; height: 108px; font-size: 28px; color: #111827; }
+.field-input--left {
+  width: 100%; height: 88px; margin-top: 18px; padding: 0 24px;
+  box-sizing: border-box; text-align: left; background: #F8FAFC; border-radius: 20px;
+}
+.field-placeholder { color: #B6C0CC; font-size: 28px; }
+.field-inline-pickers { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; justify-content: flex-end; }
+.picker-chip {
+  min-width: 140px; max-width: 320px; padding: 18px 20px; border-radius: 18px;
+  background: #EAFBF1; display: flex; align-items: center; justify-content: center;
+  gap: 10px; box-sizing: border-box;
+}
+.picker-chip--ghost { background: #F8FAFC; }
+.picker-chip-text { font-size: 26px; color: #0F172A; line-height: 1.4; }
+.picker-chip-arrow, .picker-value-arrow { color: #94A3B8; font-size: 24px; }
+.picker-value { display: flex; align-items: center; gap: 10px; }
+.picker-value-text { font-size: 28px; color: #0F172A; }
+.field-area { padding: 24px 28px 28px; }
+.field-area-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.field-count { font-size: 24px; color: #94A3B8; }
+.field-textarea {
+  width: 100%; height: 180px; border-radius: 20px; background: #F8FAFC;
+  padding: 20px 24px; box-sizing: border-box; font-size: 28px; line-height: 1.6; color: #111827;
+}
+.color-grid { display: flex; flex-wrap: wrap; gap: 24px; padding: 12px 28px 32px; }
+.color-item {
+  width: 76px; height: 76px; border-radius: 24px; background: #FFFFFF;
+  border: 2px solid transparent; display: flex; align-items: center; justify-content: center;
+  position: relative; box-sizing: border-box;
+}
+.color-item--active { border-color: #BBF7D0; box-shadow: 0 8px 20px rgba(8, 194, 94, 0.15); }
+.color-dot { width: 44px; height: 44px; border-radius: 50%; }
+.color-check {
+  position: absolute; right: 8px; top: 4px; font-size: 20px;
+  line-height: 1; color: #08C25E; font-weight: 700;
+}
+.footer {
+  padding: 20px 24px calc(20px + env(safe-area-inset-bottom));
+  background: rgba(255, 255, 255, 0.96); border-top: 1px solid #EAECEF;
+}
+.submit-btn {
+  width: 100%; height: 96px; border-radius: 999px; border: none;
+  background: linear-gradient(135deg, #15D86F 0%, #08C25E 100%);
+  color: #FFFFFF; font-size: 32px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 14px 32px rgba(8, 194, 94, 0.22);
+}
+.submit-btn::after { border: none; }

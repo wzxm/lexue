@@ -1,0 +1,96 @@
+.login-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  height: 100vh;
+  background: #FFFFFF;
+  padding: 0 60rpx;
+  padding-top: 200rpx;
+  padding-bottom: calc(80rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+
+/* 品牌区 */
+.brand-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.logo-circle {
+  width: 160rpx;
+  height: 160rpx;
+  border-radius: 80rpx;
+  background: #00C853;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 36rpx;
+  box-shadow: 0 8rpx 32rpx rgba(0, 200, 83, 0.3);
+}
+
+.logo-emoji {
+  font-size: 72rpx;
+  line-height: 1;
+}
+
+.app-name {
+  font-size: 48rpx;
+  font-weight: bold;
+  color: #222222;
+  margin-bottom: 20rpx;
+  letter-spacing: 4rpx;
+}
+
+.slogan {
+  font-size: 28rpx;
+  color: #666666;
+  text-align: center;
+  line-height: 1.6;
+}
+
+/* 登录区 */
+.login-area {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.btn-login {
+  width: 100%;
+  height: 96rpx;
+  background: #00C853;
+  color: #FFFFFF;
+  border-radius: 48rpx;
+  font-size: 34rpx;
+  font-weight: 600;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12rpx;
+  margin-bottom: 28rpx;
+  box-shadow: 0 6rpx 24rpx rgba(0, 200, 83, 0.35);
+}
+
+.btn-login::after {
+  border: none;
+}
+
+.btn-icon {
+  font-size: 32rpx;
+}
+
+.btn-text {
+  font-size: 34rpx;
+  font-weight: 600;
+}
+
+.privacy-tip {
+  font-size: 24rpx;
+  color: #BBBBBB;
+  text-align: center;
+  line-height: 1.6;
+}

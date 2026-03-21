@@ -1,0 +1,168 @@
+<!-- 课表主页 -->
+<view class="schedule-page">
+
+  <!-- 空状态：未创建课表时的引导页 -->
+  <view wx:if="{{!schedule}}" class="empty-guide">
+    <!-- 渐变顶部：标题 + 占位图 + 副标题 -->
+    <view class="guide-header">
+      <text class="guide-title">😊 欢迎使用乐学课表</text>
+      <view class="guide-placeholder" />
+      <text class="guide-subtitle">课表亮点功能</text>
+    </view>
+
+    <!-- 白色区域：功能列表 + 按钮 -->
+    <view class="guide-body">
+      <view class="feature-grid">
+        <view class="feature-item">
+          <view class="feature-icon-wrap">
+            <text class="feature-icon">🔔</text>
+          </view>
+          <text class="feature-name">微信通知</text>
+          <text class="feature-desc">提前提醒家人接送</text>
+        </view>
+        <view class="feature-item">
+          <view class="feature-icon-wrap">
+            <text class="feature-icon">🔗</text>
+          </view>
+          <text class="feature-name">课表共享</text>
+          <text class="feature-desc">家人随时查看孩子课程</text>
+        </view>
+        <view class="feature-item">
+          <view class="feature-icon-wrap">
+            <text class="feature-icon">📅</text>
+          </view>
+          <text class="feature-name">课周定位</text>
+          <text class="feature-desc">不怕单双周记不住</text>
+        </view>
+        <view class="feature-item">
+          <view class="feature-icon-wrap">
+            <text class="feature-icon">👨‍👩‍👧</text>
+          </view>
+          <text class="feature-name">多孩管理</text>
+          <text class="feature-desc">多个孩子课表轻松管理</text>
+        </view>
+      </view>
+
+      <button class="create-btn" bindtap="onAddCourse">创建课表（约耗时1分钟）</button>
+    </view>
+  </view>
+
+  <!-- 有数据：正常课表视图 -->
+  <view wx:else class="schedule-view">
+
+    <!-- 顶部绿色渐变 Header -->
+    <view class="header">
+      <view class="header-left">
+        <view class="header-icons">
+          <text class="header-icon-btn">📋</text>
+          <text class="header-icon-btn">➕</text>
+        </view>
+      </view>
+      <view class="header-center" bindtap="onSwitchStudent">
+        <text class="student-name">{{student.name || '未选择学生'}} ⇌</text>
+        <text class="student-sub">{{schedule.name || ''}}</text>
+      </view>
+      <view class="header-right"></view>
+    </view>
+
+    <!-- 网格区域 -->
+    <view class="grid-wrap">
+      <!-- 左上角周次 -->
+      <view class="week-corner" bindtap="onBackToday">
+        <text class="week-corner-text">第{{weekNum}}周 ▾</text>
+      </view>
+
+      <!-- 表头：7天 -->
+      <view class="grid-header-row">
+        <view
+          class="grid-header-cell {{isToday(weekDates[idx]) ? 'grid-header-cell--today' : ''}}"
+          wx:for="{{['一','二','三','四','五','六','日']}}"
+          wx:key="*this"
+          wx:for-index="idx"
+        >
+          <text class="grid-header-day">{{item}}</text>
+          <text class="grid-header-date">{{weekDates[idx] ? weekDates[idx].slice(5).replace('-', '-') : ''}}</text>
+        </view>
+      </view>
+
+      <!-- 课程行 -->
+      <scroll-view scroll-y class="grid-body">
+        <view
+          class="grid-row"
+          wx:for="{{periods}}"
+          wx:key="index"
+          wx:for-index="pIdx"
+        >
+          <!-- 节次列 -->
+          <view class="period-cell">
+            <text class="period-num">{{item.index}}</text>
+            <text class="period-time-line">{{item.startTime}}</text>
+            <text class="period-time-line">{{item.endTime}}</text>
+          </view>
+          <!-- 7天格子 -->
+          <view
+            class="course-cell-wrap {{isToday(weekDates[dIdx]) ? 'course-cell-wrap--today' : ''}}"
+            wx:for="{{[0,1,2,3,4,5,6]}}"
+            wx:key="*this"
+            wx:for-index="dIdx"
+            wx:for-item="wd"
+          >
+            <view
+              wx:if="{{grid[pIdx] && grid[pIdx][dIdx]}}"
+              class="course-block"
+              style="background:{{grid[pIdx][dIdx].color ? grid[pIdx][dIdx].color + '22' : '#C8F0D8'}};color:{{grid[pIdx][dIdx].color || '#00C853'}}"
+              data-course="{{grid[pIdx][dIdx]}}"
+              bindtap="onTapCourse"
+            >
+              <text class="course-block-name">{{grid[pIdx][dIdx].name}}</text>
+            </view>
+            <view
+              wx:else
+              class="empty-cell"
+              data-weekday="{{dIdx + 1}}"
+              data-period="{{pIdx + 1}}"
+              bindtap="onTapEmpty"
+            ></view>
+          </view>
+        </view>
+      </scroll-view>
+    </view>
+
+  </view>
+
+  <!-- 课程详情 Modal -->
+  <view class="modal-mask" wx:if="{{showCourseModal}}" bindtap="onCloseModal">
+    <view class="modal-content" catchtap="noop">
+      <view class="modal-drag-bar"></view>
+      <view class="modal-header">
+        <text class="modal-title">{{selectedCourse.name}}</text>
+        <view class="modal-close" bindtap="onCloseModal">
+          <text>✕</text>
+        </view>
+      </view>
+      <view class="modal-body">
+        <view class="info-row" wx:if="{{selectedCourse.teacher}}">
+          <text class="info-label">👩‍🏫 老师</text>
+          <text class="info-value">{{selectedCourse.teacher}}</text>
+        </view>
+        <view class="info-row" wx:if="{{selectedCourse.classroom}}">
+          <text class="info-label">🏫 教室</text>
+          <text class="info-value">{{selectedCourse.classroom}}</text>
+        </view>
+        <view class="info-row">
+          <text class="info-label">🕐 时间</text>
+          <text class="info-value">第{{selectedCourse.period}}节</text>
+        </view>
+        <view class="info-row" wx:if="{{selectedCourse.note}}">
+          <text class="info-label">📝 备注</text>
+          <text class="info-value">{{selectedCourse.note}}</text>
+        </view>
+      </view>
+      <view class="modal-footer">
+        <button class="btn-edit" bindtap="onEditCourse">修改</button>
+        <button class="btn-delete" bindtap="onDeleteCourse">删除</button>
+      </view>
+    </view>
+  </view>
+
+</view>

@@ -1,0 +1,39 @@
+<view class="container">
+  <view class="header">
+    <text class="title">家人管理</text>
+    <text class="subtitle">最多支持 10 名家庭成员</text>
+  </view>
+
+  <view wx:if="{{loading}}" class="loading">
+    <text>加载中...</text>
+  </view>
+
+  <view wx:elif="{{members.length === 0}}" class="empty">
+    <text class="empty-icon">👨‍👩‍👧</text>
+    <text class="empty-text">还没有家人，快去邀请吧</text>
+  </view>
+
+  <view wx:else class="member-list">
+    <view class="member-item" wx:for="{{members}}" wx:key="id">
+      <view class="member-avatar">
+        <image wx:if="{{item.avatar}}" src="{{item.avatar}}" class="avatar-img" mode="aspectFill"/>
+        <view wx:else class="avatar-placeholder">
+          <text>{{item.nickname[0] || '?'}}</text>
+        </view>
+      </view>
+      <view class="member-info">
+        <text class="member-name">{{item.nickname}}</text>
+        <view class="role-tag role-{{item.permission}}">
+          <text>{{item.is_owner ? '管理员' : item.permission === 'edit' ? '可编辑' : '仅查看'}}</text>
+        </view>
+      </view>
+      <view wx:if="{{!item.is_owner}}" class="member-actions">
+        <text class="remove-btn" data-openid="{{item.openid}}" data-nickname="{{item.nickname}}" bindtap="handleRemoveMember">移除</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="bottom-bar">
+    <button class="invite-btn" bindtap="handleInvite">+ 邀请家人</button>
+  </view>
+</view>

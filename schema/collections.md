@@ -1,0 +1,132 @@
+# 乐学课表 - 数据库集合字段说明
+
+## users（用户）
+
+| 字段名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| _id | string | 是 | 云数据库自动生成的文档ID |
+| openid | string | 是 | 微信用户唯一标识 |
+| nickname | string | 否 | 用户昵称 |
+| avatar_url | string | 否 | 用户头像URL |
+| created_at | date | 是 | 注册时间 |
+| updated_at | date | 是 | 最后更新时间 |
+
+---
+
+## students（学生）
+
+| 字段名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| _id | string | 是 | 云数据库自动生成的文档ID |
+| owner_openid | string | 是 | 创建者的 openid |
+| name | string | 是 | 学生姓名 |
+| grade | string | 否 | 年级（如：三年级、初一） |
+| avatar | string | 否 | 学生头像（emoji 或 URL） |
+| created_at | date | 是 | 创建时间 |
+| updated_at | date | 是 | 最后更新时间 |
+
+---
+
+## schedules（课表）
+
+| 字段名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| _id | string | 是 | 云数据库自动生成的文档ID |
+| owner_openid | string | 是 | 创建者的 openid |
+| student_id | string | 是 | 关联的学生ID |
+| name | string | 是 | 课表名称（如：2024春季学期） |
+| semester | string | 否 | 学期标识 |
+| is_active | boolean | 是 | 是否为当前启用课表，默认 false |
+| shared_with | array | 否 | 已共享的用户列表，元素结构见下 |
+| shared_with[].openid | string | 是 | 共享用户的 openid |
+| shared_with[].nickname | string | 否 | 共享用户昵称 |
+| shared_with[].joined_at | date | 是 | 加入共享时间 |
+| created_at | date | 是 | 创建时间 |
+| updated_at | date | 是 | 最后更新时间 |
+
+---
+
+## courses（课程）
+
+| 字段名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| _id | string | 是 | 云数据库自动生成的文档ID |
+| schedule_id | string | 是 | 关联的课表ID |
+| student_id | string | 是 | 关联的学生ID |
+| owner_openid | string | 是 | 创建者的 openid |
+| name | string | 是 | 课程名称 |
+| day_of_week | number | 是 | 星期几（1=周一，7=周日） |
+| period | number | 是 | 第几节课（1起） |
+| start_time | string | 否 | 上课时间（格式：HH:mm） |
+| end_time | string | 否 | 下课时间（格式：HH:mm） |
+| teacher | string | 否 | 教师姓名 |
+| room | string | 否 | 教室/地点 |
+| color | string | 否 | 课程颜色标识（hex色值） |
+| created_at | date | 是 | 创建时间 |
+| updated_at | date | 是 | 最后更新时间 |
+
+---
+
+## families（家庭关系）
+
+| 字段名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| _id | string | 是 | 云数据库自动生成的文档ID |
+| owner_openid | string | 是 | 家庭主创建者 openid |
+| member_openid | string | 是 | 成员 openid |
+| member_nickname | string | 否 | 成员昵称 |
+| member_avatar | string | 否 | 成员头像URL |
+| role | string | 否 | 成员角色（如：爸爸、妈妈、爷爷） |
+| student_id | string | 是 | 关联的学生ID |
+| created_at | date | 是 | 加入时间 |
+
+---
+
+## share_codes（口令分享）
+
+| 字段名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| _id | string | 是 | 云数据库自动生成的文档ID |
+| code | string | 是 | 6位随机口令（大写字母+数字） |
+| schedule_id | string | 是 | 要分享的课表ID |
+| student_id | string | 是 | 关联的学生ID |
+| owner_openid | string | 是 | 创建口令的用户 openid |
+| expires_at | date | 是 | 口令过期时间（默认24小时） |
+| used_count | number | 是 | 已使用次数，默认 0 |
+| max_uses | number | 否 | 最大使用次数，null 表示不限 |
+| created_at | date | 是 | 创建时间 |
+
+---
+
+## reminders（提醒记录）
+
+| 字段名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| _id | string | 是 | 云数据库自动生成的文档ID |
+| openid | string | 是 | 接收提醒的用户 openid |
+| student_id | string | 是 | 关联的学生ID |
+| course_id | string | 是 | 关联的课程ID |
+| course_name | string | 是 | 课程名称（冗余存储，防止课程被删后丢失） |
+| date | string | 是 | 提醒日期（格式：YYYY-MM-DD） |
+| trigger_time | date | 是 | 触发时间（精确到分钟） |
+| status | string | 是 | 状态：pending / sent / failed |
+| created_at | date | 是 | 创建时间 |
+| sent_at | date | 否 | 实际发送时间 |
+
+---
+
+## tools_data（百宝箱数据）
+
+| 字段名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| _id | string | 是 | 云数据库自动生成的文档ID |
+| openid | string | 是 | 用户 openid |
+| tool_type | string | 是 | 工具类型（如：homework、exam、note） |
+| student_id | string | 否 | 关联的学生ID（可选） |
+| title | string | 是 | 标题 |
+| content | string | 否 | 内容/备注 |
+| due_date | string | 否 | 截止日期（格式：YYYY-MM-DD） |
+| is_done | boolean | 否 | 是否完成，默认 false |
+| tags | array | 否 | 标签列表（string[]） |
+| created_at | date | 是 | 创建时间 |
+| updated_at | date | 是 | 最后更新时间 |

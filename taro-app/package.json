@@ -1,0 +1,44 @@
+{
+  "name": "lexue-taro",
+  "version": "1.0.0",
+  "private": true,
+  "description": "乐学课表 - Taro 4.x 重构版",
+  "templateInfo": {
+    "name": "default",
+    "typescript": true,
+    "css": "sass"
+  },
+  "scripts": {
+    "build:weapp": "taro build --type weapp",
+    "dev:weapp": "npm run build:weapp -- --watch"
+  },
+  "dependencies": {
+    "@tarojs/cli": "^4.1.11",
+    "@tarojs/components": "^4.1.11",
+    "@tarojs/helper": "^4.1.11",
+    "@tarojs/plugin-framework-react": "^4.1.11",
+    "@tarojs/plugin-platform-weapp": "^4.1.11",
+    "@tarojs/react": "^4.1.11",
+    "@tarojs/runtime": "^4.1.11",
+    "@tarojs/shared": "^4.1.11",
+    "@tarojs/taro": "^4.1.11",
+    "@tarojs/webpack5-runner": "^4.1.11",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "zustand": "^5.0.12"
+  },
+  "devDependencies": {
+    "@babel/preset-react": "^7.28.5",
+    "@babel/runtime": "^7.29.2",
+    "@tailwindcss/postcss": "^4.2.2",
+    "@types/react": "^19.2.14",
+    "autoprefixer": "^10.4.27",
+    "babel-preset-taro": "^4.1.11",
+    "postcss": "^8.5.8",
+    "sass": "^1.98.0",
+    "tailwindcss": "^4.2.2",
+    "typescript": "^5.9.3",
+    "weapp-tailwindcss": "^4.10.3",
+    "webpack": "^5.105.4"
+  }
+}

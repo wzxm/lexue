@@ -1,0 +1,47 @@
+.course-card {
+  background: #fff;
+  border-left: 6px solid #00C853;
+  border-radius: 0 16px 16px 0;
+  padding: 24px 24px 24px 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+}
+.card-body {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+.card-main { flex: 1; }
+.course-name {
+  display: block;
+  font-size: 32px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8px;
+}
+.course-meta {
+  display: block;
+  font-size: 24px;
+  color: #666;
+  margin-bottom: 4px;
+}
+.card-side { margin-left: 24px; }
+.period-badge {
+  display: inline-block;
+  background: #E8F5E9;
+  color: #00C853;
+  font-size: 22px;
+  font-weight: 600;
+  padding: 6px 16px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+.course-note {
+  display: block;
+  font-size: 22px;
+  color: #999;
+  margin-top: 12px;
+  line-height: 1.5;
+  border-top: 1px dashed #EEE;
+  padding-top: 12px;
+}

@@ -1,0 +1,119 @@
+.schedule-grid {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.header-row {
+  display: flex;
+  border-bottom: 2px solid #E8E8E8;
+  background: #FAFAFA;
+}
+
+.period-label-cell {
+  width: 80px;
+  min-width: 80px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 4px;
+  background: #F0F0F0;
+  border-right: 1px solid #E0E0E0;
+}
+
+.period-header-text {
+  font-size: 24px;
+  color: #999999;
+  font-weight: 500;
+}
+
+.period-num {
+  font-size: 26px;
+  color: #555555;
+  font-weight: 700;
+}
+
+.period-time {
+  font-size: 22px;
+  color: #AAAAAA;
+  margin-top: 4px;
+}
+
+.header-cell {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 4px;
+  border-right: 1px solid #EEEEEE;
+}
+
+.header-cell--today {
+  background: #E8F5E9;
+}
+
+.header-day {
+  font-size: 24px;
+  color: #555555;
+  font-weight: 600;
+}
+
+.header-date {
+  font-size: 22px;
+  color: #999999;
+  margin-top: 4px;
+}
+
+.grid-row {
+  display: flex;
+  border-bottom: 1px solid #EEEEEE;
+  min-height: 104px;
+}
+
+.grid-cell {
+  flex: 1;
+  min-height: 104px;
+  border-right: 1px solid #EEEEEE;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.grid-cell--today {
+  background: #F4FEF7;
+}
+
+.course-block {
+  width: 100%;
+  height: 100%;
+  min-height: 96px;
+  border-left: 4px solid #00C853;
+  border-radius: 8px;
+  padding: 8px 6px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.course-name {
+  font-size: 24px;
+  color: #222222;
+  font-weight: 600;
+  line-height: 1.4;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.course-teacher {
+  font-size: 22px;
+  color: #777777;
+  margin-top: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
