@@ -12,9 +12,9 @@ const { ERRORS, fail } = require('./errors');
  * @throws 如果缺少必填字段则抛出错误响应
  *
  * @example
- * require(payload, ['name', 'grade', 'class_name'])
+ * requireFields(payload, ['name', 'grade', 'class_name'])
  */
-function require(params, fields) {
+function requireFields(params, fields) {
   if (!params || typeof params !== 'object') {
     throw fail(ERRORS.PARAM_ERROR, '缺少请求参数');
   }
@@ -67,4 +67,4 @@ function range(value, min, max, fieldName = '字段') {
   }
 }
 
-module.exports = { require, maxLength, enumValue, range };
+module.exports = { requireFields, maxLength, enumValue, range };

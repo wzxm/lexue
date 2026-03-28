@@ -36,12 +36,28 @@ async function getOne(collectionName, docId) {
     const { data } = await col(collectionName).doc(docId).get();
     return data;
   } catch (e) {
-    // 记录不存在时云开发会抛异常，统一返回 null
-    if (e.errCode === -1 || e.message?.includes('not found')) {
+    // 文档不存在时云开发会抛异常，统一返回 null
+    // errCode -1 是旧版 SDK；errMsg 包含 'not exist' 是新版 SDK
+    if (
+      e.errCode === -1 ||
+      e.errCode === -502005 ||
+      e.errMsg?.includes('not exist') ||
+      e.errMsg?.includes('not found') ||
+      e.message?.includes('not exist') ||
+      e.message?.includes('not found')
+    ) {
       return null;
     }
     throw e;
   }
+}
+
+/**
+ * 集合不存在时是否应该返回空结果（而不是抛错）
+ * CloudBase 查询不存在的集合会报 -502005，插入则会自动创建
+ */
+function isCollectionNotExist(e) {
+  return e && (e.errCode === -502005 || (e.message && e.message.includes('-502005')));
 }
 
 /**
@@ -51,8 +67,13 @@ async function getOne(collectionName, docId) {
  * @returns {Promise<object|null>}
  */
 async function findOne(collectionName, where) {
-  const { data } = await col(collectionName).where(where).limit(1).get();
-  return data.length > 0 ? data[0] : null;
+  try {
+    const { data } = await col(collectionName).where(where).limit(1).get();
+    return data.length > 0 ? data[0] : null;
+  } catch (e) {
+    if (isCollectionNotExist(e)) return null;
+    throw e;
+  }
 }
 
 /**
@@ -63,19 +84,24 @@ async function findOne(collectionName, where) {
  * @returns {Promise<Array>}
  */
 async function getList(collectionName, where = {}, options = {}) {
-  let query = col(collectionName).where(where);
-  if (options.orderBy) {
-    const { field, direction = 'asc' } = options.orderBy;
-    query = query.orderBy(field, direction);
+  try {
+    let query = col(collectionName).where(where);
+    if (options.orderBy) {
+      const { field, direction = 'asc' } = options.orderBy;
+      query = query.orderBy(field, direction);
+    }
+    if (options.skip) {
+      query = query.skip(options.skip);
+    }
+    if (options.limit) {
+      query = query.limit(options.limit);
+    }
+    const { data } = await query.get();
+    return data;
+  } catch (e) {
+    if (isCollectionNotExist(e)) return [];
+    throw e;
   }
-  if (options.skip) {
-    query = query.skip(options.skip);
-  }
-  if (options.limit) {
-    query = query.limit(options.limit);
-  }
-  const { data } = await query.get();
-  return data;
 }
 
 /**
@@ -144,8 +170,13 @@ async function removeWhere(collectionName, where) {
  * @returns {Promise<number>}
  */
 async function count(collectionName, where = {}) {
-  const { total } = await col(collectionName).where(where).count();
-  return total;
+  try {
+    const { total } = await col(collectionName).where(where).count();
+    return total;
+  } catch (e) {
+    if (isCollectionNotExist(e)) return 0;
+    throw e;
+  }
 }
 
 /**

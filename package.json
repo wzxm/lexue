@@ -1,0 +1,19 @@
+{
+  "name": "lexue",
+  "version": "1.0.0",
+  "description": "乐学课表 - 家庭共享课表微信小程序",
+  "scripts": {
+    "deploy": "node scripts/deploy-cloud-functions.js",
+    "deploy:auth": "node scripts/deploy-cloud-functions.js auth",
+    "deploy:course": "node scripts/deploy-cloud-functions.js course",
+    "deploy:schedule": "node scripts/deploy-cloud-functions.js schedule",
+    "deploy:student": "node scripts/deploy-cloud-functions.js student",
+    "deploy:family": "node scripts/deploy-cloud-functions.js family",
+    "deploy:notify": "node scripts/deploy-cloud-functions.js notify",
+    "deploy:reminder": "node scripts/deploy-cloud-functions.js reminder",
+    "deploy:share": "node scripts/deploy-cloud-functions.js share"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

@@ -1,4 +1,9 @@
 node_modules/
+cloudfunctions/*/node_modules/
 dist/
 .DS_Store
 *.log
+
+# 小程序上传密钥
+private*.key
+qrcode.jpg

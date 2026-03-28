@@ -2,7 +2,7 @@
   "appid": "wx8db7f3de48496906",
   "projectname": "lexue-kebiao",
   "description": "乐学课表 - 家庭共享课表小程序",
-  "miniprogramRoot": "miniprogram/",
+  "miniprogramRoot": "taro-app/dist/",
   "cloudfunctionRoot": "cloudfunctions/",
   "cloudbaseRoot": "cloudfunctions/",
   "setting": {
@@ -39,10 +39,23 @@
     "packNpmRelationList": [],
     "minifyWXSS": false,
     "showES6CompileOption": false,
-    "minifyWXML": false
+    "minifyWXML": false,
+    "compileWorklet": false,
+    "localPlugins": false,
+    "disableUseStrict": false,
+    "useCompilerPlugins": false,
+    "condition": false,
+    "swc": false,
+    "disableSWC": true
   },
   "compileType": "miniprogram",
-  "libVersion": "3.3.4",
-  "srcMiniprogramRoot": "miniprogram/",
-  "condition": {}
+  "libVersion": "3.14.3",
+  "srcMiniprogramRoot": "taro-app/dist/",
+  "condition": {},
+  "simulatorPluginLibVersion": {},
+  "packOptions": {
+    "ignore": [],
+    "include": []
+  },
+  "editorSetting": {}
 }
