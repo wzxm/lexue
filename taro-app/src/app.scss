@@ -3,22 +3,7 @@
 /* @tailwind components; */
 /* @tailwind utilities; */
 
-/* Iconfont 字体 */
-@font-face {
-  font-family: 'iconfont';
-  src: url('//at.alicdn.com/t/c/font_5144485_9zctq5gxnc7.woff2?t=1774023877124') format('woff2'),
-       url('//at.alicdn.com/t/c/font_5144485_9zctq5gxnc7.woff?t=1774023877124') format('woff'),
-       url('//at.alicdn.com/t/c/font_5144485_9zctq5gxnc7.ttf?t=1774023877124') format('truetype');
-  font-display: swap;
-}
-
-.iconfont {
-  font-family: 'iconfont' !important;
-  font-size: 16px;
-  font-style: normal;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
+@use './styles/iconfont';
 
 /* CSS 变量 — 主题色 */
 page {

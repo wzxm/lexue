@@ -13,29 +13,15 @@ export default defineAppConfig({
     'pages/tools/index',
   ],
   tabBar: {
+    custom: true,
     color: '#999999',
-    selectedColor: '#00C853',
+    selectedColor: '#07C160',
     backgroundColor: '#FFFFFF',
     borderStyle: 'white',
     list: [
-      {
-        pagePath: 'pages/schedule/index',
-        text: '课表',
-        iconPath: 'assets/tabbar/schedule.png',
-        selectedIconPath: 'assets/tabbar/schedule-active.png',
-      },
-      {
-        pagePath: 'pages/tools/index',
-        text: '百宝箱',
-        iconPath: 'assets/tabbar/tools.png',
-        selectedIconPath: 'assets/tabbar/tools-active.png',
-      },
-      {
-        pagePath: 'pages/settings/index',
-        text: '设置',
-        iconPath: 'assets/tabbar/settings.png',
-        selectedIconPath: 'assets/tabbar/settings-active.png',
-      },
+      { pagePath: 'pages/schedule/index', text: '课表' },
+      { pagePath: 'pages/tools/index', text: '工具' },
+      { pagePath: 'pages/settings/index', text: '设置' },
     ],
   },
   window: {

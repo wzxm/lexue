@@ -1,6 +1,7 @@
 import { View, Text, ScrollView, Button } from '@tarojs/components'
 import { useState, useEffect, useCallback } from 'react'
 import Taro from '@tarojs/taro'
+import { tabState } from '../../utils/tabState'
 import { useScheduleStore, buildGrid } from '../../store/schedule.store'
 import { useStudentStore } from '../../store/student.store'
 import { useAuthStore } from '../../store/auth.store'
@@ -33,6 +34,14 @@ export default function SchedulePage() {
   const periods = currentSchedule?.periods || DEFAULT_PERIODS
   const today = new Date().toISOString().slice(0, 10)
 
+  const windowInfo = Taro.getWindowInfo()
+  const menuButtonInfo = Taro.getMenuButtonBoundingClientRect()
+
+  // 状态栏高度
+  const statusBarHeight = windowInfo.statusBarHeight || 0
+  // 导航栏高度
+  const navBarHeight = (menuButtonInfo.top - statusBarHeight) * 2 + menuButtonInfo.height
+
   const syncView = useCallback(() => {
     const offset = useScheduleStore.getState().weekOffset
     const schedule = useScheduleStore.getState().currentSchedule
@@ -48,18 +57,19 @@ export default function SchedulePage() {
   }, [])
 
   useEffect(() => {
-    if (!isLoggedIn) {
-      Taro.reLaunch({ url: ROUTES.LOGIN })
-      return
-    }
+    if (!isLoggedIn) return
     loadData()
-    // 订阅 store 变化
     const unsub = useScheduleStore.subscribe(syncView)
     return () => unsub()
-  }, [])
+  }, [isLoggedIn])
 
-  // onShow 等效：useDidShow
-  Taro.useDidShow(() => syncView())
+  Taro.useDidShow(() => {
+    syncView()
+    tabState.setSelected(0)
+    if (useAuthStore.getState().isLoggedIn) {
+      loadData()
+    }
+  })
 
   const loadData = async () => {
     Taro.showLoading({ title: '加载中', mask: true })
@@ -68,12 +78,9 @@ export default function SchedulePage() {
       setStudents(studentList)
       const cur = useStudentStore.getState().currentStudent
       if (!cur) {
-        Taro.hideLoading()
-        Taro.showModal({
-          title: '还没有学生', content: '先添加一个学生吧',
-          confirmText: '去添加', showCancel: false,
-          success: () => Taro.navigateTo({ url: ROUTES.STUDENT_FORM }),
-        })
+        setSchedules([])
+        setCurrentSchedule(null)
+        syncView()
         return
       }
       const schedules = await listSchedules(cur.id)
@@ -82,6 +89,8 @@ export default function SchedulePage() {
       if (defaultSchedule) {
         const full = await getSchedule(defaultSchedule.id)
         setCurrentSchedule(full)
+      } else {
+        setCurrentSchedule(null)
       }
       syncView()
     } catch (err: any) {
@@ -126,6 +135,10 @@ export default function SchedulePage() {
   }
 
   const onAddCourse = () => {
+    if (!isLoggedIn) {
+      Taro.navigateTo({ url: ROUTES.LOGIN })
+      return
+    }
     if (!currentSchedule) {
       Taro.navigateTo({ url: ROUTES.SCHEDULE_FORM })
       return
@@ -133,33 +146,41 @@ export default function SchedulePage() {
     Taro.navigateTo({ url: `${ROUTES.COURSE_FORM}?mode=add&scheduleId=${currentSchedule.id}` })
   }
 
-  // 空状态
-  if (!currentSchedule) {
+  if (!isLoggedIn || !currentSchedule) {
     return (
-      <View className='schedule-page'>
-        <View className='empty-guide'>
-          <View className='guide-header'>
-            <Text className='guide-title'>😊 欢迎使用乐学课表</Text>
-            <View className='guide-placeholder' />
-            <Text className='guide-subtitle'>课表亮点功能</Text>
+      <View className='schedule-page empty-page'>
+        <View className='custom-nav-bg' />
+        <View
+          className='custom-nav-bar'
+          style={{
+            paddingTop: `${menuButtonInfo.top}px`,
+          }}
+        >
+          <View className='nav-title-wrap' style={{ height: `${menuButtonInfo.height}px` }}>
+            <Text className='nav-title'>😊 欢迎使用乐学课表</Text>
           </View>
-          <View className='guide-body'>
-            <View className='feature-grid'>
-              {[
-                { icon: '🔔', name: '微信通知', desc: '提前提醒家人接送' },
-                { icon: '🔗', name: '课表共享', desc: '家人随时查看孩子课程' },
-                { icon: '📅', name: '课周定位', desc: '不怕单双周记不住' },
-                { icon: '👨‍👩‍👧', name: '多孩管理', desc: '多个孩子课表轻松管理' },
-              ].map(f => (
-                <View key={f.name} className='feature-item'>
-                  <View className='feature-icon-wrap'><Text className='feature-icon'>{f.icon}</Text></View>
-                  <Text className='feature-name'>{f.name}</Text>
-                  <Text className='feature-desc'>{f.desc}</Text>
+        </View>
+
+        {/* <View style={{ flexShrink: 0, height: `${navBarHeight}px` }} /> */}
+        <View className='empty-content'>
+          <View className='guide-subtitle'>课表亮点功能</View>
+          <View className='feature-grid'>
+            {[
+              { icon: '\ue759', name: '微信通知', desc: '提前提醒家人接送' },
+              { icon: '\ue729', name: '课表共享', desc: '家人随时查看孩子课程' },
+              { icon: '\ue696', name: '课周定位', desc: '不怕单双周记不住' },
+              { icon: '\ue600', name: '多孩管理', desc: '多个孩子课表轻松管理' },
+            ].map(f => (
+              <View key={f.name} className='feature-item'>
+                <View className='feature-icon-wrap'>
+                  <Text className='iconfont feature-icon'>{f.icon}</Text>
                 </View>
-              ))}
-            </View>
-            <Button className='create-btn' onClick={onAddCourse}>创建课表（约耗时1分钟）</Button>
+                <Text className='feature-name'>{f.name}</Text>
+                <Text className='feature-desc'>{f.desc}</Text>
+              </View>
+            ))}
           </View>
+          <Button className='create-btn' onClick={onAddCourse}>创建课表 (约耗时1分钟)</Button>
         </View>
       </View>
     )
@@ -168,21 +189,29 @@ export default function SchedulePage() {
   // 有数据
   return (
     <View className='schedule-page'>
-      <View className='schedule-view'>
-        <View className='header'>
-          <View className='header-left'>
-            <View className='header-icons'>
+      <View className='custom-nav-bg' />
+        <View
+          className='custom-nav-bar'
+          style={{
+            paddingTop: `${statusBarHeight}px`,
+            height: `${navBarHeight}px`,
+            paddingRight: `${windowInfo.windowWidth - menuButtonInfo.left}px`
+          }}
+        >
+          <View className='nav-title-wrap' style={{ height: `${menuButtonInfo.height}px` }}>
+            <View className='nav-left-icons'>
               <Text className='header-icon-btn'>📋</Text>
               <Text className='header-icon-btn'>➕</Text>
             </View>
+            <View className='header-center' style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)' }}>
+              <Text className='student-name'>{currentStudent?.name || '未选择学生'} ⇌</Text>
+              <Text className='student-sub'>{currentSchedule.name}</Text>
+            </View>
           </View>
-          <View className='header-center'>
-            <Text className='student-name'>{currentStudent?.name || '未选择学生'} ⇌</Text>
-            <Text className='student-sub'>{currentSchedule.name}</Text>
-          </View>
-          <View className='header-right' />
         </View>
 
+      <View style={{ flexShrink: 0, height: `${statusBarHeight + navBarHeight}px` }} />
+      <View className='schedule-view'>
         <View className='grid-wrap'>
           <View className='week-corner' onClick={() => setWeekOffset(0)}>
             <Text className='week-corner-text'>第{weekNum}周 ▾</Text>

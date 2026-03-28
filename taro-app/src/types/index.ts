@@ -73,6 +73,13 @@ export interface BackendSettings {
   notify_enabled: boolean;
   notify_advance_minutes: number;
   notify_time_slots: number[]; // 哪些节次需要提醒，空数组=全部
+  student_settings?: Record<string, StudentNotifySetting>;
+}
+
+export interface StudentNotifySetting {
+  noon_enabled: boolean;
+  afternoon_enabled: boolean;
+  advance_minutes: number;
 }
 
 // 前端展示用的设置（从 BackendSettings 转换而来）

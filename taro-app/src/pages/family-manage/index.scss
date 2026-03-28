@@ -1,44 +1,156 @@
-.container { min-height: 100vh; background: #F5F5F5; padding-bottom: 160px; }
-.header { background: #fff; padding: 40px 32px 32px; border-bottom: 1px solid #EEEEEE; }
-.title { display: block; font-size: 36px; font-weight: 600; color: #333; }
-.subtitle { display: block; font-size: 24px; color: #999; margin-top: 8px; }
-.loading, .empty {
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  padding: 120px 0; color: #999;
+// 家人管理页面
+.family-page {
+  min-height: 100vh;
+  background: #F9FAFB;
+  padding-bottom: calc(180px + env(safe-area-inset-bottom));
+  box-sizing: border-box;
 }
-.empty-icon { font-size: 100px; margin-bottom: 24px; }
-.empty-text { font-size: 28px; }
-.member-list { margin-top: 16px; }
-.member-item {
-  display: flex; align-items: center;
-  background: #fff; padding: 28px 32px;
-  border-bottom: 1px solid #EEEEEE;
+
+// 顶部提示区域
+.family-tip {
+  margin: 32px;
+  background: #F7F7F7;
+  padding: 16px 24px;
+  border-radius: 12px;
 }
-.avatar-img { width: 88px; height: 88px; border-radius: 50%; }
-.avatar-placeholder {
-  width: 88px; height: 88px; border-radius: 50%;
-  background: #00C853; display: flex;
-  align-items: center; justify-content: center;
-  color: #fff; font-size: 32px; font-weight: 600;
+
+.family-tip-text {
+  font-size: 26px;
+  color: #999999;
+  line-height: 1.6;
 }
-.member-info { flex: 1; margin-left: 24px; }
-.member-name { display: block; font-size: 30px; color: #333; }
-.role-tag {
-  display: inline-block; margin-top: 8px;
-  padding: 4px 16px; border-radius: 20px; font-size: 22px;
+
+// 家人数量标题
+.family-count {
+  padding: 24px 32px 16px;
 }
-.role-owner { background: #E8F5E9; color: #00C853; }
-.role-edit { background: #E3F2FD; color: #1976D2; }
-.role-view { background: #F5F5F5; color: #999; }
-.remove-btn { font-size: 26px; color: #FF5252; padding: 12px 0 12px 24px; }
-.bottom-bar {
-  position: fixed; bottom: 0; left: 0; right: 0;
-  background: #fff; padding: 24px 32px;
-  box-shadow: 0 -2px 12px rgba(0,0,0,0.06);
+
+.family-count-text {
+  font-size: 30px;
+  color: #333333;
+  font-weight: 600;
 }
-.invite-btn {
-  background: #00C853; color: #fff;
-  border-radius: 16px; font-size: 32px;
-  font-weight: 600; height: 96px; line-height: 96px;
+
+// 加载状态
+.family-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 120px 0;
+}
+
+.family-loading-text {
+  font-size: 28px;
+  color: #999999;
+}
+
+// 空状态
+.family-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 0 40px;
+}
+
+.family-empty-icon {
+  width: 200px;
+  height: 200px;
+  margin-bottom: 24px;
+}
+
+.family-empty-text {
+  font-size: 28px;
+  color: #999999;
+}
+
+// 成员列表
+.family-list {
+  margin: 0 32px;
+  background: #FFFFFF;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.family-member {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28px 32px;
+
+  &:not(:last-child) {
+    border-bottom: 1px solid #F5F5F5;
+  }
+}
+
+.member-left {
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
+.member-avatar-img {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.member-avatar-placeholder {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.member-detail {
+  margin-left: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.member-nickname {
+  font-size: 30px;
+  color: #333333;
+  font-weight: 500;
+}
+
+.member-desc {
+  font-size: 24px;
+  color: #999999;
+}
+
+.member-arrow {
+  font-size: 32px;
+  color: #CCCCCC;
+  flex-shrink: 0;
+  margin-left: 16px;
+}
+
+// 底部邀请按钮
+.family-bottom {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 24px 48px;
+  padding-bottom: calc(24px + env(safe-area-inset-bottom));
+  z-index: 100;
+}
+
+.family-invite-btn {
+  height: 96px;
+  background: #00C853;
+  color: #FFFFFF;
+  border-radius: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.family-invite-text {
+  font-size: 32px;
+  font-weight: 600;
+  color: #FFFFFF;
 }

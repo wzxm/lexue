@@ -10,7 +10,7 @@ interface ScheduleState {
 
   setSchedules: (schedules: Schedule[]) => void
   addSchedule: (schedule: Schedule) => void
-  setCurrentSchedule: (schedule: Schedule) => void
+  setCurrentSchedule: (schedule: Schedule | null) => void
   tryLoadFromCache: (id: string) => boolean
   setWeekOffset: (offset: number) => void
   addCourse: (course: Course) => void
@@ -52,7 +52,9 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
   addSchedule: (schedule) => set((s) => ({ schedules: [...s.schedules, schedule] })),
 
   setCurrentSchedule: (schedule) => {
-    saveSchedule(schedule.id, schedule)
+    if (schedule) {
+      saveSchedule(schedule.id, schedule)
+    }
     set({ currentSchedule: schedule })
   },
 

@@ -1,5 +1,5 @@
 import Taro from '@tarojs/taro'
-import type { Schedule, Student } from '../types/index';
+import type { Schedule, Student, UserInfo } from '../types/index';
 
 // 本地缓存封装 — wx.* 全部换成 Taro.*
 const PREFIX = 'lexue_';
@@ -62,6 +62,31 @@ export function loadOpenId(): string | null {
 
 export function clearOpenId(): void {
   removeItem('openId');
+}
+
+export function saveUserInfo(info: UserInfo): void {
+  setItem('userInfo', info);
+}
+
+export function loadUserInfo(): UserInfo | null {
+  return getItem<UserInfo>('userInfo');
+}
+
+export function clearUserInfo(): void {
+  removeItem('userInfo');
+}
+
+// 登录标记缓存（用于兼容 openId 缺失场景）
+export function saveLoginFlag(loggedIn: boolean): void {
+  setItem('isLoggedIn', loggedIn);
+}
+
+export function loadLoginFlag(): boolean {
+  return !!getItem<boolean>('isLoggedIn');
+}
+
+export function clearLoginFlag(): void {
+  removeItem('isLoggedIn');
 }
 
 // 当前学生 ID

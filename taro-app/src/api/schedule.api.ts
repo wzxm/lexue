@@ -8,18 +8,19 @@ export async function listSchedules(studentId?: string): Promise<Schedule[]> {
 }
 
 export async function createSchedule(data: {
-  studentId: string;
+  studentId?: string;
   name: string;
   semester: string;
   periods?: Period[];
 }): Promise<Schedule> {
+  const payload: Record<string, unknown> = {
+    name: data.name,
+    semester: data.semester,
+  };
+  if (data.studentId) payload.student_id = data.studentId;
   return cloud.call<Schedule>('schedule', {
     action: 'create',
-    payload: {
-      student_id: data.studentId,
-      name: data.name,
-      semester: data.semester,
-    },
+    payload,
   });
 }
 

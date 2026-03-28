@@ -1,0 +1,11 @@
+onlyBuiltDependencies:
+  - '@parcel/watcher'
+  - '@swc/core'
+  - '@tarojs/binding'
+  - '@tarojs/cli'
+  - core-js
+  - core-js-pure
+  - esbuild
+  - less
+  - protobufjs
+  - weapp-tailwindcss

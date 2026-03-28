@@ -10,7 +10,13 @@
   },
   "scripts": {
     "build:weapp": "taro build --type weapp",
-    "dev:weapp": "npm run build:weapp -- --watch"
+    "dev:weapp": "npm run build:weapp -- --watch",
+    "ci:upload": "node scripts/upload.js",
+    "ci:preview": "node scripts/preview.js",
+    "ci:pack-npm": "node scripts/pack-npm.js",
+    "ci:check": "node scripts/check-quality.js",
+    "build:upload": "taro build --type weapp && node scripts/upload.js",
+    "build:preview": "taro build --type weapp && node scripts/preview.js"
   },
   "dependencies": {
     "@tarojs/cli": "^4.1.11",
@@ -23,22 +29,23 @@
     "@tarojs/shared": "^4.1.11",
     "@tarojs/taro": "^4.1.11",
     "@tarojs/webpack5-runner": "^4.1.11",
-    "react": "^19.2.4",
-    "react-dom": "^19.2.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "zustand": "^5.0.12"
   },
   "devDependencies": {
     "@babel/preset-react": "^7.28.5",
     "@babel/runtime": "^7.29.2",
     "@tailwindcss/postcss": "^4.2.2",
-    "@types/react": "^19.2.14",
+    "@types/react": "^18.3.21",
     "autoprefixer": "^10.4.27",
     "babel-preset-taro": "^4.1.11",
+    "miniprogram-ci": "^2.1.31",
     "postcss": "^8.5.8",
     "sass": "^1.98.0",
     "tailwindcss": "^4.2.2",
     "typescript": "^5.9.3",
     "weapp-tailwindcss": "^4.10.3",
-    "webpack": "^5.105.4"
+    "webpack": "5.91.0"
   }
 }
