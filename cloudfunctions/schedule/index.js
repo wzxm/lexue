@@ -43,7 +43,7 @@ async function list(openid) {
  * 创建课表
  */
 async function create(openid, payload) {
-  validator.require(payload, ['student_id', 'name', 'semester']);
+  validator.requireFields(payload, ['student_id', 'name', 'semester']);
   validator.maxLength(payload.name, 50, '课表名称');
   validator.maxLength(payload.semester, 20, '学期');
 
@@ -72,7 +72,7 @@ async function create(openid, payload) {
  * 获取课表详情（含课程列表）
  */
 async function get(openid, payload) {
-  validator.require(payload, ['scheduleId']);
+  validator.requireFields(payload, ['scheduleId']);
 
   // 需要是成员（owner 或 shared_with）才能查看
   const schedule = await requireMember(openid, payload.scheduleId);
@@ -89,7 +89,7 @@ async function get(openid, payload) {
  * 修改课表（需要有编辑权限）
  */
 async function update(openid, payload) {
-  validator.require(payload, ['scheduleId']);
+  validator.requireFields(payload, ['scheduleId']);
 
   await requireEdit(openid, payload.scheduleId);
 
@@ -112,7 +112,7 @@ async function update(openid, payload) {
  * 级联删除课程和提醒记录
  */
 async function remove(openid, payload) {
-  validator.require(payload, ['scheduleId']);
+  validator.requireFields(payload, ['scheduleId']);
 
   await requireOwner(openid, payload.scheduleId);
 
@@ -135,7 +135,7 @@ async function remove(openid, payload) {
  * 同一用户同一学生只能有一个默认课表
  */
 async function setDefault(openid, payload) {
-  validator.require(payload, ['scheduleId']);
+  validator.requireFields(payload, ['scheduleId']);
 
   const schedule = await requireOwner(openid, payload.scheduleId);
 

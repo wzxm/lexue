@@ -52,7 +52,7 @@ function generateUUID() {
  * 生成口令（课表 owner 才能生成）
  */
 async function generateShareCode(openid, payload) {
-  validator.require(payload, ['scheduleId']);
+  validator.requireFields(payload, ['scheduleId']);
 
   const schedule = await requireOwner(openid, payload.scheduleId);
 
@@ -64,12 +64,16 @@ async function generateShareCode(openid, payload) {
   // 生成唯一口令（万一碰撞了就重新生成，概率极低但要处理）
   let code;
   let attempts = 0;
-  do {
+  while (attempts < 10) {
     code = generateCode();
     const existing = await db.findOne('share_codes', { code, type: 'code' });
     if (!existing) break;
     attempts++;
-  } while (attempts < 10);
+    if (attempts >= 10) {
+      logger.error(FN, 'generateCode:collision', { scheduleId: payload.scheduleId, attempts });
+      return fail(ERRORS.INTERNAL_ERROR, '生成口令失败，请重试');
+    }
+  }
 
   const expireAt = new Date(Date.now() + CODE_TTL_MS);
 
@@ -89,7 +93,7 @@ async function generateShareCode(openid, payload) {
  * 验证口令，返回课表预览信息（不需要已登录状态，但微信云开发实际上已经有 openid）
  */
 async function verifyCode(openid, payload) {
-  validator.require(payload, ['code']);
+  validator.requireFields(payload, ['code']);
 
   const shareCode = await db.findOne('share_codes', {
     code: payload.code.toUpperCase(),
@@ -121,7 +125,7 @@ async function verifyCode(openid, payload) {
  * 接受口令，将当前用户加入课表的 shared_with
  */
 async function acceptCode(openid, payload) {
-  validator.require(payload, ['code']);
+  validator.requireFields(payload, ['code']);
 
   const shareCode = await db.findOne('share_codes', {
     code: payload.code.toUpperCase(),
@@ -179,7 +183,7 @@ async function acceptCode(openid, payload) {
  * 生成家庭邀请 token（用于更紧密的家庭关系绑定）
  */
 async function generateInvite(openid, payload) {
-  validator.require(payload, ['scheduleId']);
+  validator.requireFields(payload, ['scheduleId']);
 
   const schedule = await requireOwner(openid, payload.scheduleId);
 
@@ -204,7 +208,7 @@ async function generateInvite(openid, payload) {
  * 验证邀请 token
  */
 async function verifyInvite(openid, payload) {
-  validator.require(payload, ['token']);
+  validator.requireFields(payload, ['token']);
 
   const invite = await db.findOne('share_codes', {
     code: payload.token,
@@ -232,7 +236,7 @@ async function verifyInvite(openid, payload) {
  * 接受邀请（逻辑和接受口令类似）
  */
 async function acceptInvite(openid, payload) {
-  validator.require(payload, ['token']);
+  validator.requireFields(payload, ['token']);
 
   const invite = await db.findOne('share_codes', {
     code: payload.token,

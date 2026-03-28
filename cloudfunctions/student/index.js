@@ -29,7 +29,7 @@ async function list(openid) {
  * 创建学生
  */
 async function create(openid, payload) {
-  validator.require(payload, ['name', 'school_name', 'grade', 'class_name']);
+  validator.requireFields(payload, ['name', 'school_name', 'grade', 'class_name']);
   validator.maxLength(payload.name, 20, '学生姓名');
   validator.maxLength(payload.school_name, 50, '学校名称');
   validator.maxLength(payload.grade, 20, '年级');
@@ -55,7 +55,7 @@ async function create(openid, payload) {
  * 获取学生详情（需要是 owner）
  */
 async function get(openid, payload) {
-  validator.require(payload, ['studentId']);
+  validator.requireFields(payload, ['studentId']);
 
   const student = await db.getOne('students', payload.studentId);
   if (!student) return fail(ERRORS.NOT_FOUND, '学生不存在');
@@ -68,7 +68,7 @@ async function get(openid, payload) {
  * 修改学生信息（需要是 owner）
  */
 async function update(openid, payload) {
-  validator.require(payload, ['studentId']);
+  validator.requireFields(payload, ['studentId']);
 
   const student = await db.getOne('students', payload.studentId);
   if (!student) return fail(ERRORS.NOT_FOUND, '学生不存在');
@@ -97,7 +97,7 @@ async function update(openid, payload) {
  * 同时级联删除该学生下的所有课表和课程，不删干净不行
  */
 async function remove(openid, payload) {
-  validator.require(payload, ['studentId']);
+  validator.requireFields(payload, ['studentId']);
 
   const student = await db.getOne('students', payload.studentId);
   if (!student) return fail(ERRORS.NOT_FOUND, '学生不存在');
@@ -108,10 +108,11 @@ async function remove(openid, payload) {
   // 查找该学生的所有课表
   const schedules = await db.getList('schedules', { student_id: payload.studentId });
 
-  // 逐个删除课表下的课程
+  // 逐个删除课表下的课程、提醒、分享码
   for (const schedule of schedules) {
     await db.removeWhere('courses', { schedule_id: schedule._id });
     await db.removeWhere('reminders', { schedule_id: schedule._id });
+    await db.removeWhere('share_codes', { schedule_id: schedule._id });
   }
 
   // 删除所有课表

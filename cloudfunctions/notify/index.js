@@ -65,6 +65,10 @@ async function updateSettings(openid, payload) {
     updateData['settings.notify_time_slots'] = payload.notify_time_slots;
   }
 
+  if (payload.student_settings !== undefined) {
+    updateData['settings.student_settings'] = payload.student_settings;
+  }
+
   if (Object.keys(updateData).length === 0) {
     return fail(ERRORS.PARAM_ERROR, '没有可更新的字段');
   }
@@ -79,7 +83,7 @@ async function updateSettings(openid, payload) {
  * subscribeRes 是微信 wx.requestSubscribeMessage 返回的结果
  */
 async function recordSubscribe(openid, payload) {
-  validator.require(payload, ['templateId', 'result']);
+  validator.requireFields(payload, ['templateId', 'result']);
 
   logger.info(FN, 'recordSubscribe', { openid, templateId: payload.templateId });
 

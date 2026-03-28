@@ -111,6 +111,8 @@ exports.main = async (event, context) => {
     // 如果是我们自己 throw 的错误响应，直接返回
     if (e && typeof e.code === 'number') return e;
     logger.error(FN, event.action, e);
-    return fail(ERRORS.INTERNAL_ERROR);
+    // DEBUG: 临时暴露错误信息方便排查，上线前删掉
+    const detail = e instanceof Error ? e.message : JSON.stringify(e);
+    return { ...fail(ERRORS.INTERNAL_ERROR), _debug: detail };
   }
 };

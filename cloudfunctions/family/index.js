@@ -19,7 +19,7 @@ const FN = 'family';
  * 需要是成员才能查看
  */
 async function listMembers(openid, payload) {
-  validator.require(payload, ['scheduleId']);
+  validator.requireFields(payload, ['scheduleId']);
 
   const schedule = await requireMember(openid, payload.scheduleId);
 
@@ -62,7 +62,7 @@ async function listMembers(openid, payload) {
  * permission: 'view' | 'edit'
  */
 async function updatePermission(openid, payload) {
-  validator.require(payload, ['scheduleId', 'targetOpenid', 'permission']);
+  validator.requireFields(payload, ['scheduleId', 'targetOpenid', 'permission']);
   validator.enumValue(payload.permission, ['view', 'edit'], 'permission');
 
   const schedule = await requireOwner(openid, payload.scheduleId);
@@ -96,7 +96,7 @@ async function updatePermission(openid, payload) {
  * 移除成员（只有 owner 可以操作）
  */
 async function removeMember(openid, payload) {
-  validator.require(payload, ['scheduleId', 'targetOpenid']);
+  validator.requireFields(payload, ['scheduleId', 'targetOpenid']);
 
   const schedule = await requireOwner(openid, payload.scheduleId);
 
@@ -125,7 +125,7 @@ async function removeMember(openid, payload) {
  * 自己退出共享（只能退出别人的课表，不能退出自己创建的）
  */
 async function leave(openid, payload) {
-  validator.require(payload, ['scheduleId']);
+  validator.requireFields(payload, ['scheduleId']);
 
   const schedule = await db.getOne('schedules', payload.scheduleId);
   if (!schedule) return fail(ERRORS.NOT_FOUND, '课表不存在');
