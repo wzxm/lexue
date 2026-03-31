@@ -46,6 +46,9 @@ export default function SchedulePage() {
   // 导航栏高度
   const navBarHeight = (menuButtonInfo.top - statusBarHeight) * 2 + menuButtonInfo.height
 
+  // 内容要向下偏移，不要压在导航栏上
+  const headerPaddingTop = menuButtonInfo.top;
+
   const syncView = useCallback(() => {
     const offset = useScheduleStore.getState().weekOffset
     const schedule = useScheduleStore.getState().currentSchedule
@@ -157,15 +160,17 @@ export default function SchedulePage() {
         <View
           className='custom-nav-bar'
           style={{
-            paddingTop: `${menuButtonInfo.top}px`,
+            paddingTop: `${headerPaddingTop}px`,
+            height: `${menuButtonInfo.height}px`,
+            paddingRight: `${windowInfo.windowWidth - menuButtonInfo.left}px`
           }}
         >
-          <View className='nav-title-wrap' style={{ height: `${menuButtonInfo.height}px` }}>
+          <View className='nav-title-wrap'>
             <Text className='nav-title'>😊 欢迎使用乐学课表</Text>
           </View>
         </View>
 
-        {/* <View style={{ flexShrink: 0, height: `${navBarHeight}px` }} /> */}
+        <View style={{ flexShrink: 0, height: `${headerPaddingTop + menuButtonInfo.height}px` }} />
         <EmptyState onAddCourse={onAddCourse} />
       </View>
     )
@@ -180,12 +185,12 @@ export default function SchedulePage() {
         <View
           className='custom-nav-bar'
           style={{
-            paddingTop: `${statusBarHeight}px`,
-            height: `${navBarHeight}px`,
+            paddingTop: `${headerPaddingTop}px`,
+            height: `${menuButtonInfo.height}px`,
             paddingRight: `${windowInfo.windowWidth - menuButtonInfo.left}px`
           }}
         >
-          <View className='nav-title-wrap' style={{ height: `${menuButtonInfo.height}px` }}>
+          <View className='nav-title-wrap'>
             <View className='nav-left-icons'>
               <Text className='header-icon-btn'>📋</Text>
               <Text className='header-icon-btn' onClick={onAddCourse}>➕</Text>
@@ -194,10 +199,15 @@ export default function SchedulePage() {
               <Text className='student-name'>{currentStudent?.name || '未选择学生'} ⇌</Text>
               <Text className='student-sub'>{currentSchedule.name}</Text>
             </View>
+            <View className='nav-right-icons' style={{ visibility: 'hidden' }}>
+              {/* 仅为占位保持中间居中不跑偏 */}
+              <Text className='header-icon-btn'>📋</Text>
+              <Text className='header-icon-btn'>➕</Text>
+            </View>
           </View>
         </View>
 
-      <View style={{ flexShrink: 0, height: `${statusBarHeight + navBarHeight}px` }} />
+      <View style={{ flexShrink: 0, height: `${headerPaddingTop + menuButtonInfo.height}px` }} />
       
       {!hasCourses ? (
         <EmptySchedule currentSchedule={currentSchedule} />
