@@ -53,8 +53,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 32px;
-  min-height: 104px;
+  padding: 20px 32px;
+  min-height: 96px;
   box-sizing: border-box;
 }
 
@@ -144,4 +144,79 @@
 
 .btn-save::after {
   border: none;
+}
+
+/* ===== 归属课表选择弹窗 ===== */
+.schedule-sheet {
+  padding: 40px 32px calc(32px + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+
+.schedule-sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  margin-bottom: 48px;
+}
+
+.schedule-sheet-title {
+  font-size: 34px;
+  font-weight: 500;
+  color: #333333;
+}
+
+.schedule-sheet-close {
+  position: absolute;
+  right: 0;
+  font-size: 56px;
+  color: #999999;
+  line-height: 1;
+  padding: 10px;
+  margin-right: -10px;
+  font-weight: 300;
+}
+
+.schedule-sheet-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  margin-bottom: 64px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.schedule-sheet-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 36px 40px;
+  background: #FFFFFF;
+  border-radius: 24px;
+}
+
+.schedule-sheet-item--active {
+  /* background: #F7FFF9; */
+}
+
+.schedule-sheet-name {
+  font-size: 32px;
+  color: #333333;
+}
+
+.schedule-sheet-check {
+  font-size: 32px;
+  color: #07C160;
+  font-weight: bold;
+}
+
+.schedule-sheet-footer {
+  text-align: center;
+}
+
+.schedule-sheet-empty {
+  text-align: center;
+  font-size: 28px;
+  color: #999999;
+  padding: 40px 0;
 }

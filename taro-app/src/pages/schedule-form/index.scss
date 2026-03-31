@@ -335,3 +335,75 @@
   color: #999999;
   padding: 20px;
 }
+
+/* ===== 归属学生选择弹窗 ===== */
+.student-sheet {
+  padding: 40px 32px calc(32px + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+
+.student-sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  margin-bottom: 48px;
+}
+
+.student-sheet-title {
+  font-size: 34px;
+  font-weight: 500;
+  color: #333333;
+}
+
+.student-sheet-close {
+  position: absolute;
+  right: 0;
+  font-size: 56px;
+  color: #999999;
+  line-height: 1;
+  padding: 10px;
+  margin-right: -10px;
+  font-weight: 300;
+}
+
+.student-sheet-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  margin-bottom: 64px;
+}
+
+.student-sheet-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 36px 40px;
+  background: #FFFFFF;
+  border-radius: 24px;
+}
+
+.student-sheet-item--active {
+  /* background: #F7FFF9; */
+}
+
+.student-sheet-name {
+  font-size: 32px;
+  color: #333333;
+}
+
+.student-sheet-check {
+  font-size: 32px;
+  color: #07C160;
+  font-weight: bold;
+}
+
+.student-sheet-footer {
+  text-align: center;
+}
+
+.student-sheet-manage {
+  font-size: 30px;
+  color: #07C160;
+  padding: 20px 60px;
+}

@@ -1,37 +1,158 @@
-.form-page { display: flex; flex-direction: column; height: 100vh; background: #F5F5F5; }
-.form-body { flex: 1; padding: 24px; }
-.avatar-section { display: flex; justify-content: center; padding: 40px 0 32px; }
-.avatar-upload {
-  width: 160px; height: 160px; border-radius: 80px;
-  background: #FFFFFF; border: 3px dashed #00C853;
-  display: flex; align-items: center; justify-content: center; overflow: hidden;
+.form-page { 
+  display: flex; 
+  flex-direction: column; 
+  height: 100vh; 
+  background: #F5F5F5; 
 }
-.avatar-placeholder { display: flex; flex-direction: column; align-items: center; gap: 8px; }
-.avatar-camera { font-size: 52px; line-height: 1; }
-.avatar-hint { font-size: 22px; color: #AAAAAA; }
-.form-section { background: #FFFFFF; border-radius: 16px; margin-bottom: 24px; overflow: hidden; }
-.form-item {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 0 28px; height: 104px;
+
+.form-body { 
+  flex: 1; 
+  padding: 32px; 
+  box-sizing: border-box;
 }
-.form-item.border-bottom { border-bottom: 1px solid #F5F5F5; }
-.form-label { font-size: 30px; color: #333333; min-width: 130px; flex-shrink: 0; font-weight: 500; }
-.required { color: #FF5252; }
-.form-input { flex: 1; text-align: right; font-size: 30px; color: #333333; height: 100%; }
-.input-placeholder { color: #CCCCCC; font-size: 28px; }
-.picker-value { display: flex; align-items: center; gap: 8px; }
-.picker-text { font-size: 30px; color: #333333; }
-.picker-arrow { font-size: 36px; color: #CCCCCC; font-weight: 300; }
-.form-item-textarea { padding: 28px; }
-.form-textarea { width: 100%; height: 160px; font-size: 28px; color: #333333; margin-top: 20px; line-height: 1.6; }
+
+.form-group-title {
+  font-size: 28px;
+  color: #666666;
+  margin-bottom: 24px;
+}
+
+.mt-40 {
+  margin-top: 48px;
+}
+
+.form-card { 
+  background: #FFFFFF; 
+  border-radius: 24px; 
+  padding: 0 32px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.02);
+}
+
+.name-input {
+  height: 104px;
+  font-size: 32px;
+  color: #333333;
+}
+
+.input-placeholder { 
+  color: #CCCCCC; 
+}
+
+.form-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 104px;
+}
+
+.form-row.border-bottom {
+  border-bottom: 1px solid #F5F5F5;
+}
+
+.row-label {
+  font-size: 30px;
+  color: #666666;
+}
+
+.row-value-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+}
+
+.row-value {
+  font-size: 30px;
+  color: #333333;
+}
+
+.row-value.placeholder {
+  color: #CCCCCC;
+}
+
+.school-input {
+  text-align: right;
+  font-size: 30px;
+  color: #333333;
+  width: 100%;
+}
+
+.row-arrow {
+  font-size: 40px;
+  color: #CCCCCC;
+  font-weight: 300;
+  margin-top: -4px;
+}
+
+.gender-row {
+  display: flex;
+  align-items: center;
+  gap: 64px;
+  padding: 0 16px;
+}
+
+.gender-option {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.radio-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid #CCCCCC;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.radio-circle.active {
+  background: #07C160;
+  border-color: #07C160;
+}
+
+.radio-inner {
+  color: #FFFFFF;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.gender-text {
+  font-size: 30px;
+  color: #333333;
+}
+
 .form-footer {
-  padding: 24px 28px;
+  padding: 24px 32px;
   padding-bottom: calc(24px + env(safe-area-inset-bottom));
-  background: #FFFFFF; border-top: 1px solid #EEEEEE;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
-.btn-primary {
-  width: 100%; height: 96px; background: #00C853; color: #FFFFFF;
-  border-radius: 48px; font-size: 34px; font-weight: 600; border: none;
-  display: flex; align-items: center; justify-content: center;
+
+.btn-save {
+  width: 100%; 
+  height: 96px; 
+  background: #00C853; 
+  color: #FFFFFF;
+  border-radius: 48px; 
+  font-size: 34px; 
+  font-weight: 500; 
+  border: none;
+  display: flex; 
+  align-items: center; 
+  justify-content: center;
 }
-.btn-primary::after { border: none; }
+
+.btn-save::after { border: none; }
+
+.btn-delete {
+  width: 100%;
+  text-align: center;
+  font-size: 30px;
+  color: #FF5252;
+  padding: 24px 0;
+}

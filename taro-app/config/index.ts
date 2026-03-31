@@ -1,6 +1,4 @@
 import { defineConfig } from '@tarojs/cli'
-import path from 'path'
-import { UnifiedWebpackPluginV5 } from 'weapp-tailwindcss'
 import devConfig from './dev'
 import prodConfig from './prod'
 
@@ -28,12 +26,6 @@ export default defineConfig(async (merge) => {
       type: 'webpack5' as const,
     },
     mini: {
-      webpackChain(chain: any) {
-        chain.plugin('weapp-tailwindcss').use(UnifiedWebpackPluginV5, [{
-          appType: 'taro',
-          cssEntries: [path.resolve(__dirname, '..', 'src', 'app.scss')],
-        }])
-      },
       postcss: {
         pxtransform: {
           enable: true,

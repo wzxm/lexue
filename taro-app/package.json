@@ -36,16 +36,13 @@
   "devDependencies": {
     "@babel/preset-react": "^7.28.5",
     "@babel/runtime": "^7.29.2",
-    "@tailwindcss/postcss": "^4.2.2",
     "@types/react": "^18.3.21",
     "autoprefixer": "^10.4.27",
     "babel-preset-taro": "^4.1.11",
     "miniprogram-ci": "^2.1.31",
     "postcss": "^8.5.8",
     "sass": "^1.98.0",
-    "tailwindcss": "^4.2.2",
     "typescript": "^5.9.3",
-    "weapp-tailwindcss": "^4.10.3",
     "webpack": "5.91.0"
   }
 }
