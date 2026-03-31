@@ -25,7 +25,8 @@ export function buildGrid(schedule: Schedule | null, weekOffset: number): Schedu
   )
   if (!schedule) return grid
 
-  for (const course of schedule.courses) {
+  const courses = Array.isArray(schedule.courses) ? schedule.courses : []
+  for (const course of courses) {
     const weekdayIdx = course.weekday - 1
     const periodIdx = course.period - 1
     if (periodIdx >= 0 && periodIdx < PERIOD_COUNT && weekdayIdx >= 0 && weekdayIdx < WEEKDAY_COUNT) {

@@ -36,7 +36,7 @@
 | student_id | string | 是 | 关联的学生ID |
 | name | string | 是 | 课表名称（如：2024春季学期） |
 | semester | string | 否 | 学期标识 |
-| is_active | boolean | 是 | 是否为当前启用课表，默认 false |
+| is_default | boolean | 是 | 是否为当前显示课表，默认 false，同一学生下只有一个为 true |
 | shared_with | array | 否 | 已共享的用户列表，元素结构见下 |
 | shared_with[].openid | string | 是 | 共享用户的 openid |
 | shared_with[].nickname | string | 否 | 共享用户昵称 |

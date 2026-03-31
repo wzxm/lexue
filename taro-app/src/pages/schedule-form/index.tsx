@@ -1,40 +1,41 @@
-import { View, Text, Picker, Button } from "@tarojs/components";
+import { View, Text, Picker, Button, PageContainer } from "@tarojs/components";
 import { useState, useEffect, useCallback } from "react";
 import Taro from "@tarojs/taro";
 import { createSchedule } from "../../api/schedule.api";
 import { useStudentStore } from "../../store/student.store";
 import { useScheduleStore } from "../../store/schedule.store";
 import { ROUTES } from "../../constants/routes";
+import { getSemesterOptions, getCurrentSemester } from "../../utils/date";
 import type { Schedule, Period, PeriodIndex } from "../../types/index";
 import "./index.scss";
 
-const SEMESTER_OPTIONS = [
-  { label: "2024~2025 上学期", value: "2024-2025-1" },
-  { label: "2024~2025 下学期", value: "2024-2025-2" },
-  { label: "2025~2026 上学期", value: "2025-2026-1" },
-  { label: "2025~2026 下学期", value: "2025-2026-2" },
-  { label: "2026~2027 上学期", value: "2026-2027-1" },
-  { label: "2026~2027 下学期", value: "2026-2027-2" },
-];
+const SEMESTER_OPTIONS = getSemesterOptions();
 const SEMESTER_LABELS = SEMESTER_OPTIONS.map((o) => o.label);
 
-// 上午默认时间段
+// 推算当前学期在列表中的位置，找不到就默认第一项
+const currentSemesterValue = getCurrentSemester().value;
+const DEFAULT_SEMESTER_INDEX = Math.max(
+  SEMESTER_OPTIONS.findIndex((o) => o.value === currentSemesterValue),
+  0
+);
+
+// 上午默认时间段：08:10 起，每节 40 分钟，课间 10 分钟
 const MORNING_SLOTS = [
-  { startTime: "08:10", endTime: "08:55" },
-  { startTime: "09:05", endTime: "09:50" },
-  { startTime: "10:10", endTime: "10:55" },
-  { startTime: "11:05", endTime: "11:50" },
-  { startTime: "12:00", endTime: "12:45" },
-  { startTime: "13:00", endTime: "13:45" },
+  { startTime: "08:10", endTime: "08:50" },
+  { startTime: "09:00", endTime: "09:40" },
+  { startTime: "09:50", endTime: "10:30" },
+  { startTime: "10:40", endTime: "11:20" },
+  { startTime: "11:30", endTime: "12:10" },
+  { startTime: "12:20", endTime: "13:00" },
 ];
-// 下午默认时间段
+// 下午默认时间段：14:00 起，每节 40 分钟，课间 10 分钟
 const AFTERNOON_SLOTS = [
-  { startTime: "14:30", endTime: "15:15" },
-  { startTime: "15:25", endTime: "16:10" },
-  { startTime: "16:20", endTime: "17:05" },
-  { startTime: "17:15", endTime: "18:00" },
-  { startTime: "18:10", endTime: "18:55" },
-  { startTime: "19:00", endTime: "19:45" },
+  { startTime: "14:00", endTime: "14:40" },
+  { startTime: "14:50", endTime: "15:30" },
+  { startTime: "15:40", endTime: "16:20" },
+  { startTime: "16:30", endTime: "17:10" },
+  { startTime: "17:20", endTime: "18:00" },
+  { startTime: "18:10", endTime: "18:50" },
 ];
 // 晚上默认时间段
 const EVENING_SLOTS = [
@@ -50,17 +51,17 @@ const WEEK_LABELS = WEEK_OPTIONS.map((w) => `${w}`);
 
 export default function ScheduleFormPage() {
   const students = useStudentStore((s) => s.students);
-  const currentStudent = useStudentStore((s) => s.currentStudent);
   const addSchedule = useScheduleStore((s) => s.addSchedule);
   const setCurrentSchedule = useScheduleStore((s) => s.setCurrentSchedule);
 
-  const [semesterIndex, setSemesterIndex] = useState(3);
+  const [semesterIndex, setSemesterIndex] = useState(DEFAULT_SEMESTER_INDEX);
   const [totalWeeks, setTotalWeeks] = useState(20);
   const [weekPickerIndex, setWeekPickerIndex] = useState(19);
-  const [studentIndex, setStudentIndex] = useState(0);
+  const [studentIndex, setStudentIndex] = useState(0); // 列表已按 createTime desc 排序，第一个就是最新
   const [morningCount, setMorningCount] = useState(4);
   const [afternoonCount, setAfternoonCount] = useState(4);
-  const [eveningCount, setEveningCount] = useState(3);
+  const [eveningCount, setEveningCount] = useState(0);
+  const [showStudentSheet, setShowStudentSheet] = useState(false);
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<1 | 2>(1);
   const [currentScheduleId, setCurrentScheduleId] = useState<string | null>(null);
@@ -69,10 +70,7 @@ export default function ScheduleFormPage() {
 
   useEffect(() => {
     Taro.setNavigationBarTitle({ title: "新建课表" });
-    if (currentStudent) {
-      const idx = students.findIndex((s) => s.id === currentStudent.id);
-      if (idx >= 0) setStudentIndex(idx);
-    }
+    // 学生列表已按 createTime desc 排序，始终默认选第一个
   }, []);
 
   const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
@@ -244,15 +242,13 @@ export default function ScheduleFormPage() {
 
           {/* 归属学生 */}
           <View className="section">
-            <Picker mode="selector" range={studentLabels} value={studentIndex} onChange={(e) => setStudentIndex(Number(e.detail.value))}>
-              <View className="list-item">
-                <Text className="list-label">归属学生</Text>
-                <View className="list-right">
-                  <Text className="list-value">{studentLabels[studentIndex] || "默认"}</Text>
-                  <Text className="list-arrow">›</Text>
-                </View>
+            <View className="list-item" onClick={() => setShowStudentSheet(true)}>
+              <Text className="list-label">归属学生</Text>
+              <View className="list-right">
+                <Text className="list-value">{studentLabels[studentIndex] || "默认"}</Text>
+                <Text className="list-arrow">›</Text>
               </View>
-            </Picker>
+            </View>
           </View>
 
           {/* 设置时间 */}
@@ -279,6 +275,44 @@ export default function ScheduleFormPage() {
           </Button>
         </View>
       )}
+
+      {/* 归属学生选择弹窗 */}
+      <PageContainer
+        show={showStudentSheet}
+        position="bottom"
+        round
+        zIndex={1000}
+        onClickOverlay={() => setShowStudentSheet(false)}
+        onAfterLeave={() => setShowStudentSheet(false)}
+        customStyle={`background-color: #F7F7F7;`}
+      >
+        <View className="student-sheet">
+          <View className="student-sheet-header">
+            <Text className="student-sheet-title">选择归属学生</Text>
+            <Text className="student-sheet-close" onClick={() => setShowStudentSheet(false)}>×</Text>
+          </View>
+          <View className="student-sheet-list">
+            {students.map((s, idx) => (
+              <View
+                key={s.id}
+                className={`student-sheet-item ${idx === studentIndex ? "student-sheet-item--active" : ""}`}
+                onClick={() => { setStudentIndex(idx); setShowStudentSheet(false); }}
+              >
+                <Text className="student-sheet-name">{s.name}</Text>
+                {idx === studentIndex && <Text className="student-sheet-check">✓</Text>}
+              </View>
+            ))}
+          </View>
+          <View className="student-sheet-footer">
+            <Text
+              className="student-sheet-manage"
+              onClick={() => { setShowStudentSheet(false); Taro.navigateTo({ url: ROUTES.STUDENT_MANAGE }); }}
+            >
+              学生管理
+            </Text>
+          </View>
+        </View>
+      </PageContainer>
 
       {step === 2 && (
         <>

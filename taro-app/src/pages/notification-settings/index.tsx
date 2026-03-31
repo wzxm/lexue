@@ -1,38 +1,57 @@
-import { View, Text, Switch, Picker, Button, Image } from '@tarojs/components'
+import { View, Text, Switch, Picker, Button, Image, PageContainer } from '@tarojs/components'
 import { useState, useEffect } from 'react'
 import Taro from '@tarojs/taro'
 import * as notifyApi from '../../api/notify.api'
 import * as studentApi from '../../api/student.api'
-import type { Student, StudentNotifySetting } from '../../types/index'
+import * as scheduleApi from '../../api/schedule.api'
+import type { Student, StudentNotifySetting, Schedule } from '../../types/index'
 import './index.scss'
 
 const MINUTE_OPTIONS = [5, 10, 15, 20, 25]
 
 export default function NotificationSettingsPage() {
   const [students, setStudents] = useState<Student[]>([])
+  const [schedules, setSchedules] = useState<Schedule[]>([])
   const [studentSettings, setStudentSettings] = useState<Record<string, StudentNotifySetting>>({})
   const [loading, setLoading] = useState(false)
   const [pageLoading, setPageLoading] = useState(true)
 
+  // Sheet states
+  const [activeStudentId, setActiveStudentId] = useState<string | null>(null)
+
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [studentsList, settings] = await Promise.all([
+        const [studentsList, schedulesList, settings] = await Promise.all([
           studentApi.listStudents(),
+          scheduleApi.listSchedules(),
           notifyApi.getSettings()
         ])
         setStudents(studentsList)
+        setSchedules(schedulesList)
         
         const s = settings as any
         if (s.student_settings) {
-          setStudentSettings(s.student_settings)
+          const fetchedSettings = { ...s.student_settings }
+          // Fill missing schedule_id
+          studentsList.forEach(student => {
+            if (fetchedSettings[student.id] && !fetchedSettings[student.id].schedule_id) {
+              const defaultSchedule = schedulesList.find(sch => sch.studentId === student.id)
+              if (defaultSchedule) {
+                fetchedSettings[student.id].schedule_id = defaultSchedule.id
+              }
+            }
+          })
+          setStudentSettings(fetchedSettings)
         } else {
           const initialSettings: Record<string, StudentNotifySetting> = {}
           studentsList.forEach(student => {
+            const defaultSchedule = schedulesList.find(sch => sch.studentId === student.id)
             initialSettings[student.id] = {
               noon_enabled: true,
               afternoon_enabled: true,
-              advance_minutes: 10
+              advance_minutes: 10,
+              schedule_id: defaultSchedule?.id
             }
           })
           setStudentSettings(initialSettings)
@@ -76,9 +95,16 @@ export default function NotificationSettingsPage() {
     }
   }
 
+  const getStudentSchedules = (studentId: string) => {
+    return schedules.filter(s => s.studentId === studentId)
+  }
+
   if (pageLoading) {
     return <View className='notify-page'></View>
   }
+
+  const activeStudentSchedules = activeStudentId ? getStudentSchedules(activeStudentId) : []
+  const activeStudentSetting = activeStudentId ? studentSettings[activeStudentId] : null
 
   return (
     <View className='notify-page'>
@@ -100,6 +126,8 @@ export default function NotificationSettingsPage() {
             const setting = studentSettings[student.id] || { noon_enabled: true, afternoon_enabled: true, advance_minutes: 10 }
             const minuteIndex = MINUTE_OPTIONS.indexOf(setting.advance_minutes)
             const pickerValue = minuteIndex !== -1 ? minuteIndex : 1
+            const studentSchedules = getStudentSchedules(student.id)
+            const associatedSchedule = studentSchedules.find(s => s.id === setting.schedule_id) || studentSchedules[0]
 
             return (
               <View key={student.id} className='student-section'>
@@ -113,6 +141,7 @@ export default function NotificationSettingsPage() {
                     <Switch 
                       checked={setting.noon_enabled} 
                       color='#00C853'
+                      style={{ transform: 'scale(0.8)' }}
                       onChange={(e) => updateStudentSetting(student.id, 'noon_enabled', e.detail.value)} 
                     />
                   </View>
@@ -125,8 +154,17 @@ export default function NotificationSettingsPage() {
                     <Switch 
                       checked={setting.afternoon_enabled} 
                       color='#00C853'
+                      style={{ transform: 'scale(0.8)' }}
                       onChange={(e) => updateStudentSetting(student.id, 'afternoon_enabled', e.detail.value)} 
                     />
+                  </View>
+
+                  <View className='setting-row border-bottom' onClick={() => setActiveStudentId(student.id)}>
+                    <Text className='setting-label'>关联课表</Text>
+                    <View className='picker-value'>
+                      <Text className='picker-text'>{associatedSchedule ? associatedSchedule.name : '请选择课表'}</Text>
+                      <Text className='picker-arrow'>›</Text>
+                    </View>
                   </View>
 
                   <View className='setting-row'>
@@ -160,6 +198,50 @@ export default function NotificationSettingsPage() {
           </Button>
         </View>
       )}
+
+      {/* 归属课表选择弹窗 */}
+      <PageContainer
+        show={!!activeStudentId}
+        position="bottom"
+        round
+        zIndex={1000}
+        onClickOverlay={() => setActiveStudentId(null)}
+        onAfterLeave={() => setActiveStudentId(null)}
+        customStyle="background-color: #F7F7F7;"
+      >
+        <View className="schedule-sheet">
+          <View className="schedule-sheet-header">
+            <Text className="schedule-sheet-title">选择关联课表</Text>
+            <Text className="schedule-sheet-close" onClick={() => setActiveStudentId(null)}>×</Text>
+          </View>
+          <View className="schedule-sheet-list">
+            {activeStudentSchedules.length > 0 ? (
+              activeStudentSchedules.map((s) => {
+                const isActive = activeStudentSetting?.schedule_id === s.id || (!activeStudentSetting?.schedule_id && activeStudentSchedules[0]?.id === s.id)
+                return (
+                  <View
+                    key={s.id}
+                    className={`schedule-sheet-item ${isActive ? "schedule-sheet-item--active" : ""}`}
+                    onClick={() => { 
+                      if (activeStudentId) {
+                        updateStudentSetting(activeStudentId, 'schedule_id', s.id)
+                      }
+                      setActiveStudentId(null)
+                    }}
+                  >
+                    <Text className="schedule-sheet-name">{s.name}</Text>
+                    {isActive && <Text className="schedule-sheet-check">✓</Text>}
+                  </View>
+                )
+              })
+            ) : (
+              <View className="schedule-sheet-empty">
+                该学生暂无课表
+              </View>
+            )}
+          </View>
+        </View>
+      </PageContainer>
     </View>
   )
 }

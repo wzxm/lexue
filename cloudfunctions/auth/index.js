@@ -42,6 +42,21 @@ async function login(openid, unionid) {
     logger.info(FN, 'login:created', { openid, _id });
   }
 
+  // 新老用户统一：没有学生记录就补一条默认学生
+  const students = await db.getList('students', { owner_openid: openid });
+  if (!students || students.length === 0) {
+    await db.create('students', {
+      owner_openid: openid,
+      name: '默认学生',
+      school_name: '',
+      grade: '',
+      class_name: '',
+      avatar_url: '',
+      remark: '',
+    });
+    logger.info(FN, 'login:default_student_created', { openid });
+  }
+
   return success(user);
 }
 

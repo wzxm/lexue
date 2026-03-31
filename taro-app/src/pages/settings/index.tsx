@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { View, Text, PageContainer } from '@tarojs/components'
+import { View, Text, PageContainer, Image } from '@tarojs/components'
 import Taro, { useDidHide, useDidShow, useUnload } from '@tarojs/taro'
 import { tabState } from '../../utils/tabState'
 import { ROUTES } from '../../constants/routes'
 import { useAuthStore } from '../../store/auth.store'
+import defaultAvatar from '../../assets/default-avatar.png'
 import './index.scss'
 
 type MenuKey = 'notify' | 'family' | 'scheduleTab' | 'student' | 'feedback' | 'recommend'
@@ -83,10 +84,10 @@ export default function SettingsPage() {
         Taro.navigateTo({ url: ROUTES.FAMILY_MANAGE })
         break
       case 'scheduleTab':
-        Taro.switchTab({ url: ROUTES.SCHEDULE })
+        Taro.navigateTo({ url: ROUTES.SCHEDULE_MANAGE })
         break
       case 'student':
-        Taro.navigateTo({ url: ROUTES.STUDENT_FORM })
+        Taro.navigateTo({ url: ROUTES.STUDENT_MANAGE })
         break
       case 'feedback':
         Taro.showToast({ title: '敬请期待', icon: 'none' })
@@ -115,6 +116,9 @@ export default function SettingsPage() {
         <View className='nav-title-wrap'>
           {!isLoggedIn ? (
             <View className='user-info-nav' onClick={goLogin}>
+              <View className='guest-avatar-small'>
+                <Image className='guest-avatar-small-img' src={defaultAvatar} mode='aspectFill' />
+              </View>
               <View className='user-text'>
                 <Text className='name'>登录注册</Text>
                 <Text className='school'>等你来用～</Text>

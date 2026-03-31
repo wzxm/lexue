@@ -29,13 +29,18 @@ export interface Course {
 }
 
 export interface Schedule {
-  id: string;
+  id: string; // 前端可能会映射 _id 到 id
+  _id?: string;
   studentId: string;
+  student_id?: string;
   name: string;
   semester: string;
   periods: Period[];
   courses: Course[];
   isDefault: boolean;
+  is_default?: boolean;
+  owner_openid?: string;
+  shared_with?: any[];
   createdAt: number;
   updatedAt: number;
 }
@@ -46,10 +51,7 @@ export interface Student {
   avatar?: string;
   school: string;
   grade: string;
-  classNum: string;
-  enrollYear?: number;
-  studentNo?: string;
-  note?: string;
+  gender?: number; // 1: 男, 2: 女
 }
 
 export interface FamilyMember {
@@ -80,6 +82,7 @@ export interface StudentNotifySetting {
   noon_enabled: boolean;
   afternoon_enabled: boolean;
   advance_minutes: number;
+  schedule_id?: string;
 }
 
 // 前端展示用的设置（从 BackendSettings 转换而来）

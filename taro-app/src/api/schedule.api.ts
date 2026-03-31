@@ -4,7 +4,9 @@ import type { Schedule, Period } from '../types/index';
 export async function listSchedules(studentId?: string): Promise<Schedule[]> {
   const payload: Record<string, unknown> = {};
   if (studentId) payload.studentId = studentId;
-  return cloud.call<Schedule[]>('schedule', { action: 'list', payload });
+  const result = await cloud.call<{ own: Schedule[]; shared: Schedule[] }>('schedule', { action: 'list', payload });
+  // 云函数返回 { own, shared }，拍平成数组供前端使用
+  return [...(result.own || []), ...(result.shared || [])];
 }
 
 export async function createSchedule(data: {

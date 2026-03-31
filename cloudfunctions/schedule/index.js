@@ -54,12 +54,18 @@ async function create(openid, payload) {
 
   logger.info(FN, 'create', { openid, studentId: payload.student_id });
 
+  // 新课表创建后自动成为默认课表，先把该学生其他课表取消默认
+  await db.updateWhere('schedules', {
+    owner_openid: openid,
+    student_id: payload.student_id,
+  }, { is_default: false });
+
   const { _id } = await db.create('schedules', {
     owner_openid: openid,
     student_id: payload.student_id,
     name: payload.name,
     semester: payload.semester,
-    is_default: payload.is_default || false,
+    is_default: true,
     shared_with: [], // 初始无共享成员
     remark: payload.remark || '',
   });

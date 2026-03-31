@@ -1,5 +1,64 @@
 // 日期工具函数 — 纯逻辑，零平台依赖，直接复用
 
+export interface SemesterOption {
+  label: string;
+  value: string; // 格式: "2025-2026-1"
+}
+
+/** 根据学年起始年和学期序号生成选项 */
+function makeSemesterOption(startYear: number, term: 1 | 2): SemesterOption {
+  const endYear = startYear + 1;
+  return {
+    label: `${startYear}~${endYear} ${term === 1 ? '上学期' : '下学期'}`,
+    value: `${startYear}-${endYear}-${term}`,
+  };
+}
+
+/**
+ * 动态生成学期选项列表
+ * 范围：当前学年前2年 ~ 后2年，共10项
+ */
+export function getSemesterOptions(): SemesterOption[] {
+  const now = new Date();
+  const month = now.getMonth() + 1;
+  const year = now.getFullYear();
+  const currentAcademicYear = month >= 9 ? year : year - 1;
+
+  const options: SemesterOption[] = [];
+  for (let y = currentAcademicYear - 2; y <= currentAcademicYear + 2; y++) {
+    options.push(makeSemesterOption(y, 1));
+    options.push(makeSemesterOption(y, 2));
+  }
+  return options;
+}
+
+/**
+ * 推算当前学期
+ * 上学期（秋季）：9月 ~ 次年1月
+ * 下学期（春季）：2月 ~ 8月
+ */
+export function getCurrentSemester(): SemesterOption {
+  const now = new Date();
+  const month = now.getMonth() + 1;
+  const year = now.getFullYear();
+
+  let startYear: number;
+  let term: 1 | 2;
+
+  if (month >= 9) {
+    startYear = year;
+    term = 1;
+  } else if (month === 1) {
+    startYear = year - 1;
+    term = 1;
+  } else {
+    startYear = year - 1;
+    term = 2;
+  }
+
+  return makeSemesterOption(startYear, term);
+}
+
 /**
  * 获取当前周相对于学期开始的偏移量（从0开始）
  */
