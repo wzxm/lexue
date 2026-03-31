@@ -178,14 +178,13 @@ export default function SchedulePage() {
 
   // 有数据
   const hasCourses = currentSchedule.courses && currentSchedule.courses.length > 0;
-
   return (
     <View className='schedule-page'>
       <View className='custom-nav-bg' />
         <View
           className='custom-nav-bar'
           style={{
-            paddingTop: `${headerPaddingTop}px`,
+            paddingTop: `${headerPaddingTop + 20}px`,
             height: `${menuButtonInfo.height}px`,
             paddingRight: `${windowInfo.windowWidth - menuButtonInfo.left}px`
           }}
@@ -207,7 +206,7 @@ export default function SchedulePage() {
           </View>
         </View>
 
-      <View style={{ flexShrink: 0, height: `${headerPaddingTop + menuButtonInfo.height}px` }} />
+      <View style={{ flexShrink: 0, height: `${headerPaddingTop + menuButtonInfo.height + 40}px` }} />
       
       {!hasCourses ? (
         <EmptySchedule currentSchedule={currentSchedule} />

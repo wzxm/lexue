@@ -22,7 +22,7 @@ async function list(openid) {
   const students = await db.getList('students', { owner_openid: openid }, {
     orderBy: { field: 'createTime', direction: 'desc' },
   });
-  return success(students);
+  return success(students.map(s => ({ ...s, id: s._id })));
 }
 
 /**
@@ -46,7 +46,7 @@ async function create(openid, payload) {
   });
 
   const student = await db.getOne('students', _id);
-  return success(student);
+  return success({ ...student, id: student._id });
 }
 
 /**
@@ -59,7 +59,7 @@ async function get(openid, payload) {
   if (!student) return fail(ERRORS.NOT_FOUND, '学生不存在');
   if (student.owner_openid !== openid) return fail(ERRORS.FORBIDDEN);
 
-  return success(student);
+  return success({ ...student, id: student._id });
 }
 
 /**

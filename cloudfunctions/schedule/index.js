@@ -33,9 +33,11 @@ async function list(openid) {
     owner_openid: _.neq(openid), // 排除自己创建的（避免重复）
   });
 
+  const mapId = (schedule) => schedule ? { ...schedule, id: schedule._id } : schedule;
+
   return success({
-    own: ownSchedules,
-    shared: sharedSchedules,
+    own: ownSchedules.map(mapId),
+    shared: sharedSchedules.map(mapId),
   });
 }
 
@@ -71,7 +73,7 @@ async function create(openid, payload) {
   });
 
   const schedule = await db.getOne('schedules', _id);
-  return success(schedule);
+  return success({ ...schedule, id: schedule._id });
 }
 
 /**
@@ -88,7 +90,7 @@ async function get(openid, payload) {
     orderBy: { field: 'day_of_week', direction: 'asc' },
   });
 
-  return success({ ...schedule, courses });
+  return success({ ...schedule, id: schedule._id, courses });
 }
 
 /**

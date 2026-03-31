@@ -33,7 +33,7 @@ async function list(openid, payload) {
     orderBy: { field: 'day_of_week', direction: 'asc' },
   });
 
-  return success(courses);
+  return success(courses.map(c => ({ ...c, id: c._id })));
 }
 
 /**
@@ -64,7 +64,7 @@ async function create(openid, payload) {
   });
 
   const course = await db.getOne('courses', _id);
-  return success(course);
+  return success({ ...course, id: course._id });
 }
 
 /**
