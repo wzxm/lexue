@@ -187,6 +187,8 @@ export default function SchedulePage() {
   }
 
   // 有数据
+  const hasCourses = currentSchedule.courses && currentSchedule.courses.length > 0;
+
   return (
     <View className='schedule-page'>
       <View className='custom-nav-bg' />
@@ -201,7 +203,7 @@ export default function SchedulePage() {
           <View className='nav-title-wrap' style={{ height: `${menuButtonInfo.height}px` }}>
             <View className='nav-left-icons'>
               <Text className='header-icon-btn'>📋</Text>
-              <Text className='header-icon-btn'>➕</Text>
+              <Text className='header-icon-btn' onClick={onAddCourse}>➕</Text>
             </View>
             <View className='header-center' style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)' }}>
               <Text className='student-name'>{currentStudent?.name || '未选择学生'} ⇌</Text>
@@ -211,56 +213,100 @@ export default function SchedulePage() {
         </View>
 
       <View style={{ flexShrink: 0, height: `${statusBarHeight + navBarHeight}px` }} />
-      <View className='schedule-view'>
-        <View className='grid-wrap'>
-          <View className='week-corner' onClick={() => setWeekOffset(0)}>
-            <Text className='week-corner-text'>第{weekNum}周 ▾</Text>
-          </View>
-
-          <View className='grid-header-row'>
-            {WEEKDAY_LABELS.map((label, idx) => (
-              <View key={label} className={`grid-header-cell ${weekDates[idx] === today ? 'grid-header-cell--today' : ''}`}>
-                <Text className='grid-header-day'>{label}</Text>
-                <Text className='grid-header-date'>{weekDates[idx]?.slice(5).replace('-', '-') || ''}</Text>
+      
+      {!hasCourses ? (
+        <View className="empty-schedule-view">
+          <Text className="step2-title">选择添加课程方式</Text>
+          <View className="section">
+            <View className="list-item" onClick={() => Taro.showToast({ title: "功能开发中", icon: "none" })}>
+              <Text className="list-label">照片</Text>
+              <View className="list-right">
+                <Text className="list-value list-value--tag">OCR识别</Text>
+                <Text className="list-arrow">›</Text>
               </View>
-            ))}
-          </View>
-
-          <ScrollView scrollY className='grid-body'>
-            {periods.map((period, pIdx) => (
-              <View key={period.index} className='grid-row'>
-                <View className='period-cell'>
-                  <Text className='period-num'>{period.index}</Text>
-                  <Text className='period-time-line'>{period.startTime}</Text>
-                  <Text className='period-time-line'>{period.endTime}</Text>
-                </View>
-                {Array.from({ length: 7 }, (_, dIdx) => {
-                  const course = grid[pIdx]?.[dIdx] || null
-                  const cellIsToday = weekDates[dIdx] === today
-                  return (
-                    <View key={dIdx} className={`course-cell-wrap ${cellIsToday ? 'course-cell-wrap--today' : ''}`}>
-                      {course ? (
-                        <View
-                          className='course-block'
-                          style={{
-                            background: course.color ? `${course.color}22` : '#C8F0D8',
-                            color: course.color || '#00C853',
-                          }}
-                          onClick={() => onTapCourse(course)}
-                        >
-                          <Text className='course-block-name'>{course.name}</Text>
-                        </View>
-                      ) : (
-                        <View className='empty-cell' onClick={() => onTapEmpty(dIdx + 1, pIdx + 1)} />
-                      )}
-                    </View>
-                  )
-                })}
+            </View>
+            <View className="divider" />
+            <View className="list-item" onClick={() => Taro.showToast({ title: "功能开发中", icon: "none" })}>
+              <Text className="list-label">Excel</Text>
+              <View className="list-right">
+                <Text className="list-value list-value--tag">AI识别</Text>
+                <Text className="list-arrow">›</Text>
               </View>
-            ))}
-          </ScrollView>
+            </View>
+            <View className="divider" />
+            <View className="list-item" onClick={() => Taro.navigateTo({ url: ROUTES.COPY_SCHEDULE })}>
+              <Text className="list-label">复制课表</Text>
+              <View className="list-right">
+                <Text className="list-value list-value--tag">输入口令复制</Text>
+                <Text className="list-arrow">›</Text>
+              </View>
+            </View>
+            <View className="divider" />
+            <View
+              className="list-item"
+              onClick={() => {
+                if (currentSchedule?.id) Taro.navigateTo({ url: `${ROUTES.COURSE_FORM}?mode=add&scheduleId=${currentSchedule.id}` });
+              }}
+            >
+              <Text className="list-label">手动添加课程</Text>
+              <View className="list-right">
+                <Text className="list-arrow">›</Text>
+              </View>
+            </View>
+          </View>
         </View>
-      </View>
+      ) : (
+        <View className='schedule-view'>
+          <View className='grid-wrap'>
+            <View className='week-corner' onClick={() => setWeekOffset(0)}>
+              <Text className='week-corner-text'>第{weekNum}周 ▾</Text>
+            </View>
+
+            <View className='grid-header-row'>
+              {WEEKDAY_LABELS.map((label, idx) => (
+                <View key={label} className={`grid-header-cell ${weekDates[idx] === today ? 'grid-header-cell--today' : ''}`}>
+                  <Text className='grid-header-day'>{label}</Text>
+                  <Text className='grid-header-date'>{weekDates[idx]?.slice(5).replace('-', '-') || ''}</Text>
+                </View>
+              ))}
+            </View>
+
+            <ScrollView scrollY className='grid-body'>
+              {periods.map((period, pIdx) => (
+                <View key={period.index} className='grid-row'>
+                  <View className='period-cell'>
+                    <Text className='period-num'>{period.index}</Text>
+                    <Text className='period-time-line'>{period.startTime}</Text>
+                    <Text className='period-time-line'>{period.endTime}</Text>
+                  </View>
+                  {Array.from({ length: 7 }, (_, dIdx) => {
+                    const course = grid[pIdx]?.[dIdx] || null
+                    const cellIsToday = weekDates[dIdx] === today
+                    return (
+                      <View key={dIdx} className={`course-cell-wrap ${cellIsToday ? 'course-cell-wrap--today' : ''}`}>
+                        {course ? (
+                          <View
+                            className='course-block'
+                            style={{
+                              background: course.color ? `${course.color}22` : '#C8F0D8',
+                              color: course.color || '#00C853',
+                            }}
+                            onClick={() => onTapCourse(course)}
+                          >
+                            <Text className='course-block-name'>{course.name}</Text>
+                          </View>
+                        ) : (
+                          <View className='empty-cell' onClick={() => onTapEmpty(dIdx + 1, pIdx + 1)} />
+                        )}
+                      </View>
+                    )
+                  })}
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      )}
 
       {/* 课程详情 Modal */}
       {showCourseModal && selectedCourse && (
