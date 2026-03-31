@@ -56,7 +56,12 @@ export default function ScheduleManagePage() {
     if (res.confirm) {
       try {
         Taro.showLoading({ title: '删除中' })
-        await deleteSchedule(schedule.id || schedule._id!)
+        const scheduleId = schedule.id || schedule._id
+        if (!scheduleId) {
+          Taro.showToast({ title: '课表ID异常，无法删除', icon: 'none' })
+          return
+        }
+        await deleteSchedule(scheduleId)
         Taro.showToast({ title: '删除成功', icon: 'success' })
         fetchSchedules()
       } catch (err: any) {

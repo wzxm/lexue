@@ -334,7 +334,7 @@ export default function ScheduleFormPage() {
               </View>
             </View>
             <View className="divider" />
-            <View className="list-item" onClick={() => Taro.showToast({ title: "功能开发中", icon: "none" })}>
+            <View className="list-item" onClick={() => Taro.navigateTo({ url: ROUTES.COPY_SCHEDULE })}>
               <Text className="list-label">复制课表</Text>
               <View className="list-right">
                 <Text className="list-value list-value--tag">输入口令复制</Text>

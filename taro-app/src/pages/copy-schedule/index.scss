@@ -1,0 +1,65 @@
+.copy-schedule-page {
+  min-height: 100vh;
+  background-color: #F7F7F7;
+  padding: 30px 20px;
+
+  .content {
+    background-color: transparent;
+  }
+
+  .title {
+    font-size: 20px;
+    font-weight: 500;
+    color: #333333;
+    display: block;
+    margin-bottom: 8px;
+  }
+
+  .warning-text {
+    font-size: 13px;
+    color: #999999;
+    margin-bottom: 30px;
+  }
+
+  .input-wrap {
+    background-color: #FFFFFF;
+    border-radius: 12px;
+    padding: 0 20px;
+    margin-bottom: 30px;
+    height: 54px;
+    display: flex;
+    align-items: center;
+
+    .code-input {
+      flex: 1;
+      height: 100%;
+      font-size: 16px;
+      color: #333;
+      text-align: center;
+    }
+
+    .placeholder-text {
+      color: #CCCCCC;
+    }
+  }
+
+  .submit-btn {
+    background-color: #07C160;
+    color: #FFFFFF;
+    font-size: 16px;
+    font-weight: 500;
+    border-radius: 25px;
+    height: 50px;
+    line-height: 50px;
+    border: none;
+
+    &::after {
+      border: none;
+    }
+
+    &--disabled {
+      background-color: rgba(7, 193, 96, 0.5) !important;
+      color: rgba(255, 255, 255, 0.8) !important;
+    }
+  }
+}
