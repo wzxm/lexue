@@ -1,4 +1,4 @@
-import { View, Text, Image } from '@tarojs/components'
+import { View, Text, Image, PageContainer } from '@tarojs/components'
 import { useState, useEffect } from 'react'
 import Taro from '@tarojs/taro'
 import * as familyApi from '../../api/family.api'
@@ -25,6 +25,10 @@ interface AggregatedMember {
 export default function FamilyManagePage() {
   const [aggregatedMembers, setAggregatedMembers] = useState<AggregatedMember[]>([])
   const [loading, setLoading] = useState(true)
+
+  const [showInviteSheet, setShowInviteSheet] = useState(false)
+  const [inviteOptions, setInviteOptions] = useState<{studentId: string, studentName: string, scheduleId: string}[]>([])
+  const [selectedScheduleId, setSelectedScheduleId] = useState<string>('')
 
   useEffect(() => {
     loadFamilyData()
@@ -102,35 +106,51 @@ export default function FamilyManagePage() {
 
   // 发起邀请
   const handleInvite = async () => {
-    // 获取课表列表，选择要共享的课表
     try {
-      const schedules = await scheduleApi.listSchedules()
-      if (!schedules || schedules.length === 0) {
-        Taro.showToast({ title: '请先创建课表', icon: 'none' })
-        return
-      }
+      Taro.showLoading({ title: '加载中...' })
+      const [schedules, students] = await Promise.all([
+        scheduleApi.listSchedules(),
+        studentApi.listStudents(),
+      ])
+      Taro.hideLoading()
 
-      // 如果只有一个课表，直接邀请
-      if (schedules.length === 1) {
-        await doInvite(schedules[0].id)
-        return
-      }
-
-      // 多个课表时让用户选择
-      const students = await studentApi.listStudents()
-      const studentMap: Record<string, string> = {}
-      students.forEach((s: Student) => { studentMap[s.id] = s.name })
-
-      const names = schedules.map(s => `${studentMap[s.studentId] || '未知'}的${s.name}`)
-      Taro.showActionSheet({
-        itemList: names,
-        success: async (res) => {
-          await doInvite(schedules[res.tapIndex].id)
-        },
+      // listStudents 仅返回自己创建的学生
+      const options: Array<{studentId: string, studentName: string, scheduleId: string}> = []
+      students.forEach((student: Student) => {
+        const studentSchedules = schedules.filter((s: Schedule) => s.studentId === student.id)
+        if (studentSchedules.length > 0) {
+          // 优先取默认课表，否则取第一个
+          const targetSchedule = studentSchedules.find((s: Schedule) => s.isDefault) || studentSchedules[0]
+          options.push({
+            studentId: student.id,
+            studentName: student.name,
+            scheduleId: targetSchedule.id
+          })
+        }
       })
+
+      if (options.length === 0) {
+        Taro.showToast({ title: '请先创建属于自己的课表', icon: 'none' })
+        return
+      }
+
+      setInviteOptions(options)
+      setSelectedScheduleId(options[0].scheduleId)
+      setShowInviteSheet(true)
     } catch {
+      Taro.hideLoading()
       Taro.showToast({ title: '操作失败', icon: 'none' })
     }
+  }
+
+  const closeInviteSheet = () => {
+    setShowInviteSheet(false)
+  }
+
+  const confirmInvite = async () => {
+    if (!selectedScheduleId) return
+    closeInviteSheet()
+    await doInvite(selectedScheduleId)
   }
 
   const doInvite = async (scheduleId: string) => {
@@ -253,6 +273,41 @@ export default function FamilyManagePage() {
           <Text className='family-invite-text'>发起邀请</Text>
         </View>
       </View>
+
+      {/* 选择课表范围弹窗 */}
+      <PageContainer
+        show={showInviteSheet}
+        position='bottom'
+        round
+        zIndex={1000}
+        onClickOverlay={closeInviteSheet}
+        onAfterLeave={closeInviteSheet}
+      >
+        <View className='invite-sheet-content'>
+          <View className='invite-sheet-header'>
+            <Text className='invite-sheet-title'>选择课表范围</Text>
+            <View className='invite-sheet-close' onClick={closeInviteSheet}>×</View>
+          </View>
+          <View className='invite-sheet-subtitle'>
+            选中后，被邀请人注册成功后可看的学生课表
+          </View>
+          <View className='invite-options-list'>
+            {inviteOptions.map(option => (
+              <View
+                key={option.scheduleId}
+                className={`invite-option ${selectedScheduleId === option.scheduleId ? 'active' : ''}`}
+                onClick={() => setSelectedScheduleId(option.scheduleId)}
+              >
+                <Text className='invite-option-text'>{option.studentName}</Text>
+              </View>
+            ))}
+          </View>
+          <View className='invite-confirm-btn' onClick={confirmInvite}>
+            <Text className='invite-confirm-text'>发起邀请</Text>
+          </View>
+        </View>
+      </PageContainer>
     </View>
   )
 }
+

@@ -16,7 +16,7 @@
   }
 
   .warning-text {
-    font-size: 13px;
+    font-size: 26px;
     color: #999999;
     margin-bottom: 30px;
   }
@@ -26,14 +26,14 @@
     border-radius: 12px;
     padding: 0 20px;
     margin-bottom: 30px;
-    height: 54px;
+    height: 108px;
     display: flex;
     align-items: center;
 
     .code-input {
       flex: 1;
       height: 100%;
-      font-size: 16px;
+      font-size: 32px;
       color: #333;
       text-align: center;
     }
@@ -46,11 +46,11 @@
   .submit-btn {
     background-color: #07C160;
     color: #FFFFFF;
-    font-size: 16px;
+    font-size: 32px;
     font-weight: 500;
     border-radius: 25px;
-    height: 50px;
-    line-height: 50px;
+    height: 100px;
+    line-height: 100px;
     border: none;
 
     &::after {

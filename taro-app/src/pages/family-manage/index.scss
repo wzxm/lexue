@@ -154,3 +154,90 @@
   font-weight: 600;
   color: #FFFFFF;
 }
+
+/* 邀请弹窗 */
+.invite-sheet-content {
+  width: 100%;
+  background: #FFFFFF;
+  border-radius: 32px 32px 0 0;
+  padding: 32px 32px calc(32px + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+
+.invite-sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32px;
+}
+
+.invite-sheet-title {
+  font-size: 32px;
+  font-weight: 600;
+  color: #333333;
+  flex: 1;
+  text-align: center;
+  margin-left: 48px; /* 抵消关闭按钮宽度，保持标题居中 */
+}
+
+.invite-sheet-close {
+  font-size: 48px;
+  color: #999999;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.invite-sheet-subtitle {
+  font-size: 24px;
+  color: #999999;
+  margin-bottom: 32px;
+}
+
+.invite-options-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin-bottom: 64px;
+}
+
+.invite-option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 40px;
+  border-radius: 40px;
+  border: 1px solid #DDDDDD; /* 1px边框 */
+  background: #FFFFFF;
+}
+
+.invite-option-text {
+  font-size: 28px;
+  color: #999999;
+}
+
+.invite-option.active {
+  border-color: #00C853;
+}
+
+.invite-option.active .invite-option-text {
+  color: #00C853;
+}
+
+.invite-confirm-btn {
+  height: 96px;
+  background: #00C853;
+  border-radius: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.invite-confirm-text {
+  font-size: 32px;
+  font-weight: 600;
+  color: #FFFFFF;
+}
+
