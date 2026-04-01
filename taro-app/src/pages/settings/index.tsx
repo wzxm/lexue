@@ -159,6 +159,7 @@ export default function SettingsPage() {
             </View>
           ) : (
             <View className='user-info-nav' onClick={handleUserClick}>
+              <View className='avatar'>我</View>
               <View className='user-text'>
                 <View className='name-row'>
                   <Text className='name'>{userInfo?.nickname || '微信昵称限6字...'}</Text>

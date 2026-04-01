@@ -1,0 +1,185 @@
+@keyframes schedule-switch-drawer-fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes schedule-switch-drawer-slideInLeft {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.ssd-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 10000;
+  display: flex;
+  animation: schedule-switch-drawer-fadeIn 0.25s ease-out;
+}
+
+.ssd-panel {
+  width: 75%;
+  max-width: 600px;
+  height: 100%;
+  background: linear-gradient(
+      180deg,
+      rgba(7, 193, 96, 0.2) -3.08%,
+      rgba(255, 255, 255, 0) 45.61%
+    ),
+    var(--background-page-default, #fff);
+  display: flex;
+  flex-direction: column;
+  animation: schedule-switch-drawer-slideInLeft 0.3s ease-out;
+  position: relative;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+.ssd-header {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0 32px;
+  padding-top: calc(env(safe-area-inset-top) + 100px);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  background: linear-gradient(
+    180deg,
+    rgba(7, 193, 96, 0.15) 0%,
+    rgba(7, 193, 96, 0.02) 100%
+  );
+  padding-bottom: 24px;
+}
+
+.ssd-title-wrap {
+  max-width: 100%;
+  box-sizing: border-box;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #d8d8d8;
+}
+
+.ssd-title {
+  font-size: 36px;
+  font-weight: bold;
+  color: #333;
+}
+
+.ssd-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 32px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.ssd-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-top: 200px;
+}
+
+.ssd-empty-img {
+  width: 240px;
+  height: 240px;
+  margin-bottom: 24px;
+}
+
+.ssd-empty-text {
+  font-size: 28px;
+  color: #999;
+}
+
+.ssd-list {
+  padding-top: 16px;
+}
+
+.ssd-group {
+  margin-bottom: 16px;
+}
+
+.ssd-group-header {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  padding: 24px 0 12px;
+  gap: 0 8px;
+}
+
+.ssd-student-name {
+  font-size: 28px;
+  font-weight: bold;
+  color: #333;
+}
+
+.ssd-student-divider {
+  font-size: 24px;
+  color: #d0d0d0;
+  font-weight: normal;
+  flex-shrink: 0;
+}
+
+.ssd-student-meta {
+  font-size: 26px;
+  color: #6a7282;
+  flex: 1;
+  min-width: 0;
+}
+
+.ssd-schedule-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 0;
+}
+
+.ssd-schedule-name {
+  font-size: 28px;
+  color: #333;
+}
+
+.ssd-schedule-name--active {
+  color: #07c160;
+  font-weight: bold;
+}
+
+.ssd-check-icon {
+  font-size: 28px;
+  color: #07c160;
+  font-weight: bold;
+}
+
+.ssd-footer {
+  flex-shrink: 0;
+  padding: 24px 32px;
+  padding-bottom: calc(24px + env(safe-area-inset-bottom));
+  display: flex;
+  justify-content: center;
+}
+
+.ssd-manage-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ssd-manage-icon {
+  font-size: 32px;
+  color: #07c160;
+}
+
+.ssd-manage-text {
+  font-size: 28px;
+  color: #07c160;
+}

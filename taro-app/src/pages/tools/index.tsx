@@ -4,8 +4,12 @@ import Taro, { useDidShow } from '@tarojs/taro'
 import { tabState } from '../../utils/tabState'
 import { useAuthStore } from '../../store/auth.store'
 import { useScheduleStore } from '../../store/schedule.store'
-import { getSchedule } from '../../api/schedule.api'
+import { useStudentStore } from '../../store/student.store'
+import { getSchedule, setDefaultSchedule } from '../../api/schedule.api'
+import { listStudents } from '../../api/student.api'
 import { ROUTES } from '../../constants/routes'
+import { groupSchedulesByStudent } from '../../utils/groupSchedulesByStudent'
+import ScheduleSwitchDrawer from '../../components/ScheduleSwitchDrawer'
 import noDataImg from '../../assets/noData.png'
 import ziliaoIcon from '../../assets/ziliao.svg'
 import defaultAvatar from '../../assets/default-avatar.png'
@@ -42,6 +46,10 @@ export default function ToolsPage () {
   const schedules = useScheduleStore(s => s.schedules)
   const currentSchedule = useScheduleStore(s => s.currentSchedule)
   const setCurrentSchedule = useScheduleStore(s => s.setCurrentSchedule)
+  const students = useStudentStore(s => s.students)
+  const currentStudent = useStudentStore(s => s.currentStudent)
+  const setStudents = useStudentStore(s => s.setStudents)
+  const setCurrentStudent = useStudentStore(s => s.setCurrentStudent)
 
   const [showDrawer, setShowDrawer] = useState(false)
 
@@ -57,38 +65,36 @@ export default function ToolsPage () {
   useDidShow(() => {
     tabState.setVisible(true)
     tabState.setSelected(1)
+    if (useAuthStore.getState().isLoggedIn) {
+      listStudents()
+        .then(setStudents)
+        .catch(() => {})
+    }
   })
 
   const goLogin = () => {
     Taro.navigateTo({ url: ROUTES.LOGIN })
   }
 
-  // 按学生分组课表
-  const groupedSchedules = useMemo(() => {
-    const map = new Map<
-      string,
-      {
-        studentName: string
-        school: string
-        grade: string
-        items: typeof schedules
-      }
-    >()
-    for (const s of schedules) {
-      const key = s.studentId || 'default'
-      if (!map.has(key)) {
-        // 此处用课表 name 做学生名称的 fallback
-        map.set(key, {
-          studentName: s.name || '默认',
-          school: '',
-          grade: '',
-          items: []
-        })
-      }
-      map.get(key)!.items.push(s)
+  const groupedSchedules = useMemo(
+    () => groupSchedulesByStudent(schedules, students),
+    [schedules, students]
+  )
+
+  /** 当前课表对应学生（与抽屉分组逻辑一致） */
+  const headerStudent = useMemo(() => {
+    const sid = currentSchedule?.studentId || currentSchedule?.student_id
+    if (sid) {
+      const fromList = students.find(s => s.id === sid)
+      if (fromList) return fromList
     }
-    return Array.from(map.values())
-  }, [schedules])
+    return currentStudent
+  }, [currentSchedule, students, currentStudent])
+
+  const headerStudentName = headerStudent?.name || '未命名学生'
+  const headerSchoolLine = [headerStudent?.school, headerStudent?.grade]
+    .filter(Boolean)
+    .join('\uFF0C')
 
   // 打开抽屉
   const openDrawer = () => {
@@ -104,11 +110,23 @@ export default function ToolsPage () {
     setShowDrawer(false)
   }
 
-  // 选择课表
-  const handleSelectSchedule = async (schedule: typeof schedules[0]) => {
+  const handleSelectSchedule = async (schedule: (typeof schedules)[0]) => {
+    if (currentSchedule?.id === schedule.id) {
+      closeDrawer()
+      return
+    }
     try {
       Taro.showLoading({ title: '切换中', mask: true })
       const full = await getSchedule(schedule.id)
+      const sid = full.studentId || full.student_id
+      if (sid) {
+        const st = students.find(s => s.id === sid)
+        if (st) setCurrentStudent(st)
+      }
+      const openId = userInfo?.openId
+      if (openId && schedule.owner_openid === openId) {
+        await setDefaultSchedule(schedule.id)
+      }
       setCurrentSchedule(full)
       closeDrawer()
     } catch (err: any) {
@@ -160,15 +178,19 @@ export default function ToolsPage () {
             </View>
           ) : (
             <View className='user-info' onClick={openDrawer}>
-              <View className='avatar'>{userInfo?.nickname?.[0] || '我'}</View>
+              <View className='avatar'>我</View>
               <View className='user-text'>
                 <View className='name-row'>
                   <Text className='name'>
-                    {userInfo?.nickname || '我的课表'}
+                    {currentSchedule ? headerStudentName : '暂无课表'}
                   </Text>
                   <Text className='student-sub-icon'>⇌</Text>
                 </View>
-                <Text className='school'>东东东东风东路小学</Text>
+                <Text className='school'>
+                  {currentSchedule
+                    ? headerSchoolLine || '未填写学校'
+                    : '请选择课表'}
+                </Text>
               </View>
             </View>
           )}
@@ -218,106 +240,16 @@ export default function ToolsPage () {
         </View>
       </View>
 
-      {/* 切换课表侧边抽屉 */}
-      {showDrawer && (
-        <View className='drawer-mask' onClick={closeDrawer}>
-          <View className='drawer-panel' onClick={e => e.stopPropagation()}>
-            {/* 标题区域 */}
-            <View className='drawer-header'>
-              <View className='drawer-title-wrap'>
-                <Text className='drawer-title'>切换课表</Text>
-              </View>
-              {/* <View className="drawer-close" onClick={closeDrawer}> */}
-              {/* <Text className="drawer-close-icon">←</Text> */}
-              {/* </View> */}
-            </View>
-
-            {/* 课表列表区域 */}
-            <View className='drawer-body'>
-              {schedules.length === 0 ? (
-                <View className='drawer-empty'>
-                  <Image
-                    className='drawer-empty-img'
-                    src={noDataImg}
-                    mode='aspectFit'
-                  />
-                  <Text className='drawer-empty-text'>暂无数据</Text>
-                </View>
-              ) : (
-                <View className='drawer-list'>
-                  {groupedSchedules.map((group, gIdx) => (
-                    <View key={gIdx} className='drawer-group'>
-                      {/* 学生信息头 */}
-                      <View className='drawer-group-header'>
-                        <Text className='drawer-student-name'>
-                          {group.studentName}
-                        </Text>
-                        {(group.school || group.grade) && (
-                          <Text className='drawer-student-info'>
-                            {' | '}
-                            {group.school}
-                            {group.grade ? `，${group.grade}` : ''}
-                          </Text>
-                        )}
-                      </View>
-                      {/* 该学生下的课表列表 */}
-                      {group.items.map(schedule => {
-                        const isActive = currentSchedule?.id === schedule.id
-                        return (
-                          <View
-                            key={schedule.id}
-                            className={`drawer-schedule-item ${
-                              isActive ? 'drawer-schedule-item--active' : ''
-                            }`}
-                            onClick={() => handleSelectSchedule(schedule)}
-                          >
-                            <Text
-                              className={`drawer-schedule-name ${
-                                isActive ? 'drawer-schedule-name--active' : ''
-                              }`}
-                            >
-                              {schedule.semester || schedule.name}
-                            </Text>
-                            {isActive && (
-                              <Text className='drawer-check-icon'>✓</Text>
-                            )}
-                          </View>
-                        )
-                      })}
-                    </View>
-                  ))}
-                </View>
-              )}
-            </View>
-
-            {/* 底部管理课表按钮 - 固定在底部 */}
-            <View
-              className='drawer-footer'
-              style={{
-                alignItems: 'center',
-                gap: '20px'
-              }}
-            >
-              <View className='drawer-manage-btn' onClick={goManageSchedule}>
-                <Text className='drawer-manage-icon iconfont'>&#xe696;</Text>
-                <Text className='drawer-manage-text'>课表管理</Text>
-              </View>
-              <View
-                style={{
-                  width: '1px',
-                  height: '16px',
-                  backgroundColor: '#E5E5E5',
-                  flexShrink: 0
-                }}
-              />
-              <View className='drawer-manage-btn' onClick={goManageStudent}>
-                <Text className='drawer-manage-icon iconfont'>&#xe600;</Text>
-                <Text className='drawer-manage-text'>学生管理</Text>
-              </View>
-            </View>
-          </View>
-        </View>
-      )}
+      <ScheduleSwitchDrawer
+        visible={showDrawer}
+        onClose={closeDrawer}
+        schedules={schedules}
+        groupedSchedules={groupedSchedules}
+        currentScheduleId={currentSchedule?.id}
+        onSelectSchedule={handleSelectSchedule}
+        onManageSchedule={goManageSchedule}
+        onManageStudent={goManageStudent}
+      />
     </View>
   )
 }

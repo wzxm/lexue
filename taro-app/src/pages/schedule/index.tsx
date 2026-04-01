@@ -1,4 +1,4 @@
-import { View, Text, Image } from '@tarojs/components'
+import { View, Text } from '@tarojs/components'
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import Taro from '@tarojs/taro'
 import { tabState } from '../../utils/tabState'
@@ -10,7 +10,8 @@ import { listSchedules, getSchedule, setDefaultSchedule } from '../../api/schedu
 import { deleteCourse } from '../../api/course.api'
 import { getWeekDates } from '../../utils/date'
 import { ROUTES } from '../../constants/routes'
-import noDataImg from '../../assets/noData.png'
+import { groupSchedulesByStudent } from '../../utils/groupSchedulesByStudent'
+import ScheduleSwitchDrawer from '../../components/ScheduleSwitchDrawer'
 import { DEFAULT_PERIODS } from '../../constants/periods'
 import type {
   Course,
@@ -48,31 +49,10 @@ export default function SchedulePage () {
   const periods = currentSchedule?.periods || DEFAULT_PERIODS
   const today = new Date().toISOString().slice(0, 10)
 
-  const groupedSchedules = useMemo(() => {
-    const map = new Map<
-      string,
-      {
-        studentName: string
-        school: string
-        grade: string
-        items: typeof schedules
-      }
-    >()
-    for (const s of schedules) {
-      const key = s.studentId || s.student_id || 'default'
-      if (!map.has(key)) {
-        const st = students.find(x => x.id === key)
-        map.set(key, {
-          studentName: st?.name || '未命名学生',
-          school: st?.school || '',
-          grade: st?.grade || '',
-          items: []
-        })
-      }
-      map.get(key)!.items.push(s)
-    }
-    return Array.from(map.values())
-  }, [schedules, students])
+  const groupedSchedules = useMemo(
+    () => groupSchedulesByStudent(schedules, students),
+    [schedules, students]
+  )
 
   const goLogin = () => {
     Taro.navigateTo({ url: ROUTES.LOGIN })
@@ -91,6 +71,10 @@ export default function SchedulePage () {
   }
 
   const handleSelectSchedule = async (schedule: (typeof schedules)[0]) => {
+    if (currentSchedule?.id === schedule.id) {
+      closeDrawer()
+      return
+    }
     try {
       Taro.showLoading({ title: '切换中', mask: true })
       const full = await getSchedule(schedule.id)
@@ -355,100 +339,16 @@ export default function SchedulePage () {
         onDeleteCourse={onDeleteCourse}
       />
 
-      {showDrawer && (
-        <View className='drawer-mask' onClick={closeDrawer}>
-          <View className='drawer-panel' onClick={e => e.stopPropagation()}>
-            <View className='drawer-header'>
-              <View className='drawer-title-wrap'>
-                <Text className='drawer-title'>切换课表</Text>
-              </View>
-            </View>
-
-            <View className='drawer-body'>
-              {schedules.length === 0 ? (
-                <View className='drawer-empty'>
-                  <Image
-                    className='drawer-empty-img'
-                    src={noDataImg}
-                    mode='aspectFit'
-                  />
-                  <Text className='drawer-empty-text'>暂无数据</Text>
-                </View>
-              ) : (
-                <View className='drawer-list'>
-                  {groupedSchedules.map((group, gIdx) => (
-                    <View key={gIdx} className='drawer-group'>
-                      <View className='drawer-group-header'>
-                        <Text className='drawer-student-name'>
-                          {group.studentName}
-                        </Text>
-                        {(group.school || group.grade) && (
-                          <>
-                            <Text className='drawer-student-divider'>|</Text>
-                            <Text className='drawer-student-meta'>
-                              {[group.school, group.grade]
-                                .filter(Boolean)
-                                .join('\uFF0C')}
-                            </Text>
-                          </>
-                        )}
-                      </View>
-                      {group.items.map(schedule => {
-                        const isActive = currentSchedule?.id === schedule.id
-                        return (
-                          <View
-                            key={schedule.id}
-                            className={`drawer-schedule-item ${
-                              isActive ? 'drawer-schedule-item--active' : ''
-                            }`}
-                            onClick={() => handleSelectSchedule(schedule)}
-                          >
-                            <Text
-                              className={`drawer-schedule-name ${
-                                isActive ? 'drawer-schedule-name--active' : ''
-                              }`}
-                            >
-                              {schedule.semester || schedule.name}
-                            </Text>
-                            {isActive && (
-                              <Text className='drawer-check-icon'>✓</Text>
-                            )}
-                          </View>
-                        )
-                      })}
-                    </View>
-                  ))}
-                </View>
-              )}
-            </View>
-
-            <View
-              className='drawer-footer'
-              style={{
-                alignItems: 'center',
-                gap: '20px'
-              }}
-            >
-              <View className='drawer-manage-btn' onClick={goManageSchedule}>
-                <Text className='drawer-manage-icon iconfont'>&#xe696;</Text>
-                <Text className='drawer-manage-text'>课表管理</Text>
-              </View>
-              <View
-                style={{
-                  width: '1px',
-                  height: '16px',
-                  backgroundColor: '#E5E5E5',
-                  flexShrink: 0
-                }}
-              />
-              <View className='drawer-manage-btn' onClick={goManageStudent}>
-                <Text className='drawer-manage-icon iconfont'>&#xe600;</Text>
-                <Text className='drawer-manage-text'>学生管理</Text>
-              </View>
-            </View>
-          </View>
-        </View>
-      )}
+      <ScheduleSwitchDrawer
+        visible={showDrawer}
+        onClose={closeDrawer}
+        schedules={schedules}
+        groupedSchedules={groupedSchedules}
+        currentScheduleId={currentSchedule?.id}
+        onSelectSchedule={handleSelectSchedule}
+        onManageSchedule={goManageSchedule}
+        onManageStudent={goManageStudent}
+      />
     </View>
   )
 }
