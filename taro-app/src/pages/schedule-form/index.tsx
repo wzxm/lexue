@@ -1,7 +1,7 @@
 import { View, Text, Picker, Button, PageContainer } from "@tarojs/components";
 import { useState, useEffect, useCallback } from "react";
 import Taro from "@tarojs/taro";
-import { createSchedule } from "../../api/schedule.api";
+import { createSchedule, updateSchedule } from "../../api/schedule.api";
 import { useStudentStore } from "../../store/student.store";
 import { useScheduleStore } from "../../store/schedule.store";
 import { ROUTES } from "../../constants/routes";
@@ -50,8 +50,15 @@ const WEEK_OPTIONS = Array.from({ length: 30 }, (_, i) => i + 1);
 const WEEK_LABELS = WEEK_OPTIONS.map((w) => `${w}`);
 
 export default function ScheduleFormPage() {
+  const router = Taro.useRouter();
+  const editScheduleId = router.params?.id || "";
+  const isEditMode = Boolean(editScheduleId);
+
   const students = useStudentStore((s) => s.students);
+  const schedules = useScheduleStore((s) => s.schedules);
   const addSchedule = useScheduleStore((s) => s.addSchedule);
+  const setSchedules = useScheduleStore((s) => s.setSchedules);
+  const currentSchedule = useScheduleStore((s) => s.currentSchedule);
   const setCurrentSchedule = useScheduleStore((s) => s.setCurrentSchedule);
 
   const [semesterIndex, setSemesterIndex] = useState(DEFAULT_SEMESTER_INDEX);
@@ -69,9 +76,38 @@ export default function ScheduleFormPage() {
   const studentLabels = students.length > 0 ? students.map((s) => s.name) : ["默认"];
 
   useEffect(() => {
-    Taro.setNavigationBarTitle({ title: "新建课表" });
+    Taro.setNavigationBarTitle({ title: isEditMode ? "课表详情" : "新建课表" });
     // 学生列表已按 createTime desc 排序，始终默认选第一个
-  }, []);
+  }, [isEditMode]);
+
+  useEffect(() => {
+    if (!isEditMode) return;
+    const target = schedules.find((s) => s.id === editScheduleId || s._id === editScheduleId);
+    if (!target) return;
+
+    const semesterIdx = Math.max(
+      SEMESTER_OPTIONS.findIndex((o) => o.value === target.semester),
+      0
+    );
+    setSemesterIndex(semesterIdx);
+
+    const studentId = target.studentId || target.student_id || "";
+    if (studentId && students.length > 0) {
+      const idx = students.findIndex((s) => s.id === studentId);
+      if (idx >= 0) setStudentIndex(idx);
+    }
+
+    const weeks = target.total_weeks || target.totalWeeks || 20;
+    const safeWeeks = clamp(weeks, 1, 30);
+    setTotalWeeks(safeWeeks);
+    setWeekPickerIndex(safeWeeks - 1);
+
+    const config = target.period_config;
+    const frontendConfig = target.periodConfig;
+    setMorningCount(clamp(Number(config?.morning_count ?? frontendConfig?.morningCount) || 4, 1, 6));
+    setAfternoonCount(clamp(Number(config?.afternoon_count ?? frontendConfig?.afternoonCount) || 4, 1, 6));
+    setEveningCount(clamp(Number(config?.evening_count ?? frontendConfig?.eveningCount) || 0, 0, 4));
+  }, [isEditMode, editScheduleId, schedules, students]);
 
   const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
 
@@ -97,23 +133,111 @@ export default function ScheduleFormPage() {
     }));
   };
 
+  const buildPeriodConfig = () => ({
+    morning_count: morningCount,
+    afternoon_count: afternoonCount,
+    evening_count: eveningCount,
+  });
+
   const onSave = async () => {
     const semester = SEMESTER_OPTIONS[semesterIndex];
     const student = students.length > 0 ? students[studentIndex] : null;
+    const scheduleName = `${semester.label}课表`;
 
     setLoading(true);
-    Taro.showLoading({ title: "创建中", mask: true });
+    Taro.showLoading({ title: isEditMode ? "保存中" : "创建中", mask: true });
     try {
-      const raw = await createSchedule({ studentId: student?.id, name: `${semester.label}课表`, semester: semester.value });
+      if (isEditMode) {
+        const updatePayload: Partial<Schedule> = {
+          name: scheduleName,
+          semester: semester.value,
+          total_weeks: totalWeeks,
+          periods: buildPeriods(),
+          period_config: buildPeriodConfig(),
+        };
+        if (student?.id) {
+          updatePayload.student_id = student.id;
+        }
+        await updateSchedule(editScheduleId, updatePayload);
+
+        const nextSchedules = schedules.map((s) => {
+          const sid = s.id || s._id;
+          if (sid !== editScheduleId) return s;
+          return {
+            ...s,
+            name: scheduleName,
+            semester: semester.value,
+            student_id: student?.id || s.student_id,
+            studentId: student?.id || s.studentId,
+            total_weeks: totalWeeks,
+            totalWeeks,
+            periods: buildPeriods(),
+            periodConfig: {
+              morningCount,
+              afternoonCount,
+              eveningCount,
+            },
+            period_config: buildPeriodConfig(),
+          };
+        });
+        setSchedules(nextSchedules);
+
+        const currentId = currentSchedule?.id || currentSchedule?._id;
+        if (currentSchedule && currentId === editScheduleId) {
+          setCurrentSchedule({
+            ...currentSchedule,
+            name: scheduleName,
+            semester: semester.value,
+            student_id: student?.id || currentSchedule.student_id,
+            studentId: student?.id || currentSchedule.studentId,
+            total_weeks: totalWeeks,
+            totalWeeks,
+            periods: buildPeriods(),
+            periodConfig: {
+              morningCount,
+              afternoonCount,
+              eveningCount,
+            },
+            period_config: buildPeriodConfig(),
+          });
+        }
+
+        Taro.showToast({ title: "保存成功", icon: "success" });
+        setTimeout(() => {
+          Taro.navigateBack();
+        }, 300);
+        return;
+      }
+
+      const raw = await createSchedule({
+        studentId: student?.id,
+        name: `${semester.label}课表`,
+        semester: semester.value,
+        totalWeeks,
+        periods: buildPeriods(),
+        periodConfig: {
+          morningCount,
+          afternoonCount,
+          eveningCount,
+        },
+      });
       const r = raw as unknown as Record<string, unknown>;
       const schedule: Schedule = {
         id: (r._id || r.id || "") as string,
         studentId: (r.student_id || student?.id || "") as string,
         name: (r.name || `${semester.label}课表`) as string,
         semester: (r.semester || semester.value) as string,
+        total_weeks: (r.total_weeks || totalWeeks) as number,
+        totalWeeks: (r.total_weeks || totalWeeks) as number,
         invite_code: (r.invite_code || '') as string,
         inviteCode: (r.invite_code || '') as string,
         periods: buildPeriods(),
+        periodConfig: {
+          morningCount,
+          afternoonCount,
+          eveningCount,
+        },
+        period_config: buildPeriodConfig(),
         courses: [],
         isDefault: (r.is_default ?? false) as boolean,
         createdAt: Date.now(),
@@ -127,7 +251,7 @@ export default function ScheduleFormPage() {
         setCurrentScheduleId(schedule.id);
       }, 500);
     } catch (err: any) {
-      Taro.showToast({ title: err.message || "创建失败", icon: "none", duration: 3000 });
+      Taro.showToast({ title: err.message || (isEditMode ? "保存失败" : "创建失败"), icon: "none", duration: 3000 });
     } finally {
       Taro.hideLoading();
       setLoading(false);
@@ -273,7 +397,7 @@ export default function ScheduleFormPage() {
       {step === 1 && (
         <View className="footer">
           <Button className={`save-btn ${loading ? "save-btn--loading" : ""}`} onClick={onSave} disabled={loading}>
-            {loading ? "创建中..." : "保存"}
+            保存
           </Button>
         </View>
       )}

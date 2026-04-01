@@ -17,6 +17,61 @@ const INVITE_CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const INVITE_CODE_LENGTH = 8;
 const MAX_INVITE_CODE_ATTEMPTS = 20;
 
+function validatePeriods(periods) {
+  if (periods === undefined) return;
+  if (!Array.isArray(periods) || periods.length === 0) {
+    throw fail(ERRORS.PARAM_ERROR, '课节配置不能为空');
+  }
+  if (periods.length > 16) {
+    throw fail(ERRORS.PARAM_ERROR, '课节数量不能超过16节');
+  }
+  for (let i = 0; i < periods.length; i++) {
+    const p = periods[i] || {};
+    if (!Number.isInteger(p.index) || p.index < 1 || p.index > 16) {
+      throw fail(ERRORS.PARAM_ERROR, `第${i + 1}节课 index 不合法`);
+    }
+    if (typeof p.startTime !== 'string' || typeof p.endTime !== 'string') {
+      throw fail(ERRORS.PARAM_ERROR, `第${i + 1}节课时间格式不合法`);
+    }
+    if (typeof p.label !== 'string' || !p.label.trim()) {
+      throw fail(ERRORS.PARAM_ERROR, `第${i + 1}节课标签不能为空`);
+    }
+  }
+}
+
+function validatePeriodConfig(periodConfig) {
+  if (!periodConfig || typeof periodConfig !== 'object') {
+    throw fail(ERRORS.PARAM_ERROR, '课节分组配置不能为空');
+  }
+
+  const morningCount = Number(periodConfig.morning_count);
+  const afternoonCount = Number(periodConfig.afternoon_count);
+  const eveningCount = Number(periodConfig.evening_count);
+
+  if (!Number.isInteger(morningCount) || morningCount < 1 || morningCount > 6) {
+    throw fail(ERRORS.PARAM_ERROR, '上午课节数范围应为1-6');
+  }
+  if (!Number.isInteger(afternoonCount) || afternoonCount < 1 || afternoonCount > 6) {
+    throw fail(ERRORS.PARAM_ERROR, '下午课节数范围应为1-6');
+  }
+  if (!Number.isInteger(eveningCount) || eveningCount < 0 || eveningCount > 4) {
+    throw fail(ERRORS.PARAM_ERROR, '晚上课节数范围应为0-4');
+  }
+}
+
+function validatePeriodShape(periods, periodConfig) {
+  if (!Array.isArray(periods) || periods.length === 0) {
+    throw fail(ERRORS.PARAM_ERROR, '课节配置不能为空');
+  }
+  validatePeriods(periods);
+  validatePeriodConfig(periodConfig);
+
+  const expectedCount = periodConfig.morning_count + periodConfig.afternoon_count + periodConfig.evening_count;
+  if (periods.length !== expectedCount) {
+    throw fail(ERRORS.PARAM_ERROR, '课节配置与分组节数不一致');
+  }
+}
+
 function generateInviteCode() {
   let code = '';
   for (let i = 0; i < INVITE_CODE_LENGTH; i++) {
@@ -67,7 +122,7 @@ async function list(openid) {
  * 创建课表
  */
 async function create(openid, payload) {
-  validator.requireFields(payload, ['student_id', 'name', 'semester']);
+  validator.requireFields(payload, ['student_id', 'name', 'semester', 'periods', 'period_config']);
   validator.maxLength(payload.name, 50, '课表名称');
   validator.maxLength(payload.semester, 20, '学期');
 
@@ -90,11 +145,16 @@ async function create(openid, payload) {
     return fail(ERRORS.INTERNAL_ERROR, '生成邀请码失败，请重试');
   }
 
+  validatePeriodShape(payload.periods, payload.period_config);
+
   const { _id } = await db.create('schedules', {
     owner_openid: openid,
     student_id: payload.student_id,
     name: payload.name,
     semester: payload.semester,
+    total_weeks: Number(payload.total_weeks) || 20,
+    periods: payload.periods,
+    period_config: payload.period_config,
     invite_code: inviteCode,
     is_default: true,
     shared_with: [], // 初始无共享成员
@@ -128,17 +188,51 @@ async function get(openid, payload) {
 async function update(openid, payload) {
   validator.requireFields(payload, ['scheduleId']);
 
-  await requireEdit(openid, payload.scheduleId);
+  const schedule = await requireEdit(openid, payload.scheduleId);
 
   logger.info(FN, 'update', { openid, scheduleId: payload.scheduleId });
 
-  const allowed = ['name', 'semester', 'remark'];
+  const allowed = ['name', 'semester', 'remark', 'total_weeks', 'periods', 'period_config'];
   const updateData = {};
   for (const key of allowed) {
     if (payload[key] !== undefined) updateData[key] = payload[key];
   }
 
   if (payload.name) validator.maxLength(payload.name, 50, '课表名称');
+  if (payload.total_weeks !== undefined) {
+    const weeks = Number(payload.total_weeks);
+    if (!Number.isInteger(weeks) || weeks < 1 || weeks > 30) {
+      return fail(ERRORS.PARAM_ERROR, '本学期周数范围应为1-30');
+    }
+    updateData.total_weeks = weeks;
+  }
+
+  if (payload.periods !== undefined || payload.period_config !== undefined) {
+    if (payload.periods === undefined || payload.period_config === undefined) {
+      return fail(ERRORS.PARAM_ERROR, '更新课节配置时必须同时提交 periods 和 period_config');
+    }
+    validatePeriodShape(payload.periods, payload.period_config);
+    updateData.periods = payload.periods;
+    updateData.period_config = payload.period_config;
+  }
+
+  if (payload.student_id !== undefined) {
+    if (schedule.owner_openid !== openid) {
+      return fail(ERRORS.FORBIDDEN, '仅创建者可修改归属学生');
+    }
+    const student = await db.getOne('students', payload.student_id);
+    if (!student) return fail(ERRORS.NOT_FOUND, '学生不存在');
+    if (student.owner_openid !== openid) return fail(ERRORS.FORBIDDEN, '无权关联到该学生');
+    updateData.student_id = payload.student_id;
+
+    if (schedule.is_default && schedule.student_id !== payload.student_id) {
+      await db.updateWhere('schedules', {
+        owner_openid: openid,
+        student_id: payload.student_id,
+      }, { is_default: false });
+      updateData.is_default = true;
+    }
+  }
 
   await db.update('schedules', payload.scheduleId, updateData);
   return success(null);

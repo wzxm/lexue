@@ -5,6 +5,7 @@ import { useScheduleStore } from '../../store/schedule.store'
 import { useStudentStore } from '../../store/student.store'
 import { ROUTES } from '../../constants/routes'
 import { listSchedules, deleteSchedule } from '../../api/schedule.api'
+import { loadOpenId } from '../../utils/storage'
 import noDataImg from '../../assets/noData.png'
 import './index.scss'
 import { useMemo, useState } from 'react'
@@ -12,6 +13,7 @@ import type { Schedule } from '../../types/index'
 
 export default function ScheduleManagePage() {
   const userInfo = useAuthStore(s => s.userInfo)
+  const currentOpenId = userInfo?.openId || loadOpenId() || ''
   const schedules = useScheduleStore(s => s.schedules)
   const setSchedules = useScheduleStore(s => s.setSchedules)
   const students = useStudentStore(s => s.students)
@@ -72,7 +74,7 @@ export default function ScheduleManagePage() {
     }
   }
 
-  const handleExitShare = async (e: any, schedule: Schedule) => {
+  const handleExitShare = async (e: any) => {
     e.stopPropagation()
     const res = await Taro.showModal({
       title: '退出共享',
@@ -85,10 +87,15 @@ export default function ScheduleManagePage() {
     }
   }
 
+  const handleShare = (e: any, schedule: Schedule) => {
+    e.stopPropagation()
+    Taro.navigateTo({ url: `${ROUTES.SHARE_SCHEDULE}?id=${schedule.id || schedule._id}` })
+  }
+
   const groupedSchedules = useMemo(() => {
     const map = new Map<string, { studentName: string, isShared: boolean, ownerName?: string, items: Schedule[] }>()
     for (const s of schedules) {
-      const isOwner = !s.owner_openid || s.owner_openid === userInfo?.openId
+      const isOwner = !s.owner_openid || s.owner_openid === currentOpenId
       const studentInfo = students.find(st => st.id === (s.studentId || s.student_id))
       const key = s.studentId || s.student_id || 'unknown'
       
@@ -101,10 +108,14 @@ export default function ScheduleManagePage() {
           items: [] 
         })
       }
+      if (isOwner) {
+        map.get(key)!.isShared = false
+        map.get(key)!.ownerName = undefined
+      }
       map.get(key)!.items.push(s)
     }
     return Array.from(map.values())
-  }, [schedules, students, userInfo])
+  }, [schedules, students, currentOpenId])
 
   return (
     <View className='schedule-manage-page'>
@@ -143,7 +154,7 @@ export default function ScheduleManagePage() {
               
               <View className='schedule-cards'>
                 {group.items.map(schedule => {
-                  const isOwner = !schedule.owner_openid || schedule.owner_openid === userInfo?.openId;
+                  const isOwner = !schedule.owner_openid || schedule.owner_openid === currentOpenId;
                   
                   return (
                     <View className='schedule-card-wrap' key={schedule.id || schedule._id}>
@@ -155,22 +166,20 @@ export default function ScheduleManagePage() {
                       >
                         <View className='card-left'>
                           <Text className='card-title'>{schedule.semester || schedule.name}</Text>
-                          <Text className='card-subtitle'>20周</Text>
-                        </View>
-                        <View className='card-right'>
-                          {isOwner && <Text className='arrow-icon'>›</Text>}
+                          <Text className='card-subtitle'>{schedule.total_weeks || schedule.totalWeeks || 20}周</Text>
                         </View>
                       </View>
                       
-                      {isOwner ? (
-                        <View className='action-btn action-delete' onClick={(e) => handleDelete(e, schedule)}>
-                          <Text className='iconfont'>&#xe60a;</Text>
-                        </View>
-                      ) : (
-                        <View className='action-btn action-exit' onClick={(e) => handleExitShare(e, schedule)}>
-                          <Text className='iconfont'>&#xe60b;</Text>
-                        </View>
-                      )}
+                      <View className='card-actions'>
+                        {isOwner && (
+                          <View className='action-btn action-share' onClick={(e) => handleShare(e, schedule)} />
+                        )}
+                        {isOwner ? (
+                          <View className='action-btn action-delete' onClick={(e) => handleDelete(e, schedule)} />
+                        ) : (
+                          <View className='action-btn action-exit' onClick={handleExitShare} />
+                        )}
+                      </View>
                     </View>
                   )
                 })}

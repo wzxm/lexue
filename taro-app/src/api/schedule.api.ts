@@ -1,5 +1,5 @@
 import { cloud } from './cloud';
-import type { Schedule, Period } from '../types/index';
+import type { Schedule, Period, PeriodConfig } from '../types/index';
 
 export async function listSchedules(studentId?: string): Promise<Schedule[]> {
   const payload: Record<string, unknown> = {};
@@ -13,13 +13,24 @@ export async function createSchedule(data: {
   studentId?: string;
   name: string;
   semester: string;
+  totalWeeks?: number;
   periods?: Period[];
+  periodConfig?: PeriodConfig;
 }): Promise<Schedule> {
   const payload: Record<string, unknown> = {
     name: data.name,
     semester: data.semester,
   };
   if (data.studentId) payload.student_id = data.studentId;
+  if (data.totalWeeks) payload.total_weeks = data.totalWeeks;
+  if (data.periods) payload.periods = data.periods;
+  if (data.periodConfig) {
+    payload.period_config = {
+      morning_count: data.periodConfig.morningCount,
+      afternoon_count: data.periodConfig.afternoonCount,
+      evening_count: data.periodConfig.eveningCount,
+    };
+  }
   return cloud.call<Schedule>('schedule', {
     action: 'create',
     payload,
