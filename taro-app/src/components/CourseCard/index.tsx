@@ -1,6 +1,5 @@
 import { View, Text } from '@tarojs/components'
 import type { Course, Period } from '../../types/index'
-import { DEFAULT_PERIODS } from '../../constants/periods'
 import './index.scss'
 
 interface CourseCardProps {

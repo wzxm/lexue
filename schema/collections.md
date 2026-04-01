@@ -36,6 +36,12 @@
 | student_id | string | 是 | 关联的学生ID |
 | name | string | 是 | 课表名称（如：2024春季学期） |
 | semester | string | 否 | 学期标识 |
+| total_weeks | number | 否 | 本学期总周数（1-30，默认20） |
+| periods | array | 否 | 课节配置列表（每项含 index/startTime/endTime/label） |
+| period_config | object | 是 | 课节分组配置（morning_count/afternoon_count/evening_count） |
+| period_config.morning_count | number | 是 | 上午课节数（1-6） |
+| period_config.afternoon_count | number | 是 | 下午课节数（1-6） |
+| period_config.evening_count | number | 是 | 晚上课节数（0-4） |
 | invite_code | string | 是 | 8位唯一邀请码（用于分享课表） |
 | is_default | boolean | 是 | 是否为当前显示课表，默认 false，同一学生下只有一个为 true |
 | shared_with | array | 否 | 已共享的用户列表，元素结构见下 |
@@ -62,9 +68,22 @@
 | end_time | string | 否 | 下课时间（格式：HH:mm） |
 | teacher | string | 否 | 教师姓名 |
 | room | string | 否 | 教室/地点 |
+| contact | string | 否 | 联系方式 |
 | color | string | 否 | 课程颜色标识（hex色值） |
 | created_at | date | 是 | 创建时间 |
 | updated_at | date | 是 | 最后更新时间 |
+
+---
+
+## course_name_presets（课程名称预设）
+
+| 字段名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| _id | string | 是 | 云数据库自动生成的文档ID |
+| openid | string | 是 | 创建者 openid（归属隔离） |
+| name | string | 是 | 自定义课程名称 |
+| grade_level | string | 是 | 所属学龄段（elementary/middle/high/college） |
+| created_at | date | 是 | 创建时间 |
 
 ---
 

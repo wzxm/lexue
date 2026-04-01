@@ -15,6 +15,18 @@ export interface Period {
   label: string;
 }
 
+export interface PeriodConfig {
+  morningCount: number;
+  afternoonCount: number;
+  eveningCount: number;
+}
+
+export interface BackendPeriodConfig {
+  morning_count: number;
+  afternoon_count: number;
+  evening_count: number;
+}
+
 export interface Course {
   id: string;
   scheduleId: string;
@@ -23,6 +35,7 @@ export interface Course {
   period: PeriodIndex;
   teacher?: string;
   classroom?: string;
+  contact?: string; // 联系方式
   color: string;
   weekType: WeekType;
   note?: string;
@@ -35,9 +48,13 @@ export interface Schedule {
   student_id?: string;
   name: string;
   semester: string;
+  totalWeeks?: number;
+  total_weeks?: number;
   inviteCode?: string;
   invite_code?: string;
   periods: Period[];
+  periodConfig?: PeriodConfig;
+  period_config?: BackendPeriodConfig;
   courses: Course[];
   isDefault: boolean;
   is_default?: boolean;

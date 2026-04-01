@@ -17,7 +17,7 @@
     "jsx": "react-jsx",
     "allowJs": true,
     "resolveJsonModule": true,
-    "typeRoots": ["node_modules/@types"],
+    "skipLibCheck": true,
     "paths": {
       "@/*": ["./src/*"]
     },

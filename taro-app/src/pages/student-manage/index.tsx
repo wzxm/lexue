@@ -1,13 +1,11 @@
 import { View, Text } from '@tarojs/components'
 import Taro, { useDidShow } from '@tarojs/taro'
-import { useState } from 'react'
 import { listStudents } from '../../api/student.api'
 import { useStudentStore } from '../../store/student.store'
 import { ROUTES } from '../../constants/routes'
 import './index.scss'
 
 export default function StudentManagePage() {
-  const [loading, setLoading] = useState(false)
   const students = useStudentStore(s => s.students)
   const setStudents = useStudentStore(s => s.setStudents)
 
@@ -16,14 +14,11 @@ export default function StudentManagePage() {
   })
 
   const fetchStudents = async () => {
-    setLoading(true)
     try {
       const data = await listStudents()
       setStudents(data)
     } catch (err: any) {
       Taro.showToast({ title: err.message || '获取失败', icon: 'none' })
-    } finally {
-      setLoading(false)
     }
   }
 

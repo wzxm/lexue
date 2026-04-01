@@ -84,6 +84,13 @@ db.collection("tools_data").createIndex({ openid: 1, tool_type: 1 })
 db.collection("tools_data").createIndex({ student_id: 1 })
 ```
 
+## course_name_presets
+
+```js
+// 按用户查自定义课程名称
+db.collection("course_name_presets").createIndex({ openid: 1, grade_level: 1 })
+```
+
 ---
 
 ## 索引创建云函数示例

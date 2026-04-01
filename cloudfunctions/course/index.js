@@ -19,6 +19,7 @@ const FN = 'course';
 const VALID_DAYS = [0, 1, 2, 3, 4, 5, 6];
 // 每天最多12节课
 const VALID_SLOTS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+const GRADE_LEVELS = ['elementary', 'middle', 'high', 'college'];
 
 /**
  * 获取课表下所有课程
@@ -61,6 +62,7 @@ async function create(openid, payload) {
     color: payload.color,
     weeks: payload.weeks || [], // 可选：指定哪几周上课，空数组表示每周都上
     remark: payload.remark || '',
+    contact: payload.contact !== undefined && payload.contact !== null ? String(payload.contact) : '',
   });
 
   const course = await db.getOne('courses', _id);
@@ -85,7 +87,7 @@ async function update(openid, payload) {
   if (payload.slot !== undefined) validator.enumValue(payload.slot, VALID_SLOTS, 'slot');
   if (payload.name) validator.maxLength(payload.name, 30, '课程名称');
 
-  const allowed = ['name', 'teacher', 'room', 'day_of_week', 'slot', 'color', 'weeks', 'remark'];
+  const allowed = ['name', 'teacher', 'room', 'day_of_week', 'slot', 'color', 'weeks', 'remark', 'contact'];
   const updateData = {};
   for (const key of allowed) {
     if (payload[key] !== undefined) updateData[key] = payload[key];
@@ -156,11 +158,82 @@ async function batchCreate(openid, payload) {
       color: c.color,
       weeks: c.weeks || [],
       remark: c.remark || '',
+      contact: c.contact !== undefined && c.contact !== null ? String(c.contact) : '',
     });
     results.push(_id);
   }
 
   return success({ created: results.length, ids: results });
+}
+
+/**
+ * 当前用户的自定义课程名称预设列表
+ */
+async function listPresets(openid) {
+  const rows = await db.getList('course_name_presets', { openid }, {
+    orderBy: { field: 'created_at', direction: 'desc' },
+  });
+  const presets = rows.map(r => ({
+    id: r._id,
+    name: r.name,
+    grade_level: r.grade_level,
+  }));
+  return success({ presets });
+}
+
+/**
+ * 添加自定义课程名称预设（同用户同学龄段去重）
+ */
+async function addPreset(openid, payload) {
+  validator.requireFields(payload, ['name', 'grade_level']);
+  const name = String(payload.name).trim();
+  if (!name) {
+    return fail(ERRORS.PARAM_ERROR, '名称不能为空');
+  }
+  validator.maxLength(name, 20, '课程名称');
+  validator.enumValue(payload.grade_level, GRADE_LEVELS, 'grade_level');
+
+  const dup = await db.findOne('course_name_presets', {
+    openid,
+    grade_level: payload.grade_level,
+    name,
+  });
+  if (dup) {
+    return fail(ERRORS.PARAM_ERROR, '该学龄段下已有同名课程');
+  }
+
+  logger.info(FN, 'addPreset', { openid, name, grade_level: payload.grade_level });
+
+  const { _id } = await db.create('course_name_presets', {
+    openid,
+    name,
+    grade_level: payload.grade_level,
+    created_at: new Date(),
+  });
+
+  return success({
+    id: _id,
+    name,
+    grade_level: payload.grade_level,
+  });
+}
+
+/**
+ * 删除自定义课程名称预设
+ */
+async function deletePreset(openid, payload) {
+  validator.requireFields(payload, ['presetId']);
+  const doc = await db.getOne('course_name_presets', payload.presetId);
+  if (!doc) {
+    // 删除接口设计为幂等：目标不存在也视为删除成功，避免前端重试/双击产生业务报错
+    return success(null);
+  }
+  if (doc.openid !== openid) {
+    return fail(ERRORS.FORBIDDEN, '无权删除此预设');
+  }
+  logger.info(FN, 'deletePreset', { openid, presetId: payload.presetId });
+  await db.remove('course_name_presets', payload.presetId);
+  return success(null);
 }
 
 // ——— 入口 ———
@@ -177,6 +250,9 @@ exports.main = async (event, context) => {
       case 'update':      return await update(openid, payload);
       case 'delete':      return await remove(openid, payload);
       case 'batchCreate': return await batchCreate(openid, payload);
+      case 'listPresets': return await listPresets(openid);
+      case 'addPreset':   return await addPreset(openid, payload);
+      case 'deletePreset': return await deletePreset(openid, payload);
       default:            return fail(ERRORS.PARAM_ERROR, `未知的 action: ${action}`);
     }
   } catch (e) {
