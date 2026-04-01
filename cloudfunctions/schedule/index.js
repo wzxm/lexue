@@ -13,6 +13,28 @@ const validator = require('../../shared/validator');
 const logger = require('../../shared/logger');
 
 const FN = 'schedule';
+const INVITE_CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const INVITE_CODE_LENGTH = 8;
+const MAX_INVITE_CODE_ATTEMPTS = 20;
+
+function generateInviteCode() {
+  let code = '';
+  for (let i = 0; i < INVITE_CODE_LENGTH; i++) {
+    code += INVITE_CODE_CHARS[Math.floor(Math.random() * INVITE_CODE_CHARS.length)];
+  }
+  return code;
+}
+
+async function generateUniqueInviteCode() {
+  let attempts = 0;
+  while (attempts < MAX_INVITE_CODE_ATTEMPTS) {
+    const inviteCode = generateInviteCode();
+    const existing = await db.findOne('schedules', { invite_code: inviteCode });
+    if (!existing) return inviteCode;
+    attempts += 1;
+  }
+  return null;
+}
 
 /**
  * 获取当前用户可见的所有课表
@@ -62,11 +84,18 @@ async function create(openid, payload) {
     student_id: payload.student_id,
   }, { is_default: false });
 
+  const inviteCode = await generateUniqueInviteCode();
+  if (!inviteCode) {
+    logger.error(FN, 'create:inviteCodeFailed', { openid, studentId: payload.student_id });
+    return fail(ERRORS.INTERNAL_ERROR, '生成邀请码失败，请重试');
+  }
+
   const { _id } = await db.create('schedules', {
     owner_openid: openid,
     student_id: payload.student_id,
     name: payload.name,
     semester: payload.semester,
+    invite_code: inviteCode,
     is_default: true,
     shared_with: [], // 初始无共享成员
     remark: payload.remark || '',
@@ -160,6 +189,23 @@ async function setDefault(openid, payload) {
   return success(null);
 }
 
+/**
+ * 刷新邀请码（仅 owner 可操作）
+ */
+async function refreshInviteCode(openid, payload) {
+  validator.requireFields(payload, ['scheduleId']);
+  await requireOwner(openid, payload.scheduleId);
+  logger.info(FN, 'refreshInviteCode', { openid, scheduleId: payload.scheduleId });
+
+  const inviteCode = await generateUniqueInviteCode();
+  if (!inviteCode) {
+    return fail(ERRORS.INTERNAL_ERROR, '生成邀请码失败，请重试');
+  }
+
+  await db.update('schedules', payload.scheduleId, { invite_code: inviteCode });
+  return success({ invite_code: inviteCode });
+}
+
 // ——— 入口 ———
 exports.main = async (event, context) => {
   const wxContext = cloud.getWXContext();
@@ -175,6 +221,7 @@ exports.main = async (event, context) => {
       case 'update':     return await update(openid, payload);
       case 'delete':     return await remove(openid, payload);
       case 'setDefault': return await setDefault(openid, payload);
+      case 'refreshInviteCode': return await refreshInviteCode(openid, payload);
       default:           return fail(ERRORS.PARAM_ERROR, `未知的 action: ${action}`);
     }
   } catch (e) {

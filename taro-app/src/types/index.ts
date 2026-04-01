@@ -35,6 +35,8 @@ export interface Schedule {
   student_id?: string;
   name: string;
   semester: string;
+  inviteCode?: string;
+  invite_code?: string;
   periods: Period[];
   courses: Course[];
   isDefault: boolean;

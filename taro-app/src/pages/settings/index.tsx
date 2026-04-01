@@ -7,7 +7,7 @@ import { useAuthStore } from '../../store/auth.store'
 import defaultAvatar from '../../assets/default-avatar.png'
 import './index.scss'
 
-type MenuKey = 'notify' | 'family' | 'scheduleTab' | 'student' | 'feedback' | 'recommend'
+type MenuKey = 'notify' | 'family' | 'scheduleTab' | 'student' | 'shareSchedule' | 'feedback' | 'recommend'
 
 interface MenuRow {
   key: MenuKey
@@ -20,7 +20,8 @@ const menuRows: MenuRow[] = [
   { key: 'notify', label: '通知提醒', icon: '\ue759', suffix: '开' },
   { key: 'family', label: '家人管理', icon: '\ue600', suffix: '5位' },
   { key: 'scheduleTab', label: '课表管理', icon: '\ue696', suffix: '开' },
-  { key: 'student', label: '课程管理', icon: '\ue706', suffix: '' },
+  { key: 'student', label: '展示管理', icon: '\ue706', suffix: '' },
+  { key: 'shareSchedule', label: '分享课表', icon: '\ue729', suffix: '' },
   { key: 'feedback', label: '意见反馈', icon: '\ue759', suffix: '' },
   { key: 'recommend', label: '推荐小程序', icon: '\ue729', suffix: '' },
 ]
@@ -87,7 +88,10 @@ export default function SettingsPage() {
         Taro.navigateTo({ url: ROUTES.SCHEDULE_MANAGE })
         break
       case 'student':
-        Taro.navigateTo({ url: ROUTES.STUDENT_MANAGE })
+        Taro.navigateTo({ url: ROUTES.SCHEDULE_MANAGE })
+        break
+      case 'shareSchedule':
+        Taro.navigateTo({ url: ROUTES.SHARE_SCHEDULE })
         break
       case 'feedback':
         Taro.showToast({ title: '敬请期待', icon: 'none' })
@@ -149,7 +153,7 @@ export default function SettingsPage() {
 
         <View className='menu-list'>
         <View className='menu-list-group'>
-          {menuRows.slice(0, 4).map((row) => (
+          {menuRows.slice(0, 5).map((row) => (
             <View key={row.key} className='menu-item' onClick={() => onMenu(row)}>
               <View className='menu-item-left'>
                 <View className='menu-icon-wrap'>
@@ -166,7 +170,7 @@ export default function SettingsPage() {
         </View>
 
         <View className='menu-list-group'>
-          {menuRows.slice(4).map((row) => (
+          {menuRows.slice(5).map((row) => (
             <View key={row.key} className='menu-item' onClick={() => onMenu(row)}>
               <View className='menu-item-left'>
                 <View className='menu-icon-wrap'>

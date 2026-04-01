@@ -41,3 +41,7 @@ export async function deleteSchedule(scheduleId: string): Promise<void> {
 export async function setDefaultSchedule(scheduleId: string): Promise<void> {
   return cloud.call<void>('schedule', { action: 'setDefault', payload: { scheduleId } });
 }
+
+export async function refreshInviteCode(scheduleId: string): Promise<{ invite_code: string }> {
+  return cloud.call<{ invite_code: string }>('schedule', { action: 'refreshInviteCode', payload: { scheduleId } });
+}

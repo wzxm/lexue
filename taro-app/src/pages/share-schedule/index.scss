@@ -1,0 +1,139 @@
+.share-schedule-page {
+  min-height: 100vh;
+  background: #f7f8fa;
+  padding: 32px;
+  box-sizing: border-box;
+
+  .header-card {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 36px 32px;
+    margin-bottom: 32px;
+
+    .header-list {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .header-item {
+      display: flex;
+      align-items: flex-start;
+      
+      .dot {
+        color: #646a73;
+        margin-right: 12px;
+        font-size: 26px;
+        line-height: 1.5;
+      }
+      
+      .text {
+        font-size: 26px;
+        color: #646a73;
+        line-height: 1.5;
+        flex: 1;
+      }
+    }
+  }
+
+  .loading-wrap,
+  .empty-wrap {
+    padding: 60px 0;
+    display: flex;
+    justify-content: center;
+  }
+
+  .loading-text,
+  .empty-text {
+    color: #8f959e;
+    font-size: 26px;
+  }
+
+  .list-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+  }
+
+  .student-group {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .student-name {
+    font-size: 26px;
+    color: #8f959e;
+    padding-left: 8px;
+    margin-bottom: 4px;
+  }
+
+  .schedule-card {
+    background: #ffffff;
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    padding: 0 32px;
+  }
+
+  .card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 32px 0;
+  }
+
+  .schedule-name {
+    font-size: 32px;
+    font-weight: 500;
+    color: #1f2329;
+  }
+
+  .divider-item {
+    height: 1px;
+    background: #f0f0f0;
+  }
+
+  .card-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 0 32px 0;
+  }
+
+  .code-info {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .code-label {
+    font-size: 28px;
+    color: #999999;
+    margin-right: -4px;
+  }
+
+  .code-value {
+    font-size: 28px;
+    color: #333333;
+    // font-family: monospace;
+    font-weight: 500;
+  }
+
+  .refresh-icon {
+    width: 32px;
+    height: 32px;
+    // margin-left: 8px;
+    display: block;
+    cursor: pointer;
+  }
+
+  .copy-btn {
+    font-size: 28px;
+    color: #07c160;
+    padding: 8px 0;
+    &:active {
+      opacity: 0.7;
+    }
+  }
+}

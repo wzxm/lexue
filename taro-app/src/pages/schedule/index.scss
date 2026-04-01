@@ -42,7 +42,7 @@
 }
 
 .header-icon-btn {
-  font-size: 40px;
+  font-size: 30px;
   color: #333;
   padding: 8px;
 }
@@ -55,6 +55,8 @@
 }
 
 .student-name {
+  display: flex;
+  align-items: center;
   font-size: 32px;
   font-weight: bold;
   color: #333;
@@ -62,8 +64,14 @@
 
 .student-sub {
   font-size: 22px;
-  color: #666;
+  color: #6A7282;
   margin-top: 4px;
+}
+
+.student-sub-icon {
+  margin-left: 14px;
+  font-size: 28px;
+  color: #07C160;
 }
 
 /* 空状态引导页 */
@@ -314,3 +322,173 @@
   font-size: 30px; font-weight: 600; height: 96px; line-height: 96px; border: none;
 }
 .btn-edit::after, .btn-delete::after { border: none; }
+
+/* 切换课表侧边抽屉（与 tools 页一致） */
+.drawer-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 10000;
+  display: flex;
+  animation: schedule-drawer-fadeIn 0.25s ease-out;
+}
+
+.drawer-panel {
+  width: 75%;
+  max-width: 600px;
+  height: 100%;
+  background: linear-gradient(180deg, rgba(7, 193, 96, 0.20) -3.08%, rgba(255, 255, 255, 0.00) 45.61%), var(--background-page-default, #FFF);
+  display: flex;
+  flex-direction: column;
+  animation: schedule-drawer-slideInLeft 0.3s ease-out;
+  position: relative;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+@keyframes schedule-drawer-fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes schedule-drawer-slideInLeft {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+.drawer-header {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0 32px;
+  padding-top: calc(env(safe-area-inset-top) + 100px);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  background: linear-gradient(180deg, rgba(7, 193, 96, 0.15) 0%, rgba(7, 193, 96, 0.02) 100%);
+  padding-bottom: 24px;
+}
+
+.drawer-title-wrap {
+  max-width: 100%;
+  box-sizing: border-box;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #D8D8D8;
+}
+
+.drawer-title {
+  font-size: 36px;
+  font-weight: bold;
+  color: #333;
+}
+
+.drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 32px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.drawer-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-top: 200px;
+}
+
+.drawer-empty-img {
+  width: 240px;
+  height: 240px;
+  margin-bottom: 24px;
+}
+
+.drawer-empty-text {
+  font-size: 28px;
+  color: #999;
+}
+
+.drawer-list {
+  padding-top: 16px;
+}
+
+.drawer-group {
+  margin-bottom: 16px;
+}
+
+.drawer-group-header {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  padding: 24px 0 12px;
+  gap: 0 8px;
+}
+
+.drawer-student-name {
+  font-size: 28px;
+  font-weight: bold;
+  color: #333333;
+}
+
+.drawer-student-divider {
+  font-size: 24px;
+  color: #D0D0D0;
+  font-weight: normal;
+  flex-shrink: 0;
+}
+
+.drawer-student-meta {
+  font-size: 26px;
+  color: #6A7282;
+  flex: 1;
+  min-width: 0;
+}
+
+.drawer-schedule-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 0;
+}
+
+.drawer-schedule-name {
+  font-size: 28px;
+  color: #333;
+}
+
+.drawer-schedule-name--active {
+  color: #07C160;
+  font-weight: bold;
+}
+
+.drawer-check-icon {
+  font-size: 28px;
+  color: #07C160;
+  font-weight: bold;
+}
+
+.drawer-footer {
+  flex-shrink: 0;
+  padding: 24px 32px;
+  padding-bottom: calc(24px + env(safe-area-inset-bottom));
+  display: flex;
+  justify-content: center;
+}
+
+.drawer-manage-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.drawer-manage-icon {
+  font-size: 32px;
+  color: #07C160;
+}
+
+.drawer-manage-text {
+  font-size: 28px;
+  color: #07C160;
+}

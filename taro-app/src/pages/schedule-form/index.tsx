@@ -111,6 +111,8 @@ export default function ScheduleFormPage() {
         studentId: (r.student_id || student?.id || "") as string,
         name: (r.name || `${semester.label}课表`) as string,
         semester: (r.semester || semester.value) as string,
+        invite_code: (r.invite_code || '') as string,
+        inviteCode: (r.invite_code || '') as string,
         periods: buildPeriods(),
         courses: [],
         isDefault: (r.is_default ?? false) as boolean,

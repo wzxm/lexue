@@ -11,6 +11,7 @@ export default defineAppConfig({
     'pages/notification-settings/index',
     'pages/family-manage/index',
     'pages/share-code/index',
+    'pages/share-schedule/index',
     'pages/copy-schedule/index',
     'pages/tools/index',
     'pages/schedule-manage/index',

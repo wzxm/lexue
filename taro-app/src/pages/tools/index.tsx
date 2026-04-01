@@ -166,7 +166,7 @@ export default function ToolsPage () {
                   <Text className='name'>
                     {userInfo?.nickname || '我的课表'}
                   </Text>
-                  <Text className='swap-icon'>⇌</Text>
+                  <Text className='student-sub-icon'>⇌</Text>
                 </View>
                 <Text className='school'>东东东东风东路小学</Text>
               </View>

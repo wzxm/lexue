@@ -27,6 +27,9 @@ db.collection("schedules").createIndex({ owner_openid: 1 })
 
 // 按共享成员查有权限的课表
 db.collection("schedules").createIndex({ "shared_with.openid": 1 })
+
+// 邀请码唯一索引，用于通过邀请码快速定位课表
+db.collection("schedules").createIndex({ invite_code: 1 }, { unique: true })
 ```
 
 ## courses

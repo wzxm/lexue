@@ -96,7 +96,7 @@ export default function CopySchedulePage() {
     <View className="copy-schedule-page">
       <View className="content">
         <Text className="title">输入口令，复制好友的课表</Text>
-        <View className="warning-text">⚠️老师电话等敏感信息不支持复制</View>
+        <View className="warning-text">⚠️ 老师电话等敏感信息不支持复制</View>
         
         <View className="input-wrap">
           <Input
