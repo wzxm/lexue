@@ -1,0 +1,113 @@
+.wp-sheet {
+  background: #fff;
+  border-radius: 24px 24px 0 0;
+  padding: 0 24px calc(28px + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+
+.wp-sheet__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28px 0 20px;
+}
+
+.wp-sheet__cancel {
+  font-size: 28px;
+  color: #666;
+  min-width: 80px;
+}
+
+.wp-sheet__title {
+  font-size: 32px;
+  font-weight: 600;
+  color: #111;
+}
+
+.wp-sheet__done {
+  font-size: 28px;
+  color: #07c160;
+  font-weight: 600;
+  min-width: 80px;
+  text-align: right;
+}
+
+.wp-sheet__quick {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  gap: 48px;
+  padding: 16px 0 28px;
+}
+
+.wp-sheet__quick-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+
+.wp-sheet__radio {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid #d9d9d9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.wp-sheet__radio--checked {
+  background: #07c160;
+  border-color: #07c160;
+}
+
+.wp-sheet__radio-dot {
+  font-size: 24px;
+  color: #fff;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.wp-sheet__quick-label {
+  font-size: 28px;
+  color: #333;
+}
+
+.wp-sheet__grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding-bottom: 16px;
+}
+
+.wp-sheet__week {
+  width: calc((100% - 64px) / 5);
+  height: 80px;
+  border-radius: 16px;
+  background: #07c160;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.wp-sheet__week--selected {
+  background: #07c160;
+}
+
+/* 未选中态：浅灰背景 */
+.wp-sheet__week:not(.wp-sheet__week--selected) {
+  background: #f0f0f0;
+}
+
+.wp-sheet__week-text {
+  font-size: 32px;
+  font-weight: 600;
+  color: #999;
+}
+
+.wp-sheet__week-text--selected {
+  color: #fff;
+}

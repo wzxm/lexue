@@ -33,20 +33,20 @@ export default function CourseModal({
               <Text className='info-value'>{selectedCourse.teacher}</Text>
             </View>
           )}
-          {selectedCourse.classroom && (
+          {selectedCourse.room && (
             <View className='info-row'>
               <Text className='info-label'>🏫 教室</Text>
-              <Text className='info-value'>{selectedCourse.classroom}</Text>
+              <Text className='info-value'>{selectedCourse.room}</Text>
             </View>
           )}
           <View className='info-row'>
             <Text className='info-label'>🕐 时间</Text>
-            <Text className='info-value'>第{selectedCourse.period}节</Text>
+            <Text className='info-value'>第{selectedCourse.slot}节</Text>
           </View>
-          {selectedCourse.note && (
+          {selectedCourse.remark && (
             <View className='info-row'>
               <Text className='info-label'>📝 备注</Text>
-              <Text className='info-value'>{selectedCourse.note}</Text>
+              <Text className='info-value'>{selectedCourse.remark}</Text>
             </View>
           )}
         </View>

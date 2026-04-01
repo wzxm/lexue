@@ -26,17 +26,15 @@ export function buildGrid(schedule: Schedule | null, weekOffset: number): Schedu
   if (!schedule) return grid
 
   const courses = Array.isArray(schedule.courses) ? schedule.courses : []
+  const currentWeek = Math.abs(weekOffset) + 1
   for (const course of courses) {
-    const weekdayIdx = course.weekday - 1
-    const periodIdx = course.period - 1
+    const weekdayIdx = course.day_of_week - 1
+    const periodIdx = course.slot - 1
     if (periodIdx >= 0 && periodIdx < PERIOD_COUNT && weekdayIdx >= 0 && weekdayIdx < WEEKDAY_COUNT) {
-      if (course.weekType === 'all') {
+      if (!course.weeks || course.weeks.length === 0) {
         grid[periodIdx][weekdayIdx] = course
-      } else {
-        const isOddWeek = (Math.abs(weekOffset) % 2) === 0
-        if ((course.weekType === 'odd' && isOddWeek) || (course.weekType === 'even' && !isOddWeek)) {
-          grid[periodIdx][weekdayIdx] = course
-        }
+      } else if (course.weeks.includes(currentWeek)) {
+        grid[periodIdx][weekdayIdx] = course
       }
     }
   }

@@ -9,9 +9,10 @@ export interface CourseNameSheetProps {
   show: boolean
   onClose: () => void
   onSelect: (name: string) => void
+  onAfterLeave?: () => void
 }
 
-export default function CourseNameSheet({ show, onClose, onSelect }: CourseNameSheetProps) {
+export default function CourseNameSheet({ show, onClose, onSelect, onAfterLeave }: CourseNameSheetProps) {
   const [gradeLevel, setGradeLevel] = useState<GradeLevel>('middle')
   const [inputValue, setInputValue] = useState('')
   const [presets, setPresets] = useState<CourseNamePreset[]>([])
@@ -83,7 +84,7 @@ export default function CourseNameSheet({ show, onClose, onSelect }: CourseNameS
       round
       zIndex={1000}
       onClickOverlay={onClose}
-      onAfterLeave={onClose}
+      onAfterLeave={onAfterLeave ?? onClose}
     >
       <View className='cn-sheet'>
         <View className='cn-sheet__header'>

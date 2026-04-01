@@ -1,28 +1,32 @@
-import { View, Text, Input, Picker, Button, ScrollView } from '@tarojs/components'
-import { useState, useEffect } from 'react'
+import { View, Text, Input, Button, ScrollView } from '@tarojs/components'
+import { useState, useEffect, useMemo } from 'react'
 import Taro, { useRouter } from '@tarojs/taro'
 import { createCourse, updateCourse } from '../../api/course.api'
 import { useScheduleStore } from '../../store/schedule.store'
-import type { WeekDay, PeriodIndex, WeekType, Course } from '../../types/index'
-import { DEFAULT_PERIODS } from '../../constants/periods'
+import type { WeekDay, PeriodIndex, Course } from '../../types/index'
 import CourseNameSheet from './components/CourseNameSheet'
+import PeriodGridSheet, { type SlotSelection } from './components/PeriodGridSheet'
+import WeekPickerSheet from './components/WeekPickerSheet'
 import './index.scss'
 
-const WEEK_TYPE_OPTIONS = [
-  { label: '每周', value: 'all' as WeekType },
-  { label: '单周', value: 'odd' as WeekType },
-  { label: '双周', value: 'even' as WeekType },
-]
-const PERIOD_LABELS = DEFAULT_PERIODS.map(p => `第${p.index}节 ${p.startTime}`)
+const WEEKDAY_SHORT = ['一', '二', '三', '四', '五', '六', '日']
 const DEFAULT_COURSE_COLOR = 'red'
 
 interface Section {
-  period: PeriodIndex | null
-  periodIndex: number
-  weekday: WeekDay
-  weekType: WeekType
-  weekTypeIndex: number
-  classroom: string
+  day_of_week: WeekDay | 0
+  slot: PeriodIndex | 0
+  weeks: number[]
+  room: string
+}
+
+function formatWeeksSummary(weeks: number[], totalWeeks: number): string {
+  if (weeks.length === 0 || weeks.length === totalWeeks) return '每周'
+  const allOdd = Array.from({ length: totalWeeks }, (_, i) => i + 1).filter(w => w % 2 === 1)
+  const allEven = Array.from({ length: totalWeeks }, (_, i) => i + 1).filter(w => w % 2 === 0)
+  if (weeks.length === allOdd.length && allOdd.every(w => weeks.includes(w))) return '单周'
+  if (weeks.length === allEven.length && allEven.every(w => weeks.includes(w))) return '双周'
+  if (weeks.length <= 5) return `第${weeks.join(',')}周`
+  return `${weeks.length}周`
 }
 
 export default function CourseFormPage() {
@@ -37,22 +41,49 @@ export default function CourseFormPage() {
   const addCourseToStore = useScheduleStore(s => s.addCourse)
   const updateCourseInStore = useScheduleStore(s => s.updateCourse)
 
+  const totalWeeks = currentSchedule?.total_weeks || currentSchedule?.totalWeeks || 20
+  const periodCount = currentSchedule?.periods?.length || 8
+
+  const occupiedSlots: SlotSelection[] = useMemo(() => {
+    if (!currentSchedule) return []
+    return currentSchedule.courses
+      .filter(c => mode === 'edit' ? c.id !== routeCourseId : true)
+      .map(c => ({ day_of_week: c.day_of_week, slot: c.slot }))
+  }, [currentSchedule, mode, routeCourseId])
+
   const [name, setName] = useState('')
   const [teacher, setTeacher] = useState('')
   const [contact, setContact] = useState('')
-  const [sections, setSections] = useState<Section[]>([
-    {
-      period: routePeriod ? (Number(routePeriod) as PeriodIndex) : null,
-      periodIndex: routePeriod ? Number(routePeriod) - 1 : 0,
-      weekday: routeWeekday ? (Number(routeWeekday) as WeekDay) : 1,
-      weekType: 'all',
-      weekTypeIndex: 0,
-      classroom: '',
-    },
-  ])
+  const [sections, setSections] = useState<Section[]>(() => {
+    if (routeWeekday && routePeriod) {
+      return [{
+        day_of_week: Number(routeWeekday) as WeekDay,
+        slot: Number(routePeriod) as PeriodIndex,
+        weeks: [],
+        room: '',
+      }]
+    }
+    return [{ day_of_week: 0, slot: 0, weeks: [], room: '' }]
+  })
   const [scheduleId, setScheduleId] = useState(routeScheduleId)
   const [loading, setLoading] = useState(false)
-  const [showNameSheet, setShowNameSheet] = useState(false)
+  // 微信 page-container 全局只能存在一个实例，用双状态管理：
+  // shownSheet  = 当前 show=true 的弹窗（驱动进/出场动画）
+  // mountedSheet = 当前挂载在 DOM 里的弹窗（onAfterLeave 后置 null 卸载）
+  type SheetState =
+    | { type: 'name' }
+    | { type: 'period' }
+    | { type: 'week'; index: number }
+
+  const [shownSheet, setShownSheet] = useState<SheetState | null>(null)
+  const [mountedSheet, setMountedSheet] = useState<SheetState | null>(null)
+
+  const openSheet = (sheet: SheetState) => {
+    setMountedSheet(sheet)
+    setShownSheet(sheet)
+  }
+  const closeSheet = () => setShownSheet(null)
+  const unmountSheet = () => setMountedSheet(null)
 
   useEffect(() => {
     if (mode === 'edit' && routeCourseId) {
@@ -61,18 +92,13 @@ export default function CourseFormPage() {
         setName(course.name)
         setTeacher(course.teacher || '')
         setContact(course.contact || '')
-        const wti = Math.max(0, WEEK_TYPE_OPTIONS.findIndex(o => o.value === course.weekType))
-        setSections([
-          {
-            period: course.period,
-            periodIndex: course.period - 1,
-            weekday: course.weekday,
-            weekType: course.weekType,
-            weekTypeIndex: wti,
-            classroom: course.classroom || '',
-          },
-        ])
-        setScheduleId(course.scheduleId)
+        setSections([{
+          day_of_week: course.day_of_week,
+          slot: course.slot,
+          weeks: course.weeks || [],
+          room: course.room || '',
+        }])
+        setScheduleId(course.schedule_id)
       }
       Taro.setNavigationBarTitle({ title: '修改课程' })
     } else {
@@ -84,23 +110,43 @@ export default function CourseFormPage() {
     setSections(prev => prev.map((s, i) => (i === index ? { ...s, ...patch } : s)))
   }
 
-  const addSection = () => {
-    const w = sections[0]?.weekday ?? 1
-    setSections(prev => [
-      ...prev,
-      {
-        period: null,
-        periodIndex: 0,
-        weekday: w,
-        weekType: 'all',
-        weekTypeIndex: 0,
-        classroom: '',
-      },
-    ])
+  const removeSection = (index: number) => {
+    setSections(prev => prev.filter((_, i) => i !== index))
   }
 
-  const removeSection = (index: number) => {
-    setSections(prev => (prev.length <= 1 ? prev : prev.filter((_, i) => i !== index)))
+  // 多选确认：按已有 slot 保留周数/教室数据，新 slot 创建空课节
+  const handlePeriodGridConfirm = (selections: SlotSelection[]) => {
+    setSections(prev => {
+      const keepMap = new Map<string, Section>()
+      for (const s of prev) {
+        if (s.slot > 0) keepMap.set(`${s.day_of_week}-${s.slot}`, s)
+      }
+      if (selections.length === 0) {
+        return [{ day_of_week: 0, slot: 0, weeks: [], room: '' }]
+      }
+      return selections.map(sel => {
+        const key = `${sel.day_of_week}-${sel.slot}`
+        return keepMap.get(key) ?? { day_of_week: sel.day_of_week, slot: sel.slot, weeks: [], room: '' }
+      })
+    })
+    closeSheet()
+  }
+
+  const addSection = () => {
+    setSections(prev => [...prev, { day_of_week: 0, slot: 0, weeks: [], room: '' }])
+  }
+
+  // 已选课节的 slot（传给选格器用于高亮展示）
+  const selectedSlots: SlotSelection[] = sections
+    .filter(s => s.slot > 0)
+    .map(s => ({ day_of_week: s.day_of_week as WeekDay, slot: s.slot as PeriodIndex }))
+
+  // 保留方法名，兼容热更新期间对旧渲染闭包的引用。
+  const getOccupiedForSection = (_index?: number): SlotSelection[] => occupiedSlots
+
+  const formatSectionSlot = (s: Section): string => {
+    if (!s.slot || !s.day_of_week) return ''
+    return `周${WEEKDAY_SHORT[s.day_of_week - 1]} 第${s.slot}节`
   }
 
   const onSave = async () => {
@@ -112,12 +158,14 @@ export default function CourseFormPage() {
       Taro.showToast({ title: '课表数据异常，请返回重试', icon: 'none' })
       return
     }
-    for (let i = 0; i < sections.length; i++) {
-      const s = sections[i]
-      if (s.period == null) {
-        Taro.showToast({ title: `请选择课节 ${i + 1} 的节数`, icon: 'none' })
-        return
-      }
+    if (sections.length === 0) {
+      Taro.showToast({ title: '请至少添加一个课节', icon: 'none' })
+      return
+    }
+    const unset = sections.find(s => !s.slot || !s.day_of_week)
+    if (unset) {
+      Taro.showToast({ title: '请为每个课节选择节数', icon: 'none' })
+      return
     }
 
     setLoading(true)
@@ -125,39 +173,36 @@ export default function CourseFormPage() {
       if (mode === 'edit' && routeCourseId) {
         const s = sections[0]
         const existing = currentSchedule?.courses.find(c => c.id === routeCourseId)
-        const base = {
+        const base: Partial<Course> = {
           name: name.trim(),
-          weekday: s.weekday,
-          period: s.period!,
+          day_of_week: s.day_of_week as WeekDay,
+          slot: s.slot as PeriodIndex,
           teacher: teacher.trim(),
-          classroom: s.classroom.trim(),
+          room: s.room.trim(),
           color: existing?.color ?? DEFAULT_COURSE_COLOR,
-          weekType: s.weekType,
-          note: '',
+          weeks: s.weeks,
+          remark: '',
           ...(contact.trim() ? { contact: contact.trim() } : {}),
         }
-        await updateCourse(routeCourseId, base as Partial<Course>)
+        await updateCourse(routeCourseId, base)
         if (existing) {
-          updateCourseInStore({
-            ...existing,
-            ...base,
-          } as Course)
+          updateCourseInStore({ ...existing, ...base } as Course)
         }
       } else {
         for (const s of sections) {
-          const payload = {
-            scheduleId,
+          const payload: Omit<Course, 'id'> = {
+            schedule_id: scheduleId,
             name: name.trim(),
-            weekday: s.weekday,
-            period: s.period!,
+            day_of_week: s.day_of_week as WeekDay,
+            slot: s.slot as PeriodIndex,
             teacher: teacher.trim(),
-            classroom: s.classroom.trim(),
+            room: s.room.trim(),
             color: DEFAULT_COURSE_COLOR,
-            weekType: s.weekType,
-            note: '',
+            weeks: s.weeks,
+            remark: '',
             ...(contact.trim() ? { contact: contact.trim() } : {}),
           }
-          const created = await createCourse(payload as Omit<Course, 'id'>)
+          const created = await createCourse(payload)
           addCourseToStore(created)
         }
       }
@@ -172,8 +217,9 @@ export default function CourseFormPage() {
   return (
     <View className='page'>
       <ScrollView scrollY className='page-scroll'>
+        {/* 基本信息 */}
         <View className='form-card'>
-          <View className='form-item border-bottom' onClick={() => setShowNameSheet(true)}>
+          <View className='form-item border-bottom' onClick={() => openSheet({ type: 'name' })}>
             <Text className='form-label'>名称</Text>
             <Text className={name ? 'form-value' : 'form-placeholder'}>
               {name || '填写课程名称'}
@@ -203,6 +249,7 @@ export default function CourseFormPage() {
           </View>
         </View>
 
+        {/* 课节列表 */}
         {sections.map((section, index) => (
           <View key={index}>
             <View className='section-header'>
@@ -214,67 +261,46 @@ export default function CourseFormPage() {
               )}
             </View>
             <View className='form-card'>
-              <Picker
-                mode='selector'
-                range={PERIOD_LABELS}
-                value={section.periodIndex}
-                onChange={e => {
-                  const idx = Number(e.detail.value)
-                  updateSection(index, {
-                    periodIndex: idx,
-                    period: (idx + 1) as PeriodIndex,
-                  })
-                }}
+              <View
+                className='form-item border-bottom'
+                onClick={() => openSheet({ type: 'period' })}
               >
-                <View className='form-item border-bottom'>
-                  <Text className='form-label'>节数</Text>
-                  <View className='form-arrow'>
-                    <Text
-                      className={section.period != null ? 'form-value' : 'form-placeholder'}
-                    >
-                      {section.period != null ? PERIOD_LABELS[section.periodIndex] : '请选择'}
-                    </Text>
-                    <Text className='arrow'>›</Text>
-                  </View>
+                <Text className='form-label'>节数</Text>
+                <View className='form-arrow'>
+                  <Text className={section.slot ? 'form-value' : 'form-placeholder'}>
+                    {formatSectionSlot(section) || '请选择'}
+                  </Text>
+                  <Text className='arrow'>›</Text>
                 </View>
-              </Picker>
-              <Picker
-                mode='selector'
-                range={WEEK_TYPE_OPTIONS.map(o => o.label)}
-                value={section.weekTypeIndex}
-                onChange={e => {
-                  const idx = Number(e.detail.value)
-                  updateSection(index, {
-                    weekTypeIndex: idx,
-                    weekType: WEEK_TYPE_OPTIONS[idx].value,
-                  })
-                }}
+              </View>
+              <View
+                className='form-item border-bottom'
+                onClick={() => openSheet({ type: 'week', index })}
               >
-                <View className='form-item border-bottom'>
-                  <Text className='form-label'>周数</Text>
-                  <View className='form-arrow'>
-                    <Text className='form-value'>
-                      {WEEK_TYPE_OPTIONS[section.weekTypeIndex]?.label ?? '请选择'}
-                    </Text>
-                    <Text className='arrow'>›</Text>
-                  </View>
+                <Text className='form-label'>周数</Text>
+                <View className='form-arrow'>
+                  <Text className='form-value'>
+                    {formatWeeksSummary(section.weeks, totalWeeks)}
+                  </Text>
+                  <Text className='arrow'>›</Text>
                 </View>
-              </Picker>
+              </View>
               <View className='form-item'>
                 <Text className='form-label'>教室</Text>
                 <Input
                   className='form-input'
                   placeholder='选填'
                   placeholderClass='form-input-ph'
-                  value={section.classroom}
+                  value={section.room}
                   maxlength={20}
-                  onInput={e => updateSection(index, { classroom: e.detail.value })}
+                  onInput={e => updateSection(index, { room: e.detail.value })}
                 />
               </View>
             </View>
           </View>
         ))}
 
+        {/* 增加课节按钮 */}
         {mode === 'add' && (
           <View className='add-section' onClick={addSection}>
             <Text className='add-section-text'>+增加课节</Text>
@@ -288,14 +314,43 @@ export default function CourseFormPage() {
         </Button>
       </View>
 
-      <CourseNameSheet
-        show={showNameSheet}
-        onClose={() => setShowNameSheet(false)}
-        onSelect={n => {
-          setName(n)
-          setShowNameSheet(false)
-        }}
-      />
+      {mountedSheet?.type === 'name' && (
+        <CourseNameSheet
+          show={shownSheet?.type === 'name'}
+          onClose={closeSheet}
+          onAfterLeave={unmountSheet}
+          onSelect={n => {
+            setName(n)
+            closeSheet()
+          }}
+        />
+      )}
+
+      {mountedSheet?.type === 'period' && (
+        <PeriodGridSheet
+          show={shownSheet?.type === 'period'}
+          periodCount={periodCount}
+          selected={selectedSlots}
+          occupied={getOccupiedForSection()}
+          onClose={closeSheet}
+          onAfterLeave={unmountSheet}
+          onConfirm={handlePeriodGridConfirm}
+        />
+      )}
+
+      {mountedSheet?.type === 'week' && (
+        <WeekPickerSheet
+          show={shownSheet?.type === 'week'}
+          totalWeeks={totalWeeks}
+          selectedWeeks={sections[(mountedSheet as { type: 'week'; index: number }).index]?.weeks || []}
+          onCancel={closeSheet}
+          onAfterLeave={unmountSheet}
+          onConfirm={weeks => {
+            updateSection((mountedSheet as { type: 'week'; index: number }).index, { weeks })
+            closeSheet()
+          }}
+        />
+      )}
     </View>
   )
 }

@@ -50,7 +50,7 @@ export default function CopySchedulePage() {
       setLoading(false);
       Taro.showModal({
         title: '复制失败',
-        content: err.message || '复制失败，请检查口令后再试。（若连续多次失败，系统将限制今日使用。）',
+        content: '复制失败，请检查口令后再试。（若连续多次失败，系统将限制今日使用。）',
         showCancel: false,
         confirmText: '确定'
       });
@@ -94,27 +94,45 @@ export default function CopySchedulePage() {
 
   return (
     <View className="copy-schedule-page">
-      <View className="content">
-        <Text className="title">输入口令，复制好友的课表</Text>
-        <View className="warning-text">⚠️ 老师电话等敏感信息不支持复制</View>
+      <View className="copy-schedule-content">
+        <View className="copy-schedule-icon-wrapper">
+          <Text className="copy-schedule-icon">📋</Text>
+        </View>
         
-        <View className="input-wrap">
-          <Input
-            className="code-input"
-            placeholder="请输入口令"
-            placeholderClass="placeholder-text"
-            value={code}
-            onInput={(e) => setCode(e.detail.value)}
-          />
+        <Text className="copy-schedule-title">复制好友课表</Text>
+        <Text className="copy-schedule-subtitle">
+          输入好友分享的口令，即可一键复制课表内容
+        </Text>
+
+        <View className="copy-schedule-card">
+          <View className="code-input-wrap">
+            <Input
+              className="code-input"
+              placeholder="请输入口令"
+              placeholderClass="text-gray-400"
+              value={code}
+              onInput={(e) => setCode(e.detail.value)}
+            />
+          </View>
+
+          <Button 
+            className={`copy-btn ${
+              !code.trim() || loading 
+                ? 'disabled' 
+                : 'enabled'
+            }`}
+            onClick={handleCopy}
+            disabled={loading || !code.trim()}
+          >
+            {loading ? '校验中...' : '一键复制'}
+          </Button>
         </View>
 
-        <Button 
-          className={`submit-btn ${!code.trim() ? 'submit-btn--disabled' : ''}`}
-          onClick={handleCopy}
-          disabled={loading || !code.trim()}
-        >
-          一键复制
-        </Button>
+        <View className="copy-schedule-notice">
+          <Text className="copy-schedule-notice-text">
+            <Text className="copy-schedule-notice-icon">⚠️</Text> 保护隐私：老师电话等敏感信息不会被复制
+          </Text>
+        </View>
       </View>
     </View>
   );

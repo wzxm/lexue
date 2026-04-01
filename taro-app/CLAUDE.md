@@ -64,7 +64,7 @@ TabBar 三个 tab：`pages/schedule`（课表）/ `pages/tools`（工具）/ `pa
 
 ## 注意事项
 
-- **样式**：页面与组件使用 **Sass（.scss）** 或内联 style，不使用 Tailwind
+- **样式**：使用 **Tailwind CSS** 工具类 + **Sass（.scss）** + 内联 style；Tailwind 配置在 `tailwind.config.js`，通过 PostCSS 集成，`pxtransform` 自动将 `px` 转为 `rpx`
 - **云函数调用**：所有云函数调用必须通过 `cloud.call()`，不要直接用 `Taro.cloud.callFunction`
 - **openid 来源**：云函数身份认证必须从 `cloud.getWXContext().OPENID` 取，严禁从 payload 里传
 - **Snake/Camel case**：后端数据库字段 snake_case，前端 TypeScript 类型 camelCase，API 层负责转换

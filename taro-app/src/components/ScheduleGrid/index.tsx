@@ -18,8 +18,8 @@ function buildGridData(courses: Course[], periodCount: number): (Course | null)[
     grid[p] = new Array(7).fill(null)
   }
   courses.forEach(course => {
-    const pIdx = course.period - 1
-    const wIdx = course.weekday - 1
+    const pIdx = course.slot - 1
+    const wIdx = course.day_of_week - 1
     if (pIdx >= 0 && pIdx < periodCount && wIdx >= 0 && wIdx < 7) {
       grid[pIdx][wIdx] = course
     }

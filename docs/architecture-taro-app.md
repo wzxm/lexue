@@ -14,7 +14,8 @@
 | UI 框架 | React | 18.3 | 组件开发 |
 | 语言 | TypeScript | 5.x | 类型安全 |
 | 状态管理 | Zustand | 5.x | 全局状态（store） |
-| 样式 | Sass (SCSS) | 1.x | 页面/组件级样式与全局 `app.scss` |
+| 样式（工具类） | Tailwind CSS | 3.x | 原子化工具类，`tailwind.config.js` 配置 |
+| 样式（预处理器） | Sass (SCSS) | 1.x | 页面/组件级样式与全局 `app.scss` |
 | 构建工具 | Webpack | 5.91 | 打包 |
 | CI/发布 | miniprogram-ci | 2.x | 上传/预览 |
 
@@ -133,9 +134,11 @@ cloud.call<T>(funcName: string, params: { action: string; payload?: object }): P
 
 ## 样式方案
 
-- **全局样式**：`src/app.scss`（主题变量、通用类等）
+- **Tailwind CSS**：原子化工具类（如 `flex`、`p-4`、`text-red-500`），通过 PostCSS 集成，`pxtransform` 自动将 `px` 转为 `rpx`
+- **全局样式**：`src/app.scss`（Tailwind 指令、主题变量、通用类等）
 - **页面/组件样式**：与页面同名的 `index.scss`
 - **动态样式**：必要时使用内联 `style`（如局部布局、主题色）
+- **Tailwind 配置**：`taro-app/tailwind.config.js`（`preflight` 已关闭，避免与小程序基础样式冲突）
 
 ---
 

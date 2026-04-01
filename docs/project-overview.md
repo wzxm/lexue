@@ -12,7 +12,8 @@
 | UI 框架 | React | 18.x |
 | 语言 | TypeScript | 5.x |
 | 状态管理 | Zustand | 5.x |
-| 样式方案 | Sass (SCSS) | 1.x |
+| 样式方案（工具类） | Tailwind CSS | 3.x |
+| 样式方案（预处理器） | Sass (SCSS) | 1.x |
 | 后端平台 | 微信云开发（云函数 + 云数据库） | - |
 | 云函数运行时 | Node.js | 18+ |
 | 包管理器（前端） | pnpm | - |

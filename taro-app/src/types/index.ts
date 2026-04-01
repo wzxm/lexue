@@ -29,16 +29,16 @@ export interface BackendPeriodConfig {
 
 export interface Course {
   id: string;
-  scheduleId: string;
+  schedule_id: string;
   name: string;
-  weekday: WeekDay;
-  period: PeriodIndex;
+  day_of_week: WeekDay;
+  slot: PeriodIndex;
   teacher?: string;
-  classroom?: string;
-  contact?: string; // 联系方式
+  room?: string;
+  contact?: string;
   color: string;
-  weekType: WeekType;
-  note?: string;
+  weeks: number[];
+  remark?: string;
 }
 
 export interface Schedule {

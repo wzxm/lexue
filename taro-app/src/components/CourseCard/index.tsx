@@ -19,13 +19,13 @@ export default function CourseCard({ course, onTap }: CourseCardProps) {
         <View className='card-main'>
           <Text className='course-name'>{course.name}</Text>
           {course.teacher && <Text className='course-meta'>👤 {course.teacher}</Text>}
-          {course.classroom && <Text className='course-meta'>📍 {course.classroom}</Text>}
+          {course.room && <Text className='course-meta'>📍 {course.room}</Text>}
         </View>
         <View className='card-side'>
-          <Text className='period-badge'>第{course.period}节</Text>
+          <Text className='period-badge'>第{course.slot}节</Text>
         </View>
       </View>
-      {course.note && <Text className='course-note'>{course.note}</Text>}
+      {course.remark && <Text className='course-note'>{course.remark}</Text>}
     </View>
   )
 }

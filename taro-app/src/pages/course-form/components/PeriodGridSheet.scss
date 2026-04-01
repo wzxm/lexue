@@ -1,0 +1,130 @@
+.pg-sheet {
+  background: #fff;
+  border-radius: 24px 24px 0 0;
+  padding: 32px 24px calc(20px + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+
+.pg-sheet__tip {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.pg-sheet__tip-main {
+  display: block;
+  font-size: 32px;
+  font-weight: 600;
+  color: #111;
+  margin-bottom: 8px;
+}
+
+.pg-sheet__tip-sub {
+  display: block;
+  font-size: 24px;
+  color: #ea580c;
+}
+
+.pg-sheet__grid {
+  margin-bottom: 28px;
+}
+
+.pg-sheet__row {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+}
+
+.pg-sheet__corner {
+  width: 80px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid #f0f0f0;
+  border-right: 1px solid #f0f0f0;
+}
+
+.pg-sheet__corner-text {
+  font-size: 24px;
+  color: #999;
+}
+
+.pg-sheet__header-cell {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 64px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.pg-sheet__header-text {
+  font-size: 28px;
+  color: #666;
+  font-weight: 500;
+}
+
+.pg-sheet__period-label {
+  width: 80px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 80px;
+  border-bottom: 1px solid #f0f0f0;
+  border-right: 1px solid #f0f0f0;
+}
+
+.pg-sheet__period-num {
+  font-size: 28px;
+  color: #666;
+}
+
+.pg-sheet__cell {
+  flex: 1;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid #f0f0f0;
+  border-right: 1px solid #f0f0f0;
+  transition: background 0.15s;
+}
+
+.pg-sheet__cell:last-child {
+  border-right: none;
+}
+
+.pg-sheet__cell--selected {
+  background: #07c160;
+}
+
+.pg-sheet__check {
+  font-size: 32px;
+  color: #fff;
+  font-weight: 700;
+}
+
+.pg-sheet__cell--occupied {
+  background: #f0f0f0;
+}
+
+.pg-sheet__footer {
+  padding-top: 8px;
+}
+
+.pg-sheet__btn {
+  width: 100%;
+  height: 96px;
+  border-radius: 48px;
+  background: #07c160;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pg-sheet__btn-text {
+  color: #fff;
+  font-size: 32px;
+  font-weight: 600;
+}

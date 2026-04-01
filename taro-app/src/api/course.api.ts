@@ -24,7 +24,7 @@ export async function deleteCourse(courseId: string): Promise<void> {
 }
 
 export async function batchCreateCourses(scheduleId: string, courses: Omit<Course, 'id'>[]): Promise<BatchCreateResult> {
-  return cloud.call<BatchCreateResult>('course', { action: 'batchCreate', payload: { scheduleId, courses } });
+  return cloud.call<BatchCreateResult>('course', { action: 'batchCreate', payload: { schedule_id: scheduleId, courses } });
 }
 
 export interface CourseNamePreset {
