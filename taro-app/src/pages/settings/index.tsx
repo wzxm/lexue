@@ -4,6 +4,7 @@ import Taro, { useDidHide, useDidShow, useUnload } from '@tarojs/taro'
 import { tabState } from '../../utils/tabState'
 import { ROUTES } from '../../constants/routes'
 import { useAuthStore } from '../../store/auth.store'
+import { getSettingsSummary, type SettingsSummary } from '../../api/auth.api'
 import defaultAvatar from '../../assets/default-avatar.png'
 import './index.scss'
 
@@ -13,28 +14,56 @@ interface MenuRow {
   key: MenuKey
   label: string
   icon: string
-  suffix?: string
 }
 
 const menuRows: MenuRow[] = [
-  { key: 'notify', label: '通知提醒', icon: '\ue759', suffix: '开' },
-  { key: 'family', label: '家人管理', icon: '\ue600', suffix: '5位' },
-  { key: 'scheduleTab', label: '课表管理', icon: '\ue696', suffix: '开' },
-  { key: 'student', label: '展示管理', icon: '\ue706', suffix: '' },
-  { key: 'shareSchedule', label: '分享课表', icon: '\ue729', suffix: '' },
-  { key: 'feedback', label: '意见反馈', icon: '\ue759', suffix: '' },
-  { key: 'recommend', label: '推荐小程序', icon: '\ue729', suffix: '' },
+  { key: 'notify', label: '通知提醒', icon: '\ue759' },
+  { key: 'family', label: '家人管理', icon: '\ue600' },
+  { key: 'scheduleTab', label: '课表管理', icon: '\ue696' },
+  { key: 'student', label: '展示管理', icon: '\ue706' },
+  { key: 'shareSchedule', label: '分享课表', icon: '\ue729' },
+  { key: 'feedback', label: '意见反馈', icon: '\ue759' },
+  { key: 'recommend', label: '推荐小程序', icon: '\ue729' },
 ]
+
+function menuSuffix(row: MenuRow, summary: SettingsSummary | null): string {
+  if (!summary) return ''
+  switch (row.key) {
+    case 'notify':
+      return summary.notifyAnyEnabled ? '开' : '关'
+    case 'family':
+      return `${summary.familyMemberCount}位`
+    case 'scheduleTab':
+      return `${summary.scheduleCount}张`
+    default:
+      return ''
+  }
+}
 
 export default function SettingsPage() {
   const isLoggedIn = useAuthStore(s => s.isLoggedIn)
   const userInfo = useAuthStore(s => s.userInfo)
   const logout = useAuthStore(s => s.logout)
   const [showLogoutSheet, setShowLogoutSheet] = useState(false)
+  const [settingsSummary, setSettingsSummary] = useState<SettingsSummary | null>(null)
+
+  const loadSettingsSummary = async () => {
+    if (!isLoggedIn) {
+      setSettingsSummary(null)
+      return
+    }
+    try {
+      const data = await getSettingsSummary()
+      setSettingsSummary(data)
+    } catch {
+      setSettingsSummary(null)
+    }
+  }
 
   useDidShow(() => {
     tabState.setVisible(true)
     tabState.setSelected(2)
+    loadSettingsSummary()
   })
 
   useDidHide(() => {
@@ -153,7 +182,9 @@ export default function SettingsPage() {
 
         <View className='menu-list'>
         <View className='menu-list-group'>
-          {menuRows.slice(0, 5).map((row) => (
+          {menuRows.slice(0, 5).map((row) => {
+            const suffix = menuSuffix(row, settingsSummary)
+            return (
             <View key={row.key} className='menu-item' onClick={() => onMenu(row)}>
               <View className='menu-item-left'>
                 <View className='menu-icon-wrap'>
@@ -162,15 +193,18 @@ export default function SettingsPage() {
                 <Text className='menu-label'>{row.label}</Text>
               </View>
               <View className='menu-item-right'>
-                {row.suffix ? <Text className='menu-suffix'>{row.suffix}</Text> : null}
+                {suffix ? <Text className='menu-suffix'>{suffix}</Text> : null}
                 <Text className='menu-arrow'>›</Text>
               </View>
             </View>
-          ))}
+            )
+          })}
         </View>
 
         <View className='menu-list-group'>
-          {menuRows.slice(5).map((row) => (
+          {menuRows.slice(5).map((row) => {
+            const suffix = menuSuffix(row, settingsSummary)
+            return (
             <View key={row.key} className='menu-item' onClick={() => onMenu(row)}>
               <View className='menu-item-left'>
                 <View className='menu-icon-wrap'>
@@ -179,11 +213,12 @@ export default function SettingsPage() {
                 <Text className='menu-label'>{row.label}</Text>
               </View>
               <View className='menu-item-right'>
-                {row.suffix ? <Text className='menu-suffix'>{row.suffix}</Text> : null}
+                {suffix ? <Text className='menu-suffix'>{suffix}</Text> : null}
                 <Text className='menu-arrow'>›</Text>
               </View>
             </View>
-          ))}
+            )
+          })}
         </View>
       </View>
 

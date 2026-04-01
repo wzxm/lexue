@@ -15,6 +15,18 @@ const logger = require('../../shared/logger');
 
 const FN = 'auth';
 
+function toUserPayload(user) {
+  return {
+    openId: user.openid,
+    nickname: user.nickname || '',
+    avatarUrl: user.avatar_url || '',
+    settings: user.settings || {
+      notify_enabled: true,
+      notify_advance_minutes: 30,
+    },
+  };
+}
+
 /**
  * 微信登录
  * 从 WXContext 获取 OPENID/UNIONID，查找或创建用户记录
@@ -57,7 +69,7 @@ async function login(openid, unionid) {
     logger.info(FN, 'login:default_student_created', { openid });
   }
 
-  return success(user);
+  return success(toUserPayload(user));
 }
 
 /**
@@ -70,12 +82,73 @@ async function getProfile(openid) {
   if (!user) {
     return fail(ERRORS.NOT_FOUND, '用户不存在');
   }
-  return success(user);
+  return success(toUserPayload(user));
 }
 
 /**
  * 更新用户信息（只允许改 nickname 和 avatar_url）
  */
+/**
+ * 设置页汇总：课表数、家人数、通知是否至少有一处开启（一次查询）
+ */
+async function getSettingsSummary(openid) {
+  logger.info(FN, 'getSettingsSummary', { openid });
+
+  const user = await db.findOne('users', { openid });
+  if (!user) {
+    return fail(ERRORS.NOT_FOUND, '用户不存在');
+  }
+
+  const ownSchedules = await db.getList('schedules', { owner_openid: openid }, {
+    orderBy: { field: 'createTime', direction: 'desc' },
+  });
+  const _ = db.getCommand();
+  const sharedSchedules = await db.getList('schedules', {
+    shared_with: _.elemMatch({ openid }),
+    owner_openid: _.neq(openid),
+  });
+  const allSchedules = [...ownSchedules, ...sharedSchedules];
+  const scheduleCount = allSchedules.length;
+
+  const invited = new Set();
+  for (const sch of allSchedules) {
+    for (const m of sch.shared_with || []) {
+      if (m && m.openid) {
+        invited.add(m.openid);
+      }
+    }
+  }
+  const familyMemberCount = invited.size;
+
+  const settings = user.settings || {};
+  const studentSettings = settings.student_settings || {};
+  const students = await db.getList('students', { owner_openid: openid });
+
+  let notifyAnyEnabled = false;
+  if (settings.notify_enabled === false) {
+    notifyAnyEnabled = false;
+  } else if (students.length === 0) {
+    notifyAnyEnabled = false;
+  } else {
+    for (const st of students) {
+      const sid = st._id;
+      const s = studentSettings[sid] || {};
+      const noon = s.noon_enabled !== undefined ? !!s.noon_enabled : true;
+      const afternoon = s.afternoon_enabled !== undefined ? !!s.afternoon_enabled : true;
+      if (noon || afternoon) {
+        notifyAnyEnabled = true;
+        break;
+      }
+    }
+  }
+
+  return success({
+    scheduleCount,
+    familyMemberCount,
+    notifyAnyEnabled,
+  });
+}
+
 async function updateProfile(openid, payload) {
   logger.info(FN, 'updateProfile', { openid });
 
@@ -117,6 +190,8 @@ exports.main = async (event, context) => {
     switch (action) {
       case 'getProfile':
         return await getProfile(openid);
+      case 'getSettingsSummary':
+        return await getSettingsSummary(openid);
       case 'updateProfile':
         return await updateProfile(openid, payload);
       default:
