@@ -7,6 +7,7 @@ export type PeriodIndex = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
 export type WeekType = 'all' | 'odd' | 'even';
 // 与后端保持一致：owner 单独判断，共享权限为 'edit' | 'view'
 export type FamilyRole = 'owner' | 'edit' | 'view';
+export type ViewMode = 'week' | 'day';
 
 export interface Period {
   index: PeriodIndex;
@@ -58,6 +59,8 @@ export interface Schedule {
   courses: Course[];
   isDefault: boolean;
   is_default?: boolean;
+  viewMode?: ViewMode;
+  view_mode?: string;
   owner_openid?: string;
   shared_with?: any[];
   createdAt: number;

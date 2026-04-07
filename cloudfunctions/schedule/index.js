@@ -159,6 +159,7 @@ async function create(openid, payload) {
     is_default: true,
     shared_with: [], // 初始无共享成员
     remark: payload.remark || '',
+    view_mode: payload.view_mode || 'week',
   });
 
   const schedule = await db.getOne('schedules', _id);
@@ -192,7 +193,7 @@ async function update(openid, payload) {
 
   logger.info(FN, 'update', { openid, scheduleId: payload.scheduleId });
 
-  const allowed = ['name', 'semester', 'remark', 'total_weeks', 'periods', 'period_config'];
+  const allowed = ['name', 'semester', 'remark', 'total_weeks', 'periods', 'period_config', 'view_mode'];
   const updateData = {};
   for (const key of allowed) {
     if (payload[key] !== undefined) updateData[key] = payload[key];
@@ -205,6 +206,10 @@ async function update(openid, payload) {
       return fail(ERRORS.PARAM_ERROR, '本学期周数范围应为1-30');
     }
     updateData.total_weeks = weeks;
+  }
+
+  if (updateData.view_mode && !['week', 'day'].includes(updateData.view_mode)) {
+    return fail(ERRORS.PARAM_ERROR, 'view_mode 必须为 week 或 day');
   }
 
   if (payload.periods !== undefined || payload.period_config !== undefined) {

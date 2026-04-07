@@ -1,4 +1,4 @@
-import { View, Text } from '@tarojs/components'
+import { View, Text, PageContainer } from '@tarojs/components'
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import Taro from '@tarojs/taro'
 import { tabState } from '../../utils/tabState'
@@ -6,7 +6,7 @@ import { useScheduleStore, buildGrid } from '../../store/schedule.store'
 import { useStudentStore } from '../../store/student.store'
 import { useAuthStore } from '../../store/auth.store'
 import { listStudents } from '../../api/student.api'
-import { listSchedules, getSchedule, setDefaultSchedule } from '../../api/schedule.api'
+import { listSchedules, getSchedule, setDefaultSchedule, updateSchedule } from '../../api/schedule.api'
 import { deleteCourse } from '../../api/course.api'
 import { getWeekDates } from '../../utils/date'
 import { ROUTES } from '../../constants/routes'
@@ -45,6 +45,7 @@ export default function SchedulePage () {
   const [showCourseModal, setShowCourseModal] = useState(false)
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null)
   const [showDrawer, setShowDrawer] = useState(false)
+  const [showAddCourseSheet, setShowAddCourseSheet] = useState(false)
 
   const periods = currentSchedule?.periods || DEFAULT_PERIODS
   const today = new Date().toISOString().slice(0, 10)
@@ -220,6 +221,18 @@ export default function SchedulePage () {
     }
   }
 
+  /** 切换视图模式 */
+  const onToggleViewMode = async () => {
+    if (!currentSchedule) return
+    const newMode = currentSchedule.view_mode === 'day' ? 'week' : 'day'
+    try {
+      await updateSchedule(currentSchedule.id, { view_mode: newMode })
+      setCurrentSchedule({ ...currentSchedule, view_mode: newMode, viewMode: newMode })
+    } catch (err: any) {
+      Taro.showToast({ title: err.message || '切换失败', icon: 'none' })
+    }
+  }
+
   /** 添加课程 */
   const onAddCourse = () => {
     if (!isLoggedIn) {
@@ -230,9 +243,8 @@ export default function SchedulePage () {
       Taro.navigateTo({ url: ROUTES.SCHEDULE_FORM })
       return
     }
-    Taro.navigateTo({
-      url: `${ROUTES.COURSE_FORM}?mode=add&scheduleId=${currentSchedule.id}`
-    })
+    tabState.setVisible(false)
+    setShowAddCourseSheet(true)
   }
 
   /** 空状态页面 */
@@ -279,12 +291,16 @@ export default function SchedulePage () {
         }}
       >
         <View className='nav-title-wrap'>
-          <View className='nav-left-icons'>
-            <Text className='header-icon-btn'>📋</Text>
-            <Text className='header-icon-btn' onClick={onAddCourse}>
-              ➕
-            </Text>
-          </View>
+          {hasCourses && (
+            <View className='nav-left-icons'>
+              <Text className='iconfont header-icon-btn' onClick={onToggleViewMode}>
+                {currentSchedule?.view_mode === 'day' ? '\ue606' : '\ue605'}
+              </Text>
+              <Text className='iconfont header-icon-btn' onClick={onAddCourse}>
+                {'\ue604'}
+              </Text>
+            </View>
+          )}
           <View
             className='header-center'
             onClick={openDrawer}
@@ -316,7 +332,7 @@ export default function SchedulePage () {
       />
 
       {!hasCourses ? (
-        <EmptySchedule currentSchedule={currentSchedule} />
+        <EmptySchedule scheduleId={currentSchedule?.id} />
       ) : (
         <ScheduleGrid
           weekNum={weekNum}
@@ -349,6 +365,29 @@ export default function SchedulePage () {
         onManageSchedule={goManageSchedule}
         onManageStudent={goManageStudent}
       />
+
+      {/* 添加课程方式弹窗 */}
+      <PageContainer
+        show={showAddCourseSheet}
+        position='bottom'
+        round
+        zIndex={1000}
+        onClickOverlay={() => setShowAddCourseSheet(false)}
+        onAfterLeave={() => { setShowAddCourseSheet(false); tabState.setVisible(true) }}
+        customStyle='background-color: #F7F7F7;'
+      >
+        <View className='add-course-sheet'>
+          <View className='add-course-sheet-header'>
+            <Text className='add-course-sheet-title'>选择添加课程方式</Text>
+            <Text className='add-course-sheet-close' onClick={() => setShowAddCourseSheet(false)}>×</Text>
+          </View>
+          <EmptySchedule
+            scheduleId={currentSchedule?.id}
+            useRedirect={false}
+            hideTitle
+          />
+        </View>
+      </PageContainer>
     </View>
   )
 }

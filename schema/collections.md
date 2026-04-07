@@ -43,6 +43,7 @@
 | period_config.afternoon_count | number | 是 | 下午课节数（1-6） |
 | period_config.evening_count | number | 是 | 晚上课节数（0-4） |
 | invite_code | string | 是 | 8位唯一邀请码（用于分享课表） |
+| view_mode | string | 否 | 视图模式（'week' \| 'day'，默认 'week'） |
 | is_default | boolean | 是 | 是否为当前显示课表，默认 false，同一学生下只有一个为 true |
 | shared_with | array | 否 | 已共享的用户列表，元素结构见下 |
 | shared_with[].openid | string | 是 | 共享用户的 openid |

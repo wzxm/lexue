@@ -135,6 +135,9 @@
 
 /* ===== 通用列表 ===== */
 .section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
   background: #FFFFFF;
   border-radius: 16px;
   margin: 20px 24px 0;

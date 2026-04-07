@@ -5,6 +5,7 @@ import { createSchedule, updateSchedule } from "../../api/schedule.api";
 import { useStudentStore } from "../../store/student.store";
 import { useScheduleStore } from "../../store/schedule.store";
 import { ROUTES } from "../../constants/routes";
+import EmptySchedule from "../schedule/components/EmptySchedule";
 import { getSemesterOptions, getCurrentSemester } from "../../utils/date";
 import type { Schedule, Period, PeriodIndex } from "../../types/index";
 import "./index.scss";
@@ -239,6 +240,8 @@ export default function ScheduleFormPage() {
         },
         period_config: buildPeriodConfig(),
         courses: [],
+        viewMode: 'week',
+        view_mode: 'week',
         isDefault: (r.is_default ?? false) as boolean,
         createdAt: Date.now(),
         updatedAt: Date.now(),
@@ -441,51 +444,11 @@ export default function ScheduleFormPage() {
       </PageContainer>
 
       {step === 2 && (
-        <>
-          <Text className="step2-title">选择添加课程方式</Text>
-          <View className="section">
-            <View className="list-item" onClick={() => Taro.showToast({ title: "功能开发中", icon: "none" })}>
-              <Text className="list-label">照片</Text>
-              <View className="list-right">
-                <Text className="list-value list-value--tag">OCR识别</Text>
-                <Text className="list-arrow">›</Text>
-              </View>
-            </View>
-            <View className="divider" />
-            <View className="list-item" onClick={() => Taro.showToast({ title: "功能开发中", icon: "none" })}>
-              <Text className="list-label">Excel</Text>
-              <View className="list-right">
-                <Text className="list-value list-value--tag">AI识别</Text>
-                <Text className="list-arrow">›</Text>
-              </View>
-            </View>
-            <View className="divider" />
-            <View className="list-item" onClick={() => Taro.navigateTo({ url: ROUTES.COPY_SCHEDULE })}>
-              <Text className="list-label">复制课表</Text>
-              <View className="list-right">
-                <Text className="list-value list-value--tag">输入口令复制</Text>
-                <Text className="list-arrow">›</Text>
-              </View>
-            </View>
-            <View className="divider" />
-            <View
-              className="list-item"
-              onClick={() => {
-                if (currentScheduleId) Taro.redirectTo({ url: `${ROUTES.COURSE_FORM}?mode=add&scheduleId=${currentScheduleId}` });
-              }}
-            >
-              <Text className="list-label">手动添加课程</Text>
-              <View className="list-right">
-                <Text className="list-arrow">›</Text>
-              </View>
-            </View>
-          </View>
-          <View className="step2-footer">
-            <Text className="add-later-text" onClick={() => Taro.navigateBack()}>
-              稍后再添加
-            </Text>
-          </View>
-        </>
+        <EmptySchedule
+          scheduleId={currentScheduleId ?? undefined}
+          useRedirect
+          onAddLater={() => Taro.navigateBack()}
+        />
       )}
     </View>
   );
