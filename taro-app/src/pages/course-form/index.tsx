@@ -1,9 +1,10 @@
 import { View, Text, Input, Button, ScrollView } from '@tarojs/components'
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import Taro, { useRouter } from '@tarojs/taro'
-import { createCourse, updateCourse } from '../../api/course.api'
+import { createCourse, updateCourse, listCourses } from '../../api/course.api'
 import { useScheduleStore } from '../../store/schedule.store'
 import type { WeekDay, PeriodIndex, Course } from '../../types/index'
+import { resolveCourseId } from '../../utils/courseId'
 import CourseNameSheet from './components/CourseNameSheet'
 import PeriodGridSheet, { type SlotSelection } from './components/PeriodGridSheet'
 import WeekPickerSheet from './components/WeekPickerSheet'
@@ -47,7 +48,11 @@ export default function CourseFormPage() {
   const occupiedSlots: SlotSelection[] = useMemo(() => {
     if (!currentSchedule) return []
     return currentSchedule.courses
-      .filter(c => mode === 'edit' ? c.id !== routeCourseId : true)
+      .filter(c =>
+        mode === 'edit'
+          ? resolveCourseId(c) !== String(routeCourseId)
+          : true
+      )
       .map(c => ({ day_of_week: c.day_of_week, slot: c.slot }))
   }, [currentSchedule, mode, routeCourseId])
 
@@ -85,26 +90,60 @@ export default function CourseFormPage() {
   const closeSheet = () => setShownSheet(null)
   const unmountSheet = () => setMountedSheet(null)
 
+  /** 编辑页：仅在首次拿到课程数据时回填，避免 [] 依赖导致挂载时 store 尚未就绪而无法回显 */
+  const editHydratedCourseIdRef = useRef<string | null>(null)
+
   useEffect(() => {
-    if (mode === 'edit' && routeCourseId) {
-      const course = currentSchedule?.courses.find(c => c.id === routeCourseId)
-      if (course) {
-        setName(course.name)
-        setTeacher(course.teacher || '')
-        setContact(course.contact || '')
-        setSections([{
-          day_of_week: course.day_of_week,
-          slot: course.slot,
-          weeks: course.weeks || [],
-          room: course.room || '',
-        }])
-        setScheduleId(course.schedule_id)
-      }
-      Taro.setNavigationBarTitle({ title: '修改课程' })
-    } else {
-      Taro.setNavigationBarTitle({ title: '添加课程' })
+    Taro.setNavigationBarTitle({ title: mode === 'edit' ? '修改课程' : '添加课程' })
+  }, [mode])
+
+  useEffect(() => {
+    if (mode !== 'edit' || !routeCourseId) {
+      editHydratedCourseIdRef.current = null
+      return
     }
-  }, [])
+
+    const matchRoute = (c: Course & { _id?: string }) =>
+      resolveCourseId(c) === String(routeCourseId)
+
+    const tryApply = (course: Course) => {
+      if (editHydratedCourseIdRef.current === routeCourseId) return
+      editHydratedCourseIdRef.current = routeCourseId
+
+      setName(course.name)
+      setTeacher(course.teacher || '')
+      setContact(course.contact || '')
+      setSections([{
+        day_of_week: course.day_of_week,
+        slot: course.slot,
+        weeks: course.weeks || [],
+        room: course.room || '',
+      }])
+      setScheduleId(course.schedule_id)
+    }
+
+    const fromStore = currentSchedule?.courses.find(matchRoute)
+    if (fromStore) {
+      tryApply(fromStore)
+      return
+    }
+
+    const sid = routeScheduleId || currentSchedule?.id
+    if (!sid) return
+
+    let cancelled = false
+    listCourses(sid)
+      .then(courses => {
+        if (cancelled) return
+        const c = courses.find(x => matchRoute(x))
+        if (c) tryApply(c)
+      })
+      .catch(() => {})
+
+    return () => {
+      cancelled = true
+    }
+  }, [mode, routeCourseId, currentSchedule, routeScheduleId])
 
   const updateSection = (index: number, patch: Partial<Section>) => {
     setSections(prev => prev.map((s, i) => (i === index ? { ...s, ...patch } : s)))
@@ -172,7 +211,9 @@ export default function CourseFormPage() {
     try {
       if (mode === 'edit' && routeCourseId) {
         const s = sections[0]
-        const existing = currentSchedule?.courses.find(c => c.id === routeCourseId)
+        const existing = currentSchedule?.courses.find(
+          c => resolveCourseId(c) === String(routeCourseId)
+        )
         const base: Partial<Course> = {
           name: name.trim(),
           day_of_week: s.day_of_week as WeekDay,
@@ -306,11 +347,14 @@ export default function CourseFormPage() {
             <Text className='add-section-text'>+增加课节</Text>
           </View>
         )}
+
+        {/* 底部留白，防止内容被 fixed footer 遮挡 */}
+        <View className='scroll-bottom-spacer' />
       </ScrollView>
 
       <View className='footer'>
         <Button className='save-btn' onClick={onSave} loading={loading} disabled={loading}>
-          保存
+          {loading ? '' : '保存'}
         </Button>
       </View>
 

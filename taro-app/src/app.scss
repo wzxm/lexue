@@ -1,15 +1,30 @@
 @use './styles/iconfont';
-/* CSS 变量 — 主题色 */
+/* CSS 变量 — MiniMax 蓝色设计系统 */
 page {
-  --color-primary: #07C160;
-  --color-primary-light: #E8F5E9;
-  --color-bg: #F5F5F5;
-  --color-card: #FFFFFF;
-  --color-text-main: #333333;
-  --color-text-sub: #666666;
-  --color-text-gray: #999999;
-  --color-border: #EEEEEE;
-  --color-danger: #FF5252;
+  /* 品牌蓝 */
+  --color-primary: #3b82f6;       /* primary-500，主要动作色 */
+  --color-primary-brand: #1456f0; /* brand-6，品牌深蓝 */
+  --color-primary-hover: #2563eb; /* primary-600，hover 态 */
+  --color-primary-light: #bfdbfe; /* primary-200，淡蓝背景 */
+  --color-primary-subtle: #eff6ff; /* 极淡蓝底（标签、today 等） */
+  /* 页面层 */
+  --color-bg: #f2f3f5;            /* 页面灰底 */
+  --color-card: #ffffff;          /* 卡片白 */
+  /* 文字 */
+  --color-text-main: #222222;     /* 主文案 */
+  --color-text-sub: #45515e;      /* 次级文案 */
+  --color-text-gray: #8e8e93;     /* 辅助文案 */
+  /* 边框 */
+  --color-border: #e5e7eb;        /* 组件边框 */
+  --color-border-light: #f2f3f5;  /* 分割线 */
+  /* 语义色 */
+  --color-danger: #ef4444;
+  /* 按钮 */
+  --color-dark-btn: #181e25;      /* 深色主 CTA */
+  /* 阴影 */
+  --shadow-card: rgba(0, 0, 0, 0.08) 0px 4px 6px;
+  --shadow-brand: rgba(44, 30, 116, 0.16) 0px 0px 15px;
+  --shadow-elevated: rgba(36, 36, 36, 0.08) 0px 12px 16px -4px;
 
   background-color: var(--color-bg);
   color: var(--color-text-main);
@@ -24,18 +39,19 @@ page {
 /* 通用卡片 */
 .card {
   background: var(--color-card);
-  border-radius: 16px;
+  border-radius: 20px;
   padding: 24px;
+  box-shadow: var(--shadow-card);
 }
 
-/* 通用按钮 */
+/* 通用按钮 — 深色主 CTA（MiniMax Pill Primary Dark 风格） */
 .btn-primary {
-  background: var(--color-primary);
-  color: #FFFFFF;
-  border-radius: 48px;
+  background: var(--color-dark-btn);
+  color: #ffffff;
+  border-radius: 16px;
   text-align: center;
   font-size: 32px;
-  font-weight: 500;
+  font-weight: 600;
   padding: 24px 0;
   border: none;
 }
@@ -45,7 +61,7 @@ page {
   background: transparent;
   color: var(--color-primary);
   border: 2px solid var(--color-primary);
-  border-radius: 48px;
+  border-radius: 16px;
   text-align: center;
   font-size: 32px;
   padding: 24px 0;

@@ -61,7 +61,7 @@ export default function ShareSchedulePage() {
       title: '',
       content: '更换新口令后，旧口令将无法复制课表，确认继续？',
       confirmText: '更换',
-      confirmColor: '#07c160',
+      confirmColor: '#3b82f6',
       cancelText: '取消',
       cancelColor: '#000000',
       success: async (res) => {

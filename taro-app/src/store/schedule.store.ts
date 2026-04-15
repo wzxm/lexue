@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import type { Schedule, Course, ScheduleGrid } from '../types/index'
 import { PERIOD_COUNT, WEEKDAY_COUNT } from '../constants/periods'
 import { saveSchedule, loadSchedule } from '../utils/storage'
+import { resolveCourseId } from '../utils/courseId'
 
 interface ScheduleState {
   schedules: Schedule[]
@@ -84,7 +85,9 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
     if (!currentSchedule) return
     const newSchedule = {
       ...currentSchedule,
-      courses: currentSchedule.courses.map(c => c.id === updated.id ? updated : c),
+      courses: currentSchedule.courses.map(c =>
+        resolveCourseId(c) === resolveCourseId(updated) ? updated : c
+      ),
     }
     saveSchedule(newSchedule.id, newSchedule)
     set({ currentSchedule: newSchedule })
@@ -95,7 +98,7 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
     if (!currentSchedule) return
     const newSchedule = {
       ...currentSchedule,
-      courses: currentSchedule.courses.filter(c => c.id !== courseId),
+      courses: currentSchedule.courses.filter(c => resolveCourseId(c) !== courseId),
     }
     saveSchedule(newSchedule.id, newSchedule)
     set({ currentSchedule: newSchedule })

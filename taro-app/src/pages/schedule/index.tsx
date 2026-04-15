@@ -6,10 +6,16 @@ import { useScheduleStore, buildGrid } from '../../store/schedule.store'
 import { useStudentStore } from '../../store/student.store'
 import { useAuthStore } from '../../store/auth.store'
 import { listStudents } from '../../api/student.api'
-import { listSchedules, getSchedule, setDefaultSchedule, updateSchedule } from '../../api/schedule.api'
+import {
+  listSchedules,
+  getSchedule,
+  setDefaultSchedule,
+  updateSchedule
+} from '../../api/schedule.api'
 import { deleteCourse } from '../../api/course.api'
-import { getWeekDates } from '../../utils/date'
+import { getWeekDates, getCurrentWeekOffset } from '../../utils/date'
 import { ROUTES } from '../../constants/routes'
+import { resolveCourseId } from '../../utils/courseId'
 import { groupSchedulesByStudent } from '../../utils/groupSchedulesByStudent'
 import ScheduleSwitchDrawer from '../../components/ScheduleSwitchDrawer'
 import { DEFAULT_PERIODS } from '../../constants/periods'
@@ -21,6 +27,7 @@ import type {
 import EmptyState from './components/EmptyState'
 import EmptySchedule from './components/EmptySchedule'
 import ScheduleGrid from './components/ScheduleGrid'
+import ScheduleDayList from './components/ScheduleDayList'
 import CourseModal from './components/CourseModal'
 
 import './index.scss'
@@ -46,6 +53,16 @@ export default function SchedulePage () {
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null)
   const [showDrawer, setShowDrawer] = useState(false)
   const [showAddCourseSheet, setShowAddCourseSheet] = useState(false)
+  const [selectedDayIndex, setSelectedDayIndex] = useState(0)
+
+  /** 课程详情弹层打开时隐藏底部自定义 TabBar，关闭或卸载时恢复 */
+  useEffect(() => {
+    if (!showCourseModal) return
+    tabState.setVisible(false)
+    return () => {
+      tabState.setVisible(true)
+    }
+  }, [showCourseModal])
 
   const periods = currentSchedule?.periods || DEFAULT_PERIODS
   const today = new Date().toISOString().slice(0, 10)
@@ -54,6 +71,15 @@ export default function SchedulePage () {
     () => groupSchedulesByStudent(schedules, students),
     [schedules, students]
   )
+
+  /** 根据课表 start_date 算出当前周 offset，clamp 到 [0, totalWeeks-1] */
+  const calcInitialOffset = (schedule: typeof currentSchedule): number => {
+    const startDate = schedule?.start_date || schedule?.startDate
+    if (!startDate) return 0 // 没有开学日则默认第1周
+    const totalWeeks = schedule?.total_weeks || schedule?.totalWeeks || 20
+    const offset = getCurrentWeekOffset(startDate)
+    return Math.max(0, Math.min(offset, totalWeeks - 1))
+  }
 
   const goLogin = () => {
     Taro.navigateTo({ url: ROUTES.LOGIN })
@@ -71,7 +97,7 @@ export default function SchedulePage () {
     setShowDrawer(false)
   }
 
-  const handleSelectSchedule = async (schedule: (typeof schedules)[0]) => {
+  const handleSelectSchedule = async (schedule: typeof schedules[0]) => {
     if (currentSchedule?.id === schedule.id) {
       closeDrawer()
       return
@@ -89,6 +115,7 @@ export default function SchedulePage () {
         await setDefaultSchedule(schedule.id)
       }
       setCurrentSchedule(full)
+      setWeekOffset(calcInitialOffset(full))
       closeDrawer()
     } catch (err: any) {
       Taro.showToast({ title: err?.message || '切换失败', icon: 'none' })
@@ -117,12 +144,22 @@ export default function SchedulePage () {
   const syncView = useCallback(() => {
     const offset = useScheduleStore.getState().weekOffset
     const schedule = useScheduleStore.getState().currentSchedule
-    const dates = getWeekDates(offset)
+    const startDate = schedule?.start_date || schedule?.startDate
+    // 有开学日时以开学周为锚点，保证日历日期和周序号对齐
+    const dates = getWeekDates(offset, startDate)
     const num = Math.abs(offset) + 1
+    const todayStr = new Date().toISOString().slice(0, 10)
+    const todayIdx = dates.indexOf(todayStr)
 
     setGrid(buildGrid(schedule, offset))
     setWeekDates(dates)
     setWeekNum(num)
+    // 切换到日视图时，默认定位到今天（若今天在当前周内），否则周一
+    setSelectedDayIndex(prev => {
+      // 如果是首次加载（prev === 0）且今天在本周，定位到今天
+      if (todayIdx >= 0) return todayIdx
+      return prev
+    })
   }, [])
 
   /** 页面初始化 */
@@ -161,6 +198,7 @@ export default function SchedulePage () {
       if (defaultSchedule) {
         const full = await getSchedule(defaultSchedule.id)
         setCurrentSchedule(full)
+        setWeekOffset(calcInitialOffset(full))
       } else {
         setCurrentSchedule(null)
       }
@@ -196,9 +234,15 @@ export default function SchedulePage () {
   /** 编辑课程 */
   const onEditCourse = () => {
     if (!selectedCourse) return
+    const cid = resolveCourseId(selectedCourse)
+    if (!cid) {
+      Taro.showToast({ title: '课程数据异常', icon: 'none' })
+      return
+    }
     setShowCourseModal(false)
+    const sid = currentSchedule?.id || selectedCourse.schedule_id
     Taro.navigateTo({
-      url: `${ROUTES.COURSE_FORM}?mode=edit&courseId=${selectedCourse.id}`
+      url: `${ROUTES.COURSE_FORM}?mode=edit&courseId=${encodeURIComponent(cid)}&scheduleId=${encodeURIComponent(sid)}`
     })
   }
 
@@ -211,8 +255,13 @@ export default function SchedulePage () {
     })
     if (!confirm) return
     try {
-      await deleteCourse(selectedCourse.id)
-      removeCourseFromStore(selectedCourse.id)
+      const cid = resolveCourseId(selectedCourse)
+      if (!cid) {
+        Taro.showToast({ title: '课程数据异常', icon: 'none' })
+        return
+      }
+      await deleteCourse(cid)
+      removeCourseFromStore(cid)
       setShowCourseModal(false)
       setSelectedCourse(null)
       Taro.showToast({ title: '已删除' })
@@ -221,16 +270,26 @@ export default function SchedulePage () {
     }
   }
 
-  /** 切换视图模式 */
-  const onToggleViewMode = async () => {
+  /** 切换视图模式（乐观更新：先切本地，后台异步持久化） */
+  const onToggleViewMode = () => {
     if (!currentSchedule) return
-    const newMode = currentSchedule.view_mode === 'day' ? 'week' : 'day'
-    try {
-      await updateSchedule(currentSchedule.id, { view_mode: newMode })
-      setCurrentSchedule({ ...currentSchedule, view_mode: newMode, viewMode: newMode })
-    } catch (err: any) {
+    const prevMode = currentSchedule.view_mode === 'day' ? 'day' : 'week'
+    const newMode = prevMode === 'day' ? 'week' : 'day'
+    // 立即切换，不等网络
+    setCurrentSchedule({
+      ...currentSchedule,
+      view_mode: newMode,
+      viewMode: newMode
+    })
+    // 后台持久化，失败回滚
+    updateSchedule(currentSchedule.id, { view_mode: newMode }).catch((err: any) => {
+      setCurrentSchedule({
+        ...currentSchedule,
+        view_mode: prevMode,
+        viewMode: prevMode
+      })
       Taro.showToast({ title: err.message || '切换失败', icon: 'none' })
-    }
+    })
   }
 
   /** 添加课程 */
@@ -293,7 +352,10 @@ export default function SchedulePage () {
         <View className='nav-title-wrap'>
           {hasCourses && (
             <View className='nav-left-icons'>
-              <Text className='iconfont header-icon-btn' onClick={onToggleViewMode}>
+              <Text
+                className='iconfont header-icon-btn'
+                onClick={onToggleViewMode}
+              >
                 {currentSchedule?.view_mode === 'day' ? '\ue606' : '\ue605'}
               </Text>
               <Text className='iconfont header-icon-btn' onClick={onAddCourse}>
@@ -333,8 +395,9 @@ export default function SchedulePage () {
 
       {!hasCourses ? (
         <EmptySchedule scheduleId={currentSchedule?.id} />
-      ) : (
-        <ScheduleGrid
+      ) : currentSchedule?.view_mode === 'day' ? (
+        <ScheduleDayList
+          key='day'
           weekNum={weekNum}
           weekDates={weekDates}
           today={today}
@@ -343,51 +406,84 @@ export default function SchedulePage () {
           setWeekOffset={setWeekOffset}
           onTapCourse={onTapCourse}
           onTapEmpty={onTapEmpty}
+          selectedDayIndex={selectedDayIndex}
+          setSelectedDayIndex={setSelectedDayIndex}
+        />
+      ) : (
+        <ScheduleGrid
+          key='week'
+          weekNum={weekNum}
+          weekDates={weekDates}
+          today={today}
+          periods={periods}
+          grid={grid}
+          totalWeeks={
+            currentSchedule?.total_weeks || currentSchedule?.totalWeeks || 20
+          }
+          startDate={currentSchedule?.start_date || currentSchedule?.startDate}
+          setWeekOffset={setWeekOffset}
+          onTapCourse={onTapCourse}
+          onTapEmpty={onTapEmpty}
         />
       )}
 
       {/* 课程详情 Modal */}
-      <CourseModal
-        selectedCourse={selectedCourse}
-        showCourseModal={showCourseModal}
-        setShowCourseModal={setShowCourseModal}
-        onEditCourse={onEditCourse}
-        onDeleteCourse={onDeleteCourse}
-      />
+      {showCourseModal && (
+        <CourseModal
+          selectedCourse={selectedCourse}
+          showCourseModal={showCourseModal}
+          setShowCourseModal={setShowCourseModal}
+          onEditCourse={onEditCourse}
+          onDeleteCourse={onDeleteCourse}
+        />
+      )}
 
-      <ScheduleSwitchDrawer
-        visible={showDrawer}
-        onClose={closeDrawer}
-        schedules={schedules}
-        groupedSchedules={groupedSchedules}
-        currentScheduleId={currentSchedule?.id}
-        onSelectSchedule={handleSelectSchedule}
-        onManageSchedule={goManageSchedule}
-        onManageStudent={goManageStudent}
-      />
+      {/* 课表切换抽屉 */}
+      {showDrawer && (
+        <ScheduleSwitchDrawer
+          visible={showDrawer}
+          onClose={closeDrawer}
+          schedules={schedules}
+          groupedSchedules={groupedSchedules}
+          currentScheduleId={currentSchedule?.id}
+          onSelectSchedule={handleSelectSchedule}
+          onManageSchedule={goManageSchedule}
+          onManageStudent={goManageStudent}
+        />
+      )}
 
       {/* 添加课程方式弹窗 */}
-      <PageContainer
-        show={showAddCourseSheet}
-        position='bottom'
-        round
-        zIndex={1000}
-        onClickOverlay={() => setShowAddCourseSheet(false)}
-        onAfterLeave={() => { setShowAddCourseSheet(false); tabState.setVisible(true) }}
-        customStyle='background-color: #F7F7F7;'
-      >
-        <View className='add-course-sheet'>
-          <View className='add-course-sheet-header'>
-            <Text className='add-course-sheet-title'>选择添加课程方式</Text>
-            <Text className='add-course-sheet-close' onClick={() => setShowAddCourseSheet(false)}>×</Text>
+      {showAddCourseSheet && (
+        <PageContainer
+          show={showAddCourseSheet}
+          position='bottom'
+          round
+          zIndex={1000}
+          onClickOverlay={() => setShowAddCourseSheet(false)}
+          onAfterLeave={() => {
+            setShowAddCourseSheet(false)
+            tabState.setVisible(true)
+          }}
+          customStyle='background-color: #F7F7F7;'
+        >
+          <View className='add-course-sheet'>
+            <View className='add-course-sheet-header'>
+              <Text className='add-course-sheet-title'>选择添加课程方式</Text>
+              <Text
+                className='add-course-sheet-close'
+                onClick={() => setShowAddCourseSheet(false)}
+              >
+                ×
+              </Text>
+            </View>
+            <EmptySchedule
+              scheduleId={currentSchedule?.id}
+              useRedirect={false}
+              hideTitle
+            />
           </View>
-          <EmptySchedule
-            scheduleId={currentSchedule?.id}
-            useRedirect={false}
-            hideTitle
-          />
-        </View>
-      </PageContainer>
+        </PageContainer>
+      )}
     </View>
   )
 }

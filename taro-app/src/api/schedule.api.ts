@@ -14,6 +14,7 @@ export async function createSchedule(data: {
   name: string;
   semester: string;
   totalWeeks?: number;
+  startDate?: string;
   periods?: Period[];
   periodConfig?: PeriodConfig;
 }): Promise<Schedule> {
@@ -23,6 +24,7 @@ export async function createSchedule(data: {
   };
   if (data.studentId) payload.student_id = data.studentId;
   if (data.totalWeeks) payload.total_weeks = data.totalWeeks;
+  if (data.startDate) payload.start_date = data.startDate;
   if (data.periods) payload.periods = data.periods;
   if (data.periodConfig) {
     payload.period_config = {

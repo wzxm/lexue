@@ -90,11 +90,11 @@ export default function ScheduleDayList({
             }
 
             const bgColor = isCurrentWeek 
-              ? (course?.color?.startsWith('#') ? `${course.color}1A` : (course?.color === 'red' ? '#FFEBEB' : '#E8F5E9'))
+              ? (course?.color?.startsWith('#') ? `${course.color}1A` : (course?.color === 'red' ? '#FFEBEB' : '#eff6ff'))
               : '#EFEFEF'
               
             const borderColor = isCurrentWeek
-              ? (course?.color?.startsWith('#') ? course.color : (course?.color === 'red' ? '#FF4D4F' : '#07C160'))
+              ? (course?.color?.startsWith('#') ? course.color : (course?.color === 'red' ? '#FF4D4F' : '#3b82f6'))
               : '#CCCCCC'
 
             const titleColor = isCurrentWeek ? '#333333' : '#999999'

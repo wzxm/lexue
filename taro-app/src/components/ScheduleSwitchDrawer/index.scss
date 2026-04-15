@@ -34,7 +34,7 @@
   height: 100%;
   background: linear-gradient(
       180deg,
-      rgba(7, 193, 96, 0.2) -3.08%,
+      rgba(59, 130, 246, 0.15) -3.08%,
       rgba(255, 255, 255, 0) 45.61%
     ),
     var(--background-page-default, #fff);
@@ -56,8 +56,8 @@
   align-items: stretch;
   background: linear-gradient(
     180deg,
-    rgba(7, 193, 96, 0.15) 0%,
-    rgba(7, 193, 96, 0.02) 100%
+    rgba(59, 130, 246, 0.12) 0%,
+    rgba(59, 130, 246, 0.01) 100%
   );
   padding-bottom: 24px;
 }
@@ -150,13 +150,13 @@
 }
 
 .ssd-schedule-name--active {
-  color: #07c160;
+  color: #3b82f6;
   font-weight: bold;
 }
 
 .ssd-check-icon {
   font-size: 28px;
-  color: #07c160;
+  color: #3b82f6;
   font-weight: bold;
 }
 
@@ -176,10 +176,10 @@
 
 .ssd-manage-icon {
   font-size: 32px;
-  color: #07c160;
+  color: #3b82f6;
 }
 
 .ssd-manage-text {
   font-size: 28px;
-  color: #07c160;
+  color: #3b82f6;
 }

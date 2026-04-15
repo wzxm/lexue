@@ -63,6 +63,7 @@ export default function ScheduleFormPage() {
   const setCurrentSchedule = useScheduleStore((s) => s.setCurrentSchedule);
 
   const [semesterIndex, setSemesterIndex] = useState(DEFAULT_SEMESTER_INDEX);
+  const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10));
   const [totalWeeks, setTotalWeeks] = useState(20);
   const [weekPickerIndex, setWeekPickerIndex] = useState(19);
   const [studentIndex, setStudentIndex] = useState(0); // 列表已按 createTime desc 排序，第一个就是最新
@@ -97,6 +98,9 @@ export default function ScheduleFormPage() {
       const idx = students.findIndex((s) => s.id === studentId);
       if (idx >= 0) setStudentIndex(idx);
     }
+
+    const sd = target.start_date || target.startDate || "";
+    if (sd) setStartDate(sd);
 
     const weeks = target.total_weeks || target.totalWeeks || 20;
     const safeWeeks = clamp(weeks, 1, 30);
@@ -141,6 +145,11 @@ export default function ScheduleFormPage() {
   });
 
   const onSave = async () => {
+    if (!startDate) {
+      Taro.showToast({ title: '请选择开学日期', icon: 'none' });
+      return;
+    }
+
     const semester = SEMESTER_OPTIONS[semesterIndex];
     const student = students.length > 0 ? students[studentIndex] : null;
     const scheduleName = `${semester.label}课表`;
@@ -152,6 +161,7 @@ export default function ScheduleFormPage() {
         const updatePayload: Partial<Schedule> = {
           name: scheduleName,
           semester: semester.value,
+          start_date: startDate,
           total_weeks: totalWeeks,
           periods: buildPeriods(),
           period_config: buildPeriodConfig(),
@@ -168,6 +178,8 @@ export default function ScheduleFormPage() {
             ...s,
             name: scheduleName,
             semester: semester.value,
+            start_date: startDate,
+            startDate,
             student_id: student?.id || s.student_id,
             studentId: student?.id || s.studentId,
             total_weeks: totalWeeks,
@@ -189,6 +201,8 @@ export default function ScheduleFormPage() {
             ...currentSchedule,
             name: scheduleName,
             semester: semester.value,
+            start_date: startDate,
+            startDate,
             student_id: student?.id || currentSchedule.student_id,
             studentId: student?.id || currentSchedule.studentId,
             total_weeks: totalWeeks,
@@ -215,6 +229,7 @@ export default function ScheduleFormPage() {
         name: `${semester.label}课表`,
         semester: semester.value,
         totalWeeks,
+        startDate,
         periods: buildPeriods(),
         periodConfig: {
           morningCount,
@@ -228,6 +243,8 @@ export default function ScheduleFormPage() {
         studentId: (r.student_id || student?.id || "") as string,
         name: (r.name || `${semester.label}课表`) as string,
         semester: (r.semester || semester.value) as string,
+        start_date: ((r.start_date || startDate) as string) || undefined,
+        startDate: ((r.start_date || startDate) as string) || undefined,
         total_weeks: (r.total_weeks || totalWeeks) as number,
         totalWeeks: (r.total_weeks || totalWeeks) as number,
         invite_code: (r.invite_code || '') as string,
@@ -341,6 +358,23 @@ export default function ScheduleFormPage() {
                 <Text className="list-label">选择学年</Text>
                 <View className="list-right">
                   <Text className="list-value">{SEMESTER_LABELS[semesterIndex]}</Text>
+                  <Text className="list-arrow">›</Text>
+                </View>
+              </View>
+            </Picker>
+          </View>
+
+          {/* 开学日期 */}
+          <View className="section">
+            <Picker
+              mode="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.detail.value as string)}
+            >
+              <View className="list-item">
+                <Text className="list-label">开学日期</Text>
+                <View className="list-right">
+                  <Text className="list-value">{startDate || '请选择'}</Text>
                   <Text className="list-arrow">›</Text>
                 </View>
               </View>

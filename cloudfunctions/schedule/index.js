@@ -72,6 +72,19 @@ function validatePeriodShape(periods, periodConfig) {
   }
 }
 
+function validateStartDate(startDate) {
+  if (!startDate || typeof startDate !== 'string') {
+    throw fail(ERRORS.PARAM_ERROR, '开学日期不能为空');
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate)) {
+    throw fail(ERRORS.PARAM_ERROR, '开学日期格式不合法（YYYY-MM-DD）');
+  }
+  const d = new Date(startDate);
+  if (isNaN(d.getTime())) {
+    throw fail(ERRORS.PARAM_ERROR, '开学日期不是有效日期');
+  }
+}
+
 function generateInviteCode() {
   let code = '';
   for (let i = 0; i < INVITE_CODE_LENGTH; i++) {
@@ -122,7 +135,7 @@ async function list(openid) {
  * 创建课表
  */
 async function create(openid, payload) {
-  validator.requireFields(payload, ['student_id', 'name', 'semester', 'periods', 'period_config']);
+  validator.requireFields(payload, ['student_id', 'name', 'semester', 'periods', 'period_config', 'start_date']);
   validator.maxLength(payload.name, 50, '课表名称');
   validator.maxLength(payload.semester, 20, '学期');
 
@@ -146,6 +159,7 @@ async function create(openid, payload) {
   }
 
   validatePeriodShape(payload.periods, payload.period_config);
+  validateStartDate(payload.start_date);
 
   const { _id } = await db.create('schedules', {
     owner_openid: openid,
@@ -160,6 +174,7 @@ async function create(openid, payload) {
     shared_with: [], // 初始无共享成员
     remark: payload.remark || '',
     view_mode: payload.view_mode || 'week',
+    start_date: payload.start_date,
   });
 
   const schedule = await db.getOne('schedules', _id);
@@ -179,8 +194,10 @@ async function get(openid, payload) {
   const courses = await db.getList('courses', { schedule_id: payload.scheduleId }, {
     orderBy: { field: 'day_of_week', direction: 'asc' },
   });
+  // 与 course.list 一致：文档仅有 _id，前端统一使用 id
+  const coursesNormalized = courses.map((c) => ({ ...c, id: c._id }));
 
-  return success({ ...schedule, id: schedule._id, courses });
+  return success({ ...schedule, id: schedule._id, courses: coursesNormalized });
 }
 
 /**
@@ -193,7 +210,7 @@ async function update(openid, payload) {
 
   logger.info(FN, 'update', { openid, scheduleId: payload.scheduleId });
 
-  const allowed = ['name', 'semester', 'remark', 'total_weeks', 'periods', 'period_config', 'view_mode'];
+  const allowed = ['name', 'semester', 'remark', 'total_weeks', 'periods', 'period_config', 'view_mode', 'start_date'];
   const updateData = {};
   for (const key of allowed) {
     if (payload[key] !== undefined) updateData[key] = payload[key];
@@ -206,6 +223,10 @@ async function update(openid, payload) {
       return fail(ERRORS.PARAM_ERROR, '本学期周数范围应为1-30');
     }
     updateData.total_weeks = weeks;
+  }
+
+  if (payload.start_date !== undefined) {
+    validateStartDate(payload.start_date);
   }
 
   if (updateData.view_mode && !['week', 'day'].includes(updateData.view_mode)) {

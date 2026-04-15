@@ -57,6 +57,8 @@ export interface Schedule {
   periodConfig?: PeriodConfig;
   period_config?: BackendPeriodConfig;
   courses: Course[];
+  startDate?: string;    // YYYY-MM-DD
+  start_date?: string;   // YYYY-MM-DD（后端字段名）
   isDefault: boolean;
   is_default?: boolean;
   viewMode?: ViewMode;

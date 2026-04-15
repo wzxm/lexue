@@ -4,7 +4,7 @@
   border-radius: 0 16px 16px 0;
   padding: 24px 24px 24px 20px;
   margin-bottom: 16px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+  box-shadow: rgba(0, 0, 0, 0.06) 0px 2px 8px;
 }
 .card-body {
   display: flex;
@@ -28,8 +28,8 @@
 .card-side { margin-left: 24px; }
 .period-badge {
   display: inline-block;
-  background: #E8F5E9;
-  color: #00C853;
+  background: #eff6ff;
+  color: #3b82f6;
   font-size: 22px;
   font-weight: 600;
   padding: 6px 16px;

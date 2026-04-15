@@ -93,10 +93,13 @@ function getMondayOfWeek(date: Date): Date {
 
 /**
  * 根据偏移量获取该周周一到周日的日期数组
+ * @param offset  周偏移（从 0 开始，0 = 第1周）
+ * @param semesterStartDate  学期开始日期 YYYY-MM-DD；传入时以开学周为锚点，否则以今天所在周为锚点
  * @returns 7个日期字符串 YYYY-MM-DD，index 0 = 周一
  */
-export function getWeekDates(offset: number): string[] {
-  const monday = getMondayOfWeek(new Date());
+export function getWeekDates(offset: number, semesterStartDate?: string): string[] {
+  const anchor = semesterStartDate ? new Date(semesterStartDate) : new Date();
+  const monday = getMondayOfWeek(anchor);
   monday.setDate(monday.getDate() + offset * 7);
   const dates: string[] = [];
   for (let i = 0; i < 7; i++) {

@@ -26,7 +26,7 @@
 
 .wp-sheet__done {
   font-size: 28px;
-  color: #07c160;
+  color: #3b82f6;
   font-weight: 600;
   min-width: 80px;
   text-align: right;
@@ -59,8 +59,8 @@
 }
 
 .wp-sheet__radio--checked {
-  background: #07c160;
-  border-color: #07c160;
+  background: #3b82f6;
+  border-color: #3b82f6;
 }
 
 .wp-sheet__radio-dot {
@@ -86,7 +86,7 @@
   width: calc((100% - 64px) / 5);
   height: 80px;
   border-radius: 16px;
-  background: #07c160;
+  background: #3b82f6;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -94,7 +94,7 @@
 }
 
 .wp-sheet__week--selected {
-  background: #07c160;
+  background: #3b82f6;
 }
 
 /* 未选中态：浅灰背景 */

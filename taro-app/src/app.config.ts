@@ -19,7 +19,7 @@ export default defineAppConfig({
   tabBar: {
     custom: true,
     color: '#999999',
-    selectedColor: '#07C160',
+    selectedColor: '#3b82f6',
     backgroundColor: '#FFFFFF',
     borderStyle: 'white',
     list: [
