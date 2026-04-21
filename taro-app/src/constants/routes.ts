@@ -9,10 +9,12 @@ export const ROUTES = {
   STUDENT_FORM: '/pages/student-form/index',
   SETTINGS: '/pages/settings/index',
   NOTIFICATION_SETTINGS: '/pages/notification-settings/index',
+  DISPLAY_SETTINGS: '/pages/display-settings/index',
   FAMILY_MANAGE: '/pages/family-manage/index',
   SHARE_CODE: '/pages/share-code/index',
   SHARE_SCHEDULE: '/pages/share-schedule/index',
   COPY_SCHEDULE: '/pages/copy-schedule/index',
   TOOLS: '/pages/tools/index',
   SCHEDULE_MANAGE: '/pages/schedule-manage/index',
+  INVITE_ACCEPT: '/pages/invite-accept/index',
 } as const;

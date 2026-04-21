@@ -10,6 +10,7 @@ import './index.scss';
 export default function CopySchedulePage() {
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
   const setCurrentSchedule = useScheduleStore(s => s.setCurrentSchedule);
   const addSchedule = useScheduleStore(s => s.addSchedule);
 
@@ -35,8 +36,9 @@ export default function CopySchedulePage() {
       Taro.showModal({
         title: '口令匹配成功',
         content: `查找到【${preview.studentName}，${preview.scheduleName}】，确认复制？`,
+        confirmColor: '#3b82f6',
         confirmText: '立即复制',
-        cancelText: '关闭',
+        cancelText: '取消',
         success: async (res) => {
           if (res.confirm) {
             await doCopyCode(preview);
@@ -52,6 +54,7 @@ export default function CopySchedulePage() {
         title: '复制失败',
         content: '复制失败，请检查口令后再试。（若连续多次失败，系统将限制今日使用。）',
         showCancel: false,
+        confirmColor: '#3b82f6',
         confirmText: '确定'
       });
     }
@@ -76,6 +79,7 @@ export default function CopySchedulePage() {
       Taro.showModal({
         title: '复制成功',
         content: '复制成功，您可按自身需求调整课表：\n- 修改或添加课程\n- 课表所属学生纠正\n- 调整课节和开启通知',
+        confirmColor: '#3b82f6',
         confirmText: '查看课表',
         showCancel: false,
         success: (res) => {
@@ -94,45 +98,41 @@ export default function CopySchedulePage() {
 
   return (
     <View className="copy-schedule-page">
-      <View className="copy-schedule-content">
-        <View className="copy-schedule-icon-wrapper">
-          <Text className="copy-schedule-icon">📋</Text>
-        </View>
-        
-        <Text className="copy-schedule-title">复制好友课表</Text>
-        <Text className="copy-schedule-subtitle">
+      <View className="copy-schedule-header">
+        <Text className="title">复制好友课表</Text>
+        <Text className="subtitle">
           输入好友分享的口令，即可一键复制课表内容
         </Text>
+      </View>
 
-        <View className="copy-schedule-card">
-          <View className="code-input-wrap">
-            <Input
-              className="code-input"
-              placeholder="请输入口令"
-              placeholderClass="text-gray-400"
-              value={code}
-              onInput={(e) => setCode(e.detail.value)}
-            />
-          </View>
-
-          <Button 
-            className={`copy-btn ${
-              !code.trim() || loading 
-                ? 'disabled' 
-                : 'enabled'
-            }`}
-            onClick={handleCopy}
-            disabled={loading || !code.trim()}
-          >
-            {loading ? '校验中...' : '一键复制'}
-          </Button>
+      <View className="copy-schedule-card">
+        {/* <Text className="input-label">分享口令</Text> */}
+        <View className={`code-input-wrap ${isFocused ? 'focused' : ''}`}>
+          <Input
+            className="code-input"
+            placeholder="粘贴或输入口令"
+            placeholderStyle="color: #8e8e93; font-weight: normal;"
+            value={code}
+            onInput={(e) => setCode(e.detail.value)}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
+          />
         </View>
 
-        <View className="copy-schedule-notice">
-          <Text className="copy-schedule-notice-text">
-            <Text className="copy-schedule-notice-icon">⚠️</Text> 保护隐私：老师电话等敏感信息不会被复制
-          </Text>
-        </View>
+        <Button 
+          className={`copy-btn ${!code.trim() || loading ? 'btn-disabled' : ''}`}
+          onClick={handleCopy}
+          disabled={loading || !code.trim()}
+        >
+          {loading ? '校验中...' : '一键复制'}
+        </Button>
+      </View>
+
+      <View className="copy-schedule-tips">
+        <Text className="tip-icon">🛡️</Text>
+        <Text className="tip-text">
+          安全提示：老师电话等敏感信息不会被复制。建议复制后及时核对课程时间。
+        </Text>
       </View>
     </View>
   );

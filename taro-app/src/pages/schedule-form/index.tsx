@@ -63,7 +63,7 @@ export default function ScheduleFormPage() {
   const setCurrentSchedule = useScheduleStore((s) => s.setCurrentSchedule);
 
   const [semesterIndex, setSemesterIndex] = useState(DEFAULT_SEMESTER_INDEX);
-  const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10));
+  const [startDate, setStartDate] = useState("");
   const [totalWeeks, setTotalWeeks] = useState(20);
   const [weekPickerIndex, setWeekPickerIndex] = useState(19);
   const [studentIndex, setStudentIndex] = useState(0); // 列表已按 createTime desc 排序，第一个就是最新
@@ -368,13 +368,15 @@ export default function ScheduleFormPage() {
           <View className="section">
             <Picker
               mode="date"
-              value={startDate}
+              value={startDate || new Date().toISOString().slice(0, 10)}
               onChange={(e) => setStartDate(e.detail.value as string)}
             >
               <View className="list-item">
-                <Text className="list-label">开学日期</Text>
+                <Text className="list-label">开学日期 <Text className="list-label-required">*</Text></Text>
                 <View className="list-right">
-                  <Text className="list-value">{startDate || '请选择'}</Text>
+                  <Text className={`list-value ${!startDate ? 'list-value--placeholder' : ''}`}>
+                    {startDate || '用于计算当前周数'}
+                  </Text>
                   <Text className="list-arrow">›</Text>
                 </View>
               </View>

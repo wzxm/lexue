@@ -1,8 +1,10 @@
 import { View, Text } from '@tarojs/components'
 import Taro, { useDidShow } from '@tarojs/taro'
+import { useMemo } from 'react'
 import { listStudents } from '../../api/student.api'
 import { useStudentStore } from '../../store/student.store'
 import { ROUTES } from '../../constants/routes'
+import type { Student } from '../../types/index'
 import './index.scss'
 
 export default function StudentManagePage() {
@@ -22,17 +24,64 @@ export default function StudentManagePage() {
     }
   }
 
+  const { ownStudents, sharedStudents } = useMemo(() => {
+    const own: Student[] = []
+    const shared: Student[] = []
+    for (const s of students) {
+      if (s.isShared) shared.push(s)
+      else own.push(s)
+    }
+    return { ownStudents: own, sharedStudents: shared }
+  }, [students])
+
   const goToAdd = () => {
     Taro.navigateTo({ url: `${ROUTES.STUDENT_FORM}?mode=add` })
   }
 
-  const goToEdit = (id: string) => {
-    Taro.navigateTo({ url: `${ROUTES.STUDENT_FORM}?mode=edit&studentId=${id}` })
+  const goToEdit = (student: Student) => {
+    if (student.isShared) {
+      Taro.showToast({ title: '共享学生不可编辑', icon: 'none' })
+      return
+    }
+    Taro.navigateTo({ url: `${ROUTES.STUDENT_FORM}?mode=edit&studentId=${student.id}` })
   }
+
+  const renderStudentCard = (student: Student) => (
+    <View
+      key={student.id}
+      className={`student-card ${student.isShared ? 'student-card--shared' : ''}`}
+      onClick={() => goToEdit(student)}
+    >
+      <View className='card-left'>
+        <View className='avatar'>
+          {student.name === '默认学生' ? '默' : student.name.charAt(0)}
+        </View>
+        <View className='info'>
+          <View className='name-row'>
+            <Text className='name'>{student.name}</Text>
+            {student.isShared && <Text className='shared-tag'>共享</Text>}
+          </View>
+          <Text className='desc'>
+            {student.school || '未完善学校'}
+            {student.grade ? ` (${student.grade})` : ' (未完善年级)'}
+          </Text>
+        </View>
+      </View>
+      <View className='card-right'>
+        {student.isShared ? (
+          <Text className='readonly-hint'>只读</Text>
+        ) : (
+          <>
+            <Text className='iconfont card-side-icon'>&#xe704;</Text>
+            <Text className='iconfont card-side-icon'>&#xe631;</Text>
+          </>
+        )}
+      </View>
+    </View>
+  )
 
   return (
     <View className='manage-page'>
-      {/* 顶部提示卡片 */}
       <View className='tip-card'>
         <View className='tip-item'>
           <Text className='tip-dot'>•</Text>
@@ -46,42 +95,34 @@ export default function StudentManagePage() {
           <Text className='tip-dot'>•</Text>
           <Text className='tip-text'>升学后，请记得修改学生信息。</Text>
         </View>
+        <View className='tip-item'>
+          <Text className='tip-dot'>•</Text>
+          <Text className='tip-text'>家人共享的学生仅供查看，不支持编辑或删除。</Text>
+        </View>
       </View>
 
-      {/* 列表头部 */}
       <View className='list-header'>
-        <Text className='list-count'>共 {students.length} 位学生</Text>
+        <Text className='list-count'>我的学生 {ownStudents.length} 位</Text>
         <View className='add-btn' onClick={goToAdd}>
           <Text className='add-icon'>+</Text>
           <Text className='add-text'>增加学生</Text>
         </View>
       </View>
 
-      {/* 学生列表 */}
       <View className='student-list'>
-        {students.map((student) => (
-          <View key={student.id} className='student-card' onClick={() => goToEdit(student.id)}>
-            <View className='card-left'>
-              <View className='avatar'>
-                {student.name === '默认学生' ? '默' : student.name.charAt(0)}
-              </View>
-              <View className='info'>
-                <View className='name-row'>
-                  <Text className='name'>{student.name}</Text>
-                </View>
-                <Text className='desc'>
-                  {student.school || '未完善学校'}
-                  {student.grade ? ` (${student.grade})` : ' (未完善年级)'}
-                </Text>
-              </View>
-            </View>
-            <View className='card-right'>
-              <Text className='iconfont card-side-icon'>&#xe704;</Text>
-              <Text className='iconfont card-side-icon'>&#xe631;</Text>
-            </View>
-          </View>
-        ))}
+        {ownStudents.map(renderStudentCard)}
       </View>
+
+      {sharedStudents.length > 0 && (
+        <>
+          <View className='list-header list-header--shared'>
+            <Text className='list-count'>家人共享 {sharedStudents.length} 位</Text>
+          </View>
+          <View className='student-list'>
+            {sharedStudents.map(renderStudentCard)}
+          </View>
+        </>
+      )}
     </View>
   )
 }

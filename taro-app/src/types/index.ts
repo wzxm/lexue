@@ -76,6 +76,10 @@ export interface Student {
   school: string;
   grade: string;
   gender?: number; // 1: 男, 2: 女
+  /** 是否为共享学生（他人通过邀请共享给我的） */
+  isShared?: boolean;
+  /** 学生的实际 owner openid（用于前端权限判断） */
+  ownerOpenId?: string;
 }
 
 export interface FamilyMember {
@@ -100,6 +104,7 @@ export interface BackendSettings {
   notify_advance_minutes: number;
   notify_time_slots: number[]; // 哪些节次需要提醒，空数组=全部
   student_settings?: Record<string, StudentNotifySetting>;
+  hide_weekend?: boolean; // 隐藏周六周日
 }
 
 export interface StudentNotifySetting {

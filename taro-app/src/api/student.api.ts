@@ -8,6 +8,8 @@ type BackendStudent = {
   school_name?: string;
   grade?: string;
   gender?: number;
+  is_shared?: boolean;
+  owner_openid?: string;
 };
 
 function toFrontendStudent(data: BackendStudent): Student {
@@ -18,6 +20,8 @@ function toFrontendStudent(data: BackendStudent): Student {
     school: data.school_name || '',
     grade: data.grade || '',
     gender: data.gender || 0,
+    isShared: !!data.is_shared,
+    ownerOpenId: data.owner_openid || '',
   };
 }
 

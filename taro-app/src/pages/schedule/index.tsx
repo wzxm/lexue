@@ -54,6 +54,8 @@ export default function SchedulePage () {
   const [showDrawer, setShowDrawer] = useState(false)
   const [showAddCourseSheet, setShowAddCourseSheet] = useState(false)
   const [selectedDayIndex, setSelectedDayIndex] = useState(0)
+  const [showDayWeekPicker, setShowDayWeekPicker] = useState(false)
+  const [tempDayWeek, setTempDayWeek] = useState(1)
 
   /** 课程详情弹层打开时隐藏底部自定义 TabBar，关闭或卸载时恢复 */
   useEffect(() => {
@@ -66,6 +68,7 @@ export default function SchedulePage () {
 
   const periods = currentSchedule?.periods || DEFAULT_PERIODS
   const today = new Date().toISOString().slice(0, 10)
+  const hideWeekend = userInfo?.settings?.hide_weekend ?? false
 
   const groupedSchedules = useMemo(
     () => groupSchedulesByStudent(schedules, students),
@@ -292,6 +295,24 @@ export default function SchedulePage () {
     })
   }
 
+  /** 日视图周选择器 */
+  const handleOpenDayWeekPicker = () => {
+    setTempDayWeek(weekNum)
+    setShowDayWeekPicker(true)
+    tabState.setVisible(false)
+  }
+
+  const handleConfirmDayWeek = () => {
+    setWeekOffset(tempDayWeek - 1)
+    setShowDayWeekPicker(false)
+    tabState.setVisible(true)
+  }
+
+  const handleCancelDayWeek = () => {
+    setShowDayWeekPicker(false)
+    tabState.setVisible(true)
+  }
+
   /** 添加课程 */
   const onAddCourse = () => {
     if (!isLoggedIn) {
@@ -408,6 +429,8 @@ export default function SchedulePage () {
           onTapEmpty={onTapEmpty}
           selectedDayIndex={selectedDayIndex}
           setSelectedDayIndex={setSelectedDayIndex}
+          onOpenWeekPicker={handleOpenDayWeekPicker}
+          hideWeekend={hideWeekend}
         />
       ) : (
         <ScheduleGrid
@@ -424,6 +447,7 @@ export default function SchedulePage () {
           setWeekOffset={setWeekOffset}
           onTapCourse={onTapCourse}
           onTapEmpty={onTapEmpty}
+          hideWeekend={hideWeekend}
         />
       )}
 
@@ -484,6 +508,54 @@ export default function SchedulePage () {
           </View>
         </PageContainer>
       )}
+
+      {/* 日视图周选择浮层 */}
+      {showDayWeekPicker && (() => {
+        const totalWeeks = currentSchedule?.total_weeks || currentSchedule?.totalWeeks || 20
+        const startDate = currentSchedule?.start_date || currentSchedule?.startDate
+        let currentWeekByDate = 1
+        if (startDate) {
+          const start = new Date(startDate)
+          const todayDate = new Date(today)
+          const startDay = start.getDay()
+          start.setDate(start.getDate() + (startDay === 0 ? -6 : 1 - startDay))
+          const diffWeeks = Math.floor((todayDate.getTime() - start.getTime()) / (1000 * 60 * 60 * 24 * 7))
+          currentWeekByDate = Math.max(1, Math.min(diffWeeks + 1, totalWeeks))
+        }
+        const availableWeeks = Array.from({ length: totalWeeks - currentWeekByDate + 1 }, (_, i) => currentWeekByDate + i)
+        return (
+          <>
+            <View className='week-picker-overlay' onClick={handleCancelDayWeek} />
+            <View className='week-picker-popup'>
+              <View className='week-picker-nav'>
+                <Text className='week-picker-nav-btn' onClick={handleCancelDayWeek}>取消</Text>
+                <Text className='week-picker-nav-title'>选择周数</Text>
+                <Text className='week-picker-nav-btn week-picker-nav-btn--primary' onClick={handleConfirmDayWeek}>完成</Text>
+              </View>
+              <View className='week-picker-grid'>
+                {availableWeeks.map(week => {
+                  const isSelected = week === tempDayWeek
+                  const isCurrent = week === currentWeekByDate
+                  return (
+                    <View
+                      key={week}
+                      className={`week-grid-item ${isSelected ? 'week-grid-item--selected' : ''}`}
+                      onClick={() => setTempDayWeek(week)}
+                    >
+                      <Text className={`week-grid-text ${isSelected ? 'week-grid-text--selected' : ''}`}>
+                        {week}
+                      </Text>
+                      {isCurrent && !isSelected && (
+                        <Text className='week-grid-tag'>当前</Text>
+                      )}
+                    </View>
+                  )
+                })}
+              </View>
+            </View>
+          </>
+        )
+      })()}
     </View>
   )
 }

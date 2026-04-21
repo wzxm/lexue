@@ -10,10 +10,11 @@ interface Props {
   periods: Period[];
   grid: ScheduleGridType;
   totalWeeks: number;
-  startDate?: string; // 课表开始日期 YYYY-MM-DD
+  startDate?: string;
   setWeekOffset: (offset: number) => void;
   onTapCourse: (course: Course) => void;
   onTapEmpty: (weekday: number, period: number) => void;
+  hideWeekend?: boolean;
 }
 
 const WEEKDAY_LABELS = ['一', '二', '三', '四', '五', '六', '日']
@@ -29,7 +30,9 @@ export default function ScheduleGrid({
   setWeekOffset,
   onTapCourse,
   onTapEmpty,
+  hideWeekend = false,
 }: Props) {
+  const visibleDayIndices = hideWeekend ? [0, 1, 2, 3, 4] : [0, 1, 2, 3, 4, 5, 6]
   const [showWeekPicker, setShowWeekPicker] = useState(false)
   const [tempSelectedWeek, setTempSelectedWeek] = useState(weekNum)
 
@@ -101,9 +104,9 @@ export default function ScheduleGrid({
         </View>
 
         <View className='grid-header-row'>
-          {WEEKDAY_LABELS.map((label, idx) => (
-            <View key={label} className={`grid-header-cell ${weekDates[idx] === today ? 'grid-header-cell--today' : ''}`}>
-              <Text className='grid-header-day'>{label}</Text>
+          {visibleDayIndices.map((idx) => (
+            <View key={idx} className={`grid-header-cell ${weekDates[idx] === today ? 'grid-header-cell--today' : ''}`}>
+              <Text className='grid-header-day'>{WEEKDAY_LABELS[idx]}</Text>
               <Text className='grid-header-date'>{weekDates[idx]?.slice(5).replace('-', '/') || ''}</Text>
             </View>
           ))}
@@ -117,7 +120,7 @@ export default function ScheduleGrid({
                 <Text className='period-time-line'>{period.startTime}</Text>
                 <Text className='period-time-line'>{period.endTime}</Text>
               </View>
-              {Array.from({ length: 7 }, (_, dIdx) => {
+              {visibleDayIndices.map((dIdx) => {
                 const course = grid[pIdx]?.[dIdx] || null
                 const cellIsToday = weekDates[dIdx] === today
                 return (

@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Picker } from '@tarojs/components'
+import { View, Text, ScrollView } from '@tarojs/components'
 import { useScheduleStore } from '../../../store/schedule.store'
 import type { Course, ScheduleGrid as ScheduleGridType, Period } from '../../../types/index'
 import './ScheduleDayList.scss'
@@ -14,6 +14,8 @@ interface Props {
   onTapEmpty: (weekday: number, period: number) => void;
   selectedDayIndex: number;
   setSelectedDayIndex: (idx: number) => void;
+  onOpenWeekPicker: () => void;
+  hideWeekend?: boolean;
 }
 
 const WEEKDAY_LABELS = ['一', '二', '三', '四', '五', '六', '日']
@@ -21,33 +23,50 @@ const WEEKDAY_LABELS = ['一', '二', '三', '四', '五', '六', '日']
 export default function ScheduleDayList({
   weekNum,
   weekDates,
-  // today, // actually unused in this component because we derive title manually
+  today,
   periods,
   grid,
   setWeekOffset,
   onTapCourse,
   onTapEmpty,
   selectedDayIndex,
-  setSelectedDayIndex
+  setSelectedDayIndex,
+  onOpenWeekPicker,
+  hideWeekend = false,
 }: Props) {
   const weekOffset = useScheduleStore(state => state.weekOffset)
-  const currentSchedule = useScheduleStore(state => state.currentSchedule)
-  const totalWeeks = currentSchedule?.total_weeks || currentSchedule?.totalWeeks || 20
-  const weekOptions = Array.from({ length: totalWeeks }, (_, i) => `第${i + 1}周`)
+  // 隐藏周末时最大可选 index 为 4（周五），否则为 6
+  const maxDayIndex = hideWeekend ? 4 : 6
 
-  const currentDateTitle = `周${WEEKDAY_LABELS[selectedDayIndex]}(${weekDates[selectedDayIndex]?.slice(5)?.replace('-', '-') || ''})`
+  // 今天所在周的周一（ISO 日期字符串）
+  const todayMonday = (() => {
+    const d = new Date(today)
+    const day = d.getDay()
+    const diff = day === 0 ? -6 : 1 - day
+    d.setDate(d.getDate() + diff)
+    return d.toISOString().slice(0, 10)
+  })()
+
+  // 当前显示周的周一
+  const currentMonday = weekDates[0] || ''
+
+  // 是否已到达"今天所在周的周一"这一天（不能再往前翻）
+  const isAtEarliestDay = currentMonday === todayMonday && selectedDayIndex === 0
+
+  const currentDateTitle = `周${WEEKDAY_LABELS[selectedDayIndex]}(${weekDates[selectedDayIndex]?.slice(5)?.replace('-', '/') || ''})`
 
   const handlePrevDay = () => {
+    if (isAtEarliestDay) return
     if (selectedDayIndex > 0) {
       setSelectedDayIndex(selectedDayIndex - 1)
     } else {
       setWeekOffset(weekOffset - 1)
-      setSelectedDayIndex(6)
+      setSelectedDayIndex(maxDayIndex)
     }
   }
 
   const handleNextDay = () => {
-    if (selectedDayIndex < 6) {
+    if (selectedDayIndex < maxDayIndex) {
       setSelectedDayIndex(selectedDayIndex + 1)
     } else {
       setWeekOffset(weekOffset + 1)
@@ -59,24 +78,17 @@ export default function ScheduleDayList({
     <View className='schedule-view'>
       <View className='grid-wrap'>
         <View className='day-list-header'>
-          <Picker
-            mode='selector'
-            range={weekOptions}
-            value={weekNum > 0 ? weekNum - 1 : 0}
-            onChange={(e) => {
-              const selectedIdx = Number(e.detail.value)
-              setWeekOffset(selectedIdx)
-            }}
-          >
-            <View className='day-week-picker'>
-              <Text className='day-week-picker-text'>第{weekNum}周 ▾</Text>
-            </View>
-          </Picker>
-          
+          <View className='day-week-picker' onClick={onOpenWeekPicker}>
+            <Text className='day-week-picker-text'>第{weekNum}周</Text>
+          </View>
+
           <View className='day-stepper'>
-            <Text className='stepper-btn iconfont' onClick={handlePrevDay}>&#xe600;</Text>
+            <Text
+              className={`stepper-btn iconfont${isAtEarliestDay ? ' stepper-btn--disabled' : ''}`}
+              onClick={handlePrevDay}
+            >&#xe67f;</Text>
             <Text className='stepper-title'>{currentDateTitle}</Text>
-            <Text className='stepper-btn iconfont' onClick={handleNextDay}>&#xe602;</Text>
+            <Text className='stepper-btn iconfont' onClick={handleNextDay}>&#xe681;</Text>
           </View>
         </View>
 
@@ -84,15 +96,15 @@ export default function ScheduleDayList({
           {periods.map((period, pIdx) => {
             const course = grid[pIdx]?.[selectedDayIndex] || null
             let isCurrentWeek = true
-            
+
             if (course && course.weeks && course.weeks.length > 0) {
               isCurrentWeek = course.weeks.includes(weekNum)
             }
 
-            const bgColor = isCurrentWeek 
+            const bgColor = isCurrentWeek
               ? (course?.color?.startsWith('#') ? `${course.color}1A` : (course?.color === 'red' ? '#FFEBEB' : '#eff6ff'))
               : '#EFEFEF'
-              
+
             const borderColor = isCurrentWeek
               ? (course?.color?.startsWith('#') ? course.color : (course?.color === 'red' ? '#FF4D4F' : '#3b82f6'))
               : '#CCCCCC'
@@ -110,7 +122,7 @@ export default function ScheduleDayList({
 
                 <View className='day-course-col'>
                   {course ? (
-                    <View 
+                    <View
                       className={`day-course-card ${!isCurrentWeek ? 'day-course-card--inactive' : ''}`}
                       style={{ background: bgColor, borderLeftColor: borderColor }}
                       onClick={() => onTapCourse(course)}

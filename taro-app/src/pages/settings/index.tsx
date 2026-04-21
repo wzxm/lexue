@@ -117,7 +117,7 @@ export default function SettingsPage() {
         Taro.navigateTo({ url: ROUTES.SCHEDULE_MANAGE })
         break
       case 'student':
-        Taro.navigateTo({ url: ROUTES.SCHEDULE_MANAGE })
+        Taro.navigateTo({ url: ROUTES.DISPLAY_SETTINGS })
         break
       case 'shareSchedule':
         Taro.navigateTo({ url: ROUTES.SHARE_SCHEDULE })

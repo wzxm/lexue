@@ -15,14 +15,43 @@ const logger = require('../../shared/logger');
 const FN = 'student';
 
 /**
- * 获取当前用户的学生列表
+ * 获取当前用户可见的学生列表
+ * 返回：自己创建的学生 + 通过共享课表可见的他人学生（标记 is_shared）
  */
 async function list(openid) {
   logger.info(FN, 'list', { openid });
-  const students = await db.getList('students', { owner_openid: openid }, {
+
+  // 1. 自己创建的学生
+  const ownStudents = await db.getList('students', { owner_openid: openid }, {
     orderBy: { field: 'createTime', direction: 'desc' },
   });
-  return success(students.map(s => ({ ...s, id: s._id })));
+
+  // 2. 共享课表里涉及到的他人学生（去重）
+  const _ = db.getCommand();
+  const sharedSchedules = await db.getList('schedules', {
+    shared_with: _.elemMatch({ openid }),
+    owner_openid: _.neq(openid),
+  });
+
+  const sharedStudentIdSet = new Set();
+  for (const sch of sharedSchedules) {
+    if (sch.student_id) sharedStudentIdSet.add(sch.student_id);
+  }
+
+  const sharedStudents = [];
+  for (const sid of sharedStudentIdSet) {
+    const st = await db.getOne('students', sid);
+    if (st) {
+      sharedStudents.push({ ...st, is_shared: true });
+    }
+  }
+
+  const result = [
+    ...ownStudents.map(s => ({ ...s, id: s._id, is_shared: false })),
+    ...sharedStudents.map(s => ({ ...s, id: s._id, is_shared: true })),
+  ];
+
+  return success(result);
 }
 
 /**
@@ -50,16 +79,29 @@ async function create(openid, payload) {
 }
 
 /**
- * 获取学生详情（需要是 owner）
+ * 获取学生详情
+ * owner 可直接查看；共享成员（在该学生任一课表的 shared_with 中）也可只读查看
  */
 async function get(openid, payload) {
   validator.requireFields(payload, ['studentId']);
 
   const student = await db.getOne('students', payload.studentId);
   if (!student) return fail(ERRORS.NOT_FOUND, '学生不存在');
-  if (student.owner_openid !== openid) return fail(ERRORS.FORBIDDEN);
 
-  return success({ ...student, id: student._id });
+  const isOwner = student.owner_openid === openid;
+  if (isOwner) {
+    return success({ ...student, id: student._id, is_shared: false });
+  }
+
+  // 非 owner：检查当前用户是否通过该学生的任一课表以共享身份加入
+  const _ = db.getCommand();
+  const sharedSchedule = await db.findOne('schedules', {
+    student_id: payload.studentId,
+    shared_with: _.elemMatch({ openid }),
+  });
+  if (!sharedSchedule) return fail(ERRORS.FORBIDDEN);
+
+  return success({ ...student, id: student._id, is_shared: true });
 }
 
 /**

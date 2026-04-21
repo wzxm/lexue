@@ -172,6 +172,17 @@ async function updateProfile(openid, payload) {
   return success(null);
 }
 
+async function updateDisplaySettings(openid, payload) {
+  const user = await db.findOne('users', { openid });
+  if (!user) return fail(ERRORS.NOT_FOUND, '用户不存在');
+  const settings = user.settings || {};
+  if (payload.hide_weekend !== undefined) {
+    settings.hide_weekend = !!payload.hide_weekend;
+  }
+  await db.update('users', user._id, { settings });
+  return success(null);
+}
+
 // ——— 入口 ———
 exports.main = async (event, context) => {
   const wxContext = cloud.getWXContext();
@@ -194,6 +205,8 @@ exports.main = async (event, context) => {
         return await getSettingsSummary(openid);
       case 'updateProfile':
         return await updateProfile(openid, payload);
+      case 'updateDisplaySettings':
+        return await updateDisplaySettings(openid, payload);
       default:
         return fail(ERRORS.PARAM_ERROR, `未知的 action: ${action}`);
     }

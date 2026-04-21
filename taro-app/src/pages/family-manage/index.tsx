@@ -1,25 +1,30 @@
-import { View, Text, Image, PageContainer } from '@tarojs/components'
+import { View, Text, Image, PageContainer, Button } from '@tarojs/components'
 import { useState, useEffect } from 'react'
-import Taro from '@tarojs/taro'
+import Taro, { useShareAppMessage } from '@tarojs/taro'
 import * as familyApi from '../../api/family.api'
 import * as shareApi from '../../api/share.api'
 import * as scheduleApi from '../../api/schedule.api'
 import * as studentApi from '../../api/student.api'
 import type { MemberInfo } from '../../api/family.api'
 import type { Student, Schedule } from '../../types/index'
+import { ROUTES } from '../../constants/routes'
+import { theme } from '../../theme'
 import './index.scss'
 
-// 头像占位颜色列表
 const AVATAR_COLORS = ['#A0A4F0', '#E8C86A', '#7EC8A0', '#E88A8A', '#8AB4E8', '#D4A0E8']
 
-// 聚合后的家人信息（跨课表去重）
 interface AggregatedMember {
   openid: string
   nickname: string
   avatar_url: string
   is_owner: boolean
-  // 该家人可查看的学生列表
   visibleStudents: string[]
+}
+
+interface InviteOption {
+  studentId: string
+  studentName: string
+  scheduleCount: number
 }
 
 export default function FamilyManagePage() {
@@ -27,18 +32,31 @@ export default function FamilyManagePage() {
   const [loading, setLoading] = useState(true)
 
   const [showInviteSheet, setShowInviteSheet] = useState(false)
-  const [inviteOptions, setInviteOptions] = useState<{studentId: string, studentName: string, scheduleId: string}[]>([])
-  const [selectedScheduleId, setSelectedScheduleId] = useState<string>('')
+  const [inviteStep, setInviteStep] = useState<'select' | 'share'>('select')
+  const [inviteOptions, setInviteOptions] = useState<InviteOption[]>([])
+  const [selectedStudentId, setSelectedStudentId] = useState<string>('')
+  const [pendingToken, setPendingToken] = useState('')
+
+  const selectedOption = inviteOptions.find(o => o.studentId === selectedStudentId) || null
+
+  // 微信分享回调：分享卡片时取当前状态生成 path（path 需以 / 开头）
+  useShareAppMessage(() => {
+    const option = inviteOptions.find(o => o.studentId === selectedStudentId)
+    const studentName = option?.studentName || '家人'
+    const title = `${studentName}的课表已为你开启共享`
+    const path = pendingToken
+      ? `${ROUTES.INVITE_ACCEPT}?token=${pendingToken}`
+      : ROUTES.SCHEDULE
+    return { title, path }
+  })
 
   useEffect(() => {
     loadFamilyData()
   }, [])
 
-  // 加载所有课表 → 每个课表获取成员列表 → 聚合去重
   const loadFamilyData = async () => {
     setLoading(true)
     try {
-      // 并行拉取课表列表和学生列表
       const [schedules, students] = await Promise.all([
         scheduleApi.listSchedules(),
         studentApi.listStudents(),
@@ -50,19 +68,15 @@ export default function FamilyManagePage() {
         return
       }
 
-      // 构建学生 id → 名称映射
       const studentMap: Record<string, string> = {}
-      students.forEach((s: Student) => {
-        studentMap[s.id] = s.name
-      })
+      students.forEach((s: Student) => { studentMap[s.id] = s.name })
 
-      // 构建课表 id → 学生名称映射
       const scheduleStudentMap: Record<string, string> = {}
       schedules.forEach((sch: Schedule) => {
-        scheduleStudentMap[sch.id] = studentMap[sch.studentId] || '未知学生'
+        const sid = sch.studentId || sch.student_id || ''
+        scheduleStudentMap[sch.id] = studentMap[sid] || '未知学生'
       })
 
-      // 并行拉取所有课表的成员列表
       const memberResults = await Promise.all(
         schedules.map((sch: Schedule) =>
           familyApi.listMembers(sch.id)
@@ -71,13 +85,11 @@ export default function FamilyManagePage() {
         )
       )
 
-      // 聚合：按 openid 去重，收集每个成员可查看的学生
       const memberAgg: Record<string, AggregatedMember> = {}
 
       for (const { scheduleId, members } of memberResults) {
         const studentName = scheduleStudentMap[scheduleId] || '未知学生'
         for (const m of members) {
-          // 跳过 owner（即课表创建者自己），只展示被邀请的家人
           if (m.is_owner) continue
 
           if (!memberAgg[m.openid]) {
@@ -89,7 +101,6 @@ export default function FamilyManagePage() {
               visibleStudents: [],
             }
           }
-          // 添加可查看的学生，避免重复
           if (!memberAgg[m.openid].visibleStudents.includes(studentName)) {
             memberAgg[m.openid].visibleStudents.push(studentName)
           }
@@ -104,7 +115,6 @@ export default function FamilyManagePage() {
     }
   }
 
-  // 发起邀请
   const handleInvite = async () => {
     try {
       Taro.showLoading({ title: '加载中...' })
@@ -114,17 +124,22 @@ export default function FamilyManagePage() {
       ])
       Taro.hideLoading()
 
-      // listStudents 仅返回自己创建的学生
-      const options: Array<{studentId: string, studentName: string, scheduleId: string}> = []
-      students.forEach((student: Student) => {
-        const studentSchedules = schedules.filter((s: Schedule) => s.studentId === student.id)
+      // 仅允许分享自己创建的学生（排除他人共享给我的学生）
+      const ownStudents = students.filter((student: Student) => !student.isShared)
+      const ownStudentIdSet = new Set(ownStudents.map(s => s.id))
+
+      // 按学生聚合其名下的课表数量（同样限定为自己名下的学生 id）
+      const options: InviteOption[] = []
+      ownStudents.forEach((student: Student) => {
+        const studentSchedules = schedules.filter((s: Schedule) => {
+          const scheduleStudentId = s.studentId || s.student_id || ''
+          return scheduleStudentId === student.id && ownStudentIdSet.has(scheduleStudentId)
+        })
         if (studentSchedules.length > 0) {
-          // 优先取默认课表，否则取第一个
-          const targetSchedule = studentSchedules.find((s: Schedule) => s.isDefault) || studentSchedules[0]
           options.push({
             studentId: student.id,
             studentName: student.name,
-            scheduleId: targetSchedule.id
+            scheduleCount: studentSchedules.length,
           })
         }
       })
@@ -135,7 +150,9 @@ export default function FamilyManagePage() {
       }
 
       setInviteOptions(options)
-      setSelectedScheduleId(options[0].scheduleId)
+      setSelectedStudentId(options[0].studentId)
+      setPendingToken('')
+      setInviteStep('select')
       setShowInviteSheet(true)
     } catch {
       Taro.hideLoading()
@@ -145,30 +162,38 @@ export default function FamilyManagePage() {
 
   const closeInviteSheet = () => {
     setShowInviteSheet(false)
+    setTimeout(() => {
+      setInviteStep('select')
+      setPendingToken('')
+    }, 200)
   }
 
-  const confirmInvite = async () => {
-    if (!selectedScheduleId) return
-    closeInviteSheet()
-    await doInvite(selectedScheduleId)
-  }
-
-  const doInvite = async (scheduleId: string) => {
-    Taro.showLoading({ title: '生成邀请中...' })
+  // 第一步：确认学生后生成邀请 token，进入分享步骤
+  const confirmSelectStudent = async () => {
+    if (!selectedStudentId) {
+      Taro.showToast({ title: '请选择一位学生', icon: 'none' })
+      return
+    }
+    Taro.showLoading({ title: '生成邀请中...', mask: true })
     try {
-      const res = await shareApi.generateInvite(scheduleId)
+      const res = await shareApi.generateInvite(selectedStudentId)
+      setPendingToken(res.token)
+      setInviteStep('share')
+    } catch (err: any) {
+      Taro.showToast({ title: err?.message || '生成失败', icon: 'none' })
+    } finally {
       Taro.hideLoading()
-      Taro.setClipboardData({
-        data: res.inviteUrl,
-        success: () => Taro.showToast({ title: '邀请链接已复制，发给家人吧', icon: 'none', duration: 2500 }),
-      })
-    } catch {
-      Taro.hideLoading()
-      Taro.showToast({ title: '生成失败，请重试', icon: 'none' })
     }
   }
 
-  // 点击成员，可移除
+  const onShareButtonClick = () => {
+    // 分享卡片发出后（由微信回调触发 useShareAppMessage），提示用户
+    // 此处仅做埋点与兜底
+    if (!pendingToken) {
+      Taro.showToast({ title: '邀请数据异常，请重试', icon: 'none' })
+    }
+  }
+
   const handleMemberClick = (member: AggregatedMember) => {
     Taro.showActionSheet({
       itemList: ['移除该成员'],
@@ -177,11 +202,10 @@ export default function FamilyManagePage() {
           Taro.showModal({
             title: '移除成员',
             content: `确定移除「${member.nickname}」吗？移除后将从所有课表中删除该成员的访问权限。`,
-            confirmColor: '#FF5252',
+            confirmColor: theme.light.danger,
             success: async (modalRes) => {
               if (modalRes.confirm) {
                 try {
-                  // 从所有课表中移除该成员
                   const schedules = await scheduleApi.listSchedules()
                   await Promise.all(
                     schedules.map(sch =>
@@ -201,19 +225,16 @@ export default function FamilyManagePage() {
     })
   }
 
-  // 获取头像占位颜色
   const getAvatarColor = (index: number) => AVATAR_COLORS[index % AVATAR_COLORS.length]
 
   return (
     <View className='family-page'>
-      {/* 顶部说明 */}
       <View className='family-tip'>
         <Text className='family-tip-text'>
           邀请家人后，家人可查看你设定的课表数据范围。但是通知提醒需要每位家人自行打开开关。
         </Text>
       </View>
 
-      {/* 成员数量标题 */}
       <View className='family-count'>
         <Text className='family-count-text'>对{aggregatedMembers.length}位家人开放</Text>
       </View>
@@ -223,7 +244,6 @@ export default function FamilyManagePage() {
           <Text className='family-loading-text'>加载中...</Text>
         </View>
       ) : aggregatedMembers.length === 0 ? (
-        // 空状态
         <View className='family-empty'>
           <Image
             className='family-empty-icon'
@@ -233,7 +253,6 @@ export default function FamilyManagePage() {
           <Text className='family-empty-text'>暂未邀请家人</Text>
         </View>
       ) : (
-        // 成员列表
         <View className='family-list'>
           {aggregatedMembers.map((member, index) => (
             <View
@@ -267,14 +286,13 @@ export default function FamilyManagePage() {
         </View>
       )}
 
-      {/* 底部邀请按钮 */}
       <View className='family-bottom'>
         <View className='family-invite-btn' onClick={handleInvite}>
           <Text className='family-invite-text'>发起邀请</Text>
         </View>
       </View>
 
-      {/* 选择课表范围弹窗 */}
+      {/* 发起邀请弹窗：分两步 - 选择学生 → 生成邀请后点按钮分享卡片 */}
       <PageContainer
         show={showInviteSheet}
         position='bottom'
@@ -285,29 +303,53 @@ export default function FamilyManagePage() {
       >
         <View className='invite-sheet-content'>
           <View className='invite-sheet-header'>
-            <Text className='invite-sheet-title'>选择课表范围</Text>
+            <Text className='invite-sheet-title'>
+              {inviteStep === 'select' ? '选择要共享的学生' : '分享邀请卡片'}
+            </Text>
             <View className='invite-sheet-close' onClick={closeInviteSheet}>×</View>
           </View>
-          <View className='invite-sheet-subtitle'>
-            选中后，被邀请人注册成功后可看的学生课表
-          </View>
-          <View className='invite-options-list'>
-            {inviteOptions.map(option => (
-              <View
-                key={option.scheduleId}
-                className={`invite-option ${selectedScheduleId === option.scheduleId ? 'active' : ''}`}
-                onClick={() => setSelectedScheduleId(option.scheduleId)}
-              >
-                <Text className='invite-option-text'>{option.studentName}</Text>
+
+          {inviteStep === 'select' ? (
+            <>
+              <View className='invite-sheet-subtitle'>
+                选中学生后，其名下全部课表将共享给被邀请人。
               </View>
-            ))}
-          </View>
-          <View className='invite-confirm-btn' onClick={confirmInvite}>
-            <Text className='invite-confirm-text'>发起邀请</Text>
-          </View>
+              <View className='invite-options-list'>
+                {inviteOptions.map(option => (
+                  <View
+                    key={option.studentId}
+                    className={`invite-option ${selectedStudentId === option.studentId ? 'active' : ''}`}
+                    onClick={() => setSelectedStudentId(option.studentId)}
+                  >
+                    <Text className='invite-option-text'>
+                      {option.studentName}（{option.scheduleCount}份课表）
+                    </Text>
+                  </View>
+                ))}
+              </View>
+              <View className='invite-confirm-btn' onClick={confirmSelectStudent}>
+                <Text className='invite-confirm-text'>下一步</Text>
+              </View>
+            </>
+          ) : (
+            <>
+              <View className='invite-sheet-subtitle'>
+                点击下方按钮，调起微信分享将 <Text className='invite-strong'>{selectedOption?.studentName}</Text> 及名下 <Text className='invite-strong'>{selectedOption?.scheduleCount}</Text> 份课表分享给家人。
+              </View>
+              <View className='invite-share-tip'>
+                家人点击卡片即可打开邀请详情页并一键接收。
+              </View>
+              <Button
+                className='invite-share-btn'
+                openType='share'
+                onClick={onShareButtonClick}
+              >
+                分享给家人
+              </Button>
+            </>
+          )}
         </View>
       </PageContainer>
     </View>
   )
 }
-

@@ -31,6 +31,10 @@ export default function ShareCodePage() {
   }, [])
 
   const copyCode = () => {
+    if (!code) {
+      Taro.showToast({ title: '口令还未生成，请稍候', icon: 'none' })
+      return
+    }
     Taro.setClipboardData({
       data: code,
       success: () => Taro.showToast({ title: '已复制口令', icon: 'success' }),

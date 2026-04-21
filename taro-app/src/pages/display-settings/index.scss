@@ -1,0 +1,65 @@
+.display-settings-page {
+  min-height: 100vh;
+  background: #F6F6F6;
+  padding: 32px;
+  box-sizing: border-box;
+}
+
+.ds-header {
+  margin-bottom: 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ds-header-title {
+  font-size: 36px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.ds-header-desc {
+  font-size: 24px;
+  color: #9CA3AF;
+}
+
+.ds-section {
+  background: #fff;
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 32px;
+}
+
+.ds-section-title {
+  font-size: 22px;
+  color: #9CA3AF;
+  padding: 20px 28px 12px;
+}
+
+.ds-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28px;
+  border-top: 1px solid #F3F4F6;
+}
+
+.ds-item-left {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  margin-right: 24px;
+}
+
+.ds-item-label {
+  font-size: 28px;
+  color: #111827;
+  font-weight: 500;
+}
+
+.ds-item-desc {
+  font-size: 22px;
+  color: #9CA3AF;
+  line-height: 1.5;
+}

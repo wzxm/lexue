@@ -29,3 +29,10 @@ export async function updateProfile(data: { nickname?: string; avatarUrl?: strin
     },
   });
 }
+
+export async function updateDisplaySettings(data: { hideWeekend: boolean }): Promise<void> {
+  return cloud.call<void>('auth', {
+    action: 'updateDisplaySettings',
+    payload: { hide_weekend: data.hideWeekend },
+  });
+}

@@ -146,3 +146,33 @@
   color: #666666;
   line-height: 1;
 }
+
+/* 共享学生样式 */
+.student-card--shared {
+  background: #F5F7FA;
+}
+
+.student-card--shared .avatar {
+  background: #EEF2F7;
+  color: #8695A8;
+  border-color: #DDE3EB;
+}
+
+.shared-tag {
+  margin-left: 16px;
+  font-size: 22px;
+  color: #3b82f6;
+  background: #EFF6FF;
+  padding: 4px 16px;
+  border-radius: 12px;
+  line-height: 1.4;
+}
+
+.readonly-hint {
+  font-size: 24px;
+  color: #BDBDBD;
+}
+
+.list-header--shared {
+  margin-top: 48px;
+}
