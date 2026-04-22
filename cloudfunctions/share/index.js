@@ -25,6 +25,29 @@ const CODE_LENGTH = 6;
 // 有效期（毫秒）：7天
 const CODE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
+// invite_code 字符集和长度（与 schedule 云函数保持一致）
+const INVITE_CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const INVITE_CODE_LENGTH = 8;
+
+function generateInviteCode() {
+  let code = '';
+  for (let i = 0; i < INVITE_CODE_LENGTH; i++) {
+    code += INVITE_CODE_CHARS[Math.floor(Math.random() * INVITE_CODE_CHARS.length)];
+  }
+  return code;
+}
+
+async function generateUniqueInviteCode() {
+  let attempts = 0;
+  while (attempts < 10) {
+    const code = generateInviteCode();
+    const existing = await db.findOne('schedules', { invite_code: code });
+    if (!existing) return code;
+    attempts++;
+  }
+  return null;
+}
+
 /**
  * 生成随机口令
  * @returns {string} 6位大写字母数字口令
@@ -105,6 +128,11 @@ async function verifyCode(openid, payload) {
     return fail(ERRORS.PARAM_ERROR, '口令已过期');
   }
 
+  // 本人口令不能自己用
+  if (shareCode.creator_openid === openid) {
+    return fail(ERRORS.PARAM_ERROR, '这是你自己的口令，分享给好友使用吧');
+  }
+
   // 返回课表基本信息预览
   const schedule = await db.getOne('schedules', shareCode.schedule_id);
   if (!schedule) return fail(ERRORS.NOT_FOUND, '课表不存在');
@@ -115,9 +143,11 @@ async function verifyCode(openid, payload) {
   return success({
     schedule_id: schedule._id,
     schedule_name: schedule.name,
-    semester: schedule.semester,
+    semester: schedule.semester || '',
     student_name: student ? student.name : '未知',
-    member_count: (schedule.shared_with || []).length + 1, // +1 是 owner
+    student_school: student ? (student.school_name || '') : '',
+    student_grade: student ? (student.grade || '') : '',
+    member_count: (schedule.shared_with || []).length + 1,
   });
 }
 
@@ -177,6 +207,111 @@ async function acceptCode(openid, payload) {
   await db.update('share_codes', shareCode._id, { used_count: shareCode.used_count + 1 });
 
   return success({ schedule_id: schedule._id, permission: 'view' });
+}
+
+/**
+ * 通过 invite_code 验证课表口令，返回预览信息
+ */
+async function verifyInviteCode(openid, payload) {
+  validator.requireFields(payload, ['code']);
+
+  const code = payload.code.toUpperCase().trim();
+  const schedule = await db.findOne('schedules', { invite_code: code });
+  if (!schedule) return fail(ERRORS.NOT_FOUND, '口令不存在，请检查后重试');
+
+  if (schedule.owner_openid === openid) {
+    return fail(ERRORS.PARAM_ERROR, '这是你自己的口令，分享给好友使用吧');
+  }
+
+  const student = await db.getOne('students', schedule.student_id);
+
+  return success({
+    schedule_id: schedule._id,
+    schedule_name: schedule.name,
+    semester: schedule.semester || '',
+    student_name: student ? student.name : '未知',
+    student_school: student ? (student.school_name || '') : '',
+    student_grade: student ? (student.grade || '') : '',
+  });
+}
+
+/**
+ * 通过 invite_code 复制课表数据到当前用户名下
+ * 课程的 teacher 和 contact 字段留空
+ * 课表和课程的 owner/student 改为当前用户
+ */
+async function copyByInviteCode(openid, payload) {
+  validator.requireFields(payload, ['code']);
+
+  const code = payload.code.toUpperCase().trim();
+  const sourceSchedule = await db.findOne('schedules', { invite_code: code });
+  if (!sourceSchedule) return fail(ERRORS.NOT_FOUND, '口令不存在，请检查后重试');
+
+  if (sourceSchedule.owner_openid === openid) {
+    return fail(ERRORS.PARAM_ERROR, '这是你自己的口令，分享给好友使用吧');
+  }
+
+  // 查当前用户的默认学生（source='init' 优先，否则取第一条）
+  let defaultStudent = await db.findOne('students', { owner_openid: openid, source: 'init' });
+  if (!defaultStudent) {
+    const studentList = await db.getList('students', { owner_openid: openid }, { limit: 1 });
+    defaultStudent = studentList[0] || null;
+  }
+  if (!defaultStudent) {
+    return fail(ERRORS.NOT_FOUND, '请先创建学生信息');
+  }
+
+  // 生成新课表的 invite_code
+  const newInviteCode = await generateUniqueInviteCode();
+  if (!newInviteCode) {
+    return fail(ERRORS.INTERNAL_ERROR, '生成邀请码失败，请重试');
+  }
+
+  // 判断是否为当前用户第一个课表
+  const existingSchedules = await db.getList('schedules', { owner_openid: openid }, { limit: 1 });
+  const isDefault = existingSchedules.length === 0;
+
+  logger.info(FN, 'copyByInviteCode', { openid, sourceScheduleId: sourceSchedule._id });
+
+  // 复制课表
+  const { _id: newScheduleId } = await db.create('schedules', {
+    owner_openid: openid,
+    student_id: defaultStudent._id,
+    name: sourceSchedule.name,
+    semester: sourceSchedule.semester || '',
+    total_weeks: sourceSchedule.total_weeks || 20,
+    periods: sourceSchedule.periods,
+    period_config: sourceSchedule.period_config,
+    invite_code: newInviteCode,
+    is_default: isDefault,
+    shared_with: [],
+    remark: '',
+    view_mode: sourceSchedule.view_mode || 'week',
+    start_date: sourceSchedule.start_date,
+  });
+
+  // 复制课程（teacher 和 contact 留空）
+  const sourceCourses = await db.getList('courses', { schedule_id: sourceSchedule._id });
+  for (const course of sourceCourses) {
+    await db.create('courses', {
+      schedule_id: newScheduleId,
+      student_id: defaultStudent._id,
+      owner_openid: openid,
+      name: course.name,
+      day_of_week: course.day_of_week,
+      period: course.period,
+      start_time: course.start_time || '',
+      end_time: course.end_time || '',
+      teacher: '',
+      room: course.room || '',
+      contact: '',
+      color: course.color || '',
+    });
+  }
+
+  // 返回新课表完整信息
+  const newSchedule = await db.getOne('schedules', newScheduleId);
+  return success({ ...newSchedule, id: newSchedule._id });
 }
 
 /**
@@ -380,6 +515,8 @@ exports.main = async (event, context) => {
       case 'generateCode':   return await generateShareCode(openid, payload);
       case 'verifyCode':     return await verifyCode(openid, payload);
       case 'acceptCode':     return await acceptCode(openid, payload);
+      case 'verifyInviteCode': return await verifyInviteCode(openid, payload);
+      case 'copyByInviteCode': return await copyByInviteCode(openid, payload);
       case 'generateInvite': return await generateInvite(openid, payload);
       case 'verifyInvite':   return await verifyInvite(openid, payload);
       case 'acceptInvite':   return await acceptInvite(openid, payload);

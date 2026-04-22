@@ -149,6 +149,67 @@ async function leave(openid, payload) {
   return success(null);
 }
 
+/**
+ * 批量更新成员可见的学生列表（只有 owner 可以操作）
+ * 根据 studentIds 决定 targetOpenid 在哪些课表里有共享权限
+ */
+async function updateMemberStudents(openid, payload) {
+  validator.requireFields(payload, ['targetOpenid', 'studentIds']);
+
+  if (!Array.isArray(payload.studentIds)) {
+    return fail(ERRORS.PARAM_ERROR, 'studentIds 必须是数组');
+  }
+
+  if (payload.targetOpenid === openid) {
+    return fail(ERRORS.PARAM_ERROR, '不能操作自己');
+  }
+
+  logger.info(FN, 'updateMemberStudents', {
+    openid,
+    targetOpenid: payload.targetOpenid,
+    studentIds: payload.studentIds,
+  });
+
+  // 查出当前用户所有 owner 的课表
+  const schedules = await db.getList('schedules', { owner_openid: openid });
+
+  const updates = [];
+
+  for (const schedule of schedules) {
+    const sharedWith = schedule.shared_with || [];
+    const inTarget = payload.studentIds.includes(schedule.student_id);
+    const memberIndex = sharedWith.findIndex(m => m.openid === payload.targetOpenid);
+
+    let newSharedWith;
+
+    if (inTarget) {
+      // 该课表的学生在目标列表里 → 确保 targetOpenid 在 shared_with 中
+      if (memberIndex === -1) {
+        newSharedWith = [
+          ...sharedWith,
+          { openid: payload.targetOpenid, permission: 'view', join_time: Date.now() },
+        ];
+      } else {
+        // 已存在，无需变更
+        continue;
+      }
+    } else {
+      // 该课表的学生不在目标列表里 → 移除 targetOpenid
+      if (memberIndex === -1) {
+        // 本来就不在，无需变更
+        continue;
+      }
+      newSharedWith = sharedWith.filter(m => m.openid !== payload.targetOpenid);
+    }
+
+    updates.push(db.update('schedules', schedule._id, { shared_with: newSharedWith }));
+  }
+
+  await Promise.all(updates);
+
+  return success(null);
+}
+
 // ——— 入口 ———
 exports.main = async (event, context) => {
   const wxContext = cloud.getWXContext();
@@ -161,7 +222,8 @@ exports.main = async (event, context) => {
       case 'listMembers':       return await listMembers(openid, payload);
       case 'updatePermission':  return await updatePermission(openid, payload);
       case 'removeMember':      return await removeMember(openid, payload);
-      case 'leave':             return await leave(openid, payload);
+      case 'leave':                  return await leave(openid, payload);
+      case 'updateMemberStudents':   return await updateMemberStudents(openid, payload);
       default:                  return fail(ERRORS.PARAM_ERROR, `未知的 action: ${action}`);
     }
   } catch (e) {

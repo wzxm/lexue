@@ -26,3 +26,7 @@ export async function removeMember(scheduleId: string, targetOpenid: string): Pr
 export async function leave(scheduleId: string): Promise<void> {
   return cloud.call<void>('family', { action: 'leave', payload: { scheduleId } });
 }
+
+export async function updateMemberStudents(targetOpenid: string, studentIds: string[]): Promise<void> {
+  return cloud.call<void>('family', { action: 'updateMemberStudents', payload: { targetOpenid, studentIds } });
+}

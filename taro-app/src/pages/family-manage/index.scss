@@ -297,3 +297,127 @@
 .invite-share-btn::after {
   border: none;
 }
+
+/* 修改课表范围弹窗 */
+.edit-sheet-content {
+  width: 100%;
+  background: var(--color-card);
+  border-radius: 32px 32px 0 0;
+  padding: 32px 32px calc(32px + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+
+.edit-sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.edit-sheet-title {
+  font-size: 32px;
+  font-weight: 600;
+  color: var(--color-text-main);
+  flex: 1;
+  text-align: center;
+  margin-left: 48px;
+}
+
+.edit-sheet-close {
+  font-size: 48px;
+  color: var(--color-text-gray);
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.edit-sheet-subtitle {
+  font-size: 24px;
+  color: var(--color-text-sub);
+  margin-bottom: 32px;
+  text-align: center;
+}
+
+.edit-student-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  margin-bottom: 48px;
+}
+
+.edit-student-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 36px;
+  border-radius: 40px;
+  border: 1px solid var(--color-border);
+  background: var(--color-card);
+
+  &:active {
+    background: var(--color-bg);
+  }
+
+  &.checked {
+    border-color: #22c55e;
+    background: rgba(34, 197, 94, 0.08);
+  }
+}
+
+.edit-student-name {
+  font-size: 28px;
+  color: var(--color-text-sub);
+
+  .edit-student-item.checked & {
+    color: #22c55e;
+    font-weight: 600;
+  }
+}
+
+.edit-student-check {
+  font-size: 26px;
+  color: #22c55e;
+  font-weight: 700;
+}
+
+.edit-confirm-btn {
+  height: 96px;
+  background: #22c55e;
+  border-radius: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+
+  &:active {
+    opacity: 0.8;
+  }
+
+  &.disabled {
+    opacity: 0.6;
+  }
+}
+
+.edit-confirm-text {
+  font-size: 32px;
+  font-weight: 600;
+  color: #FFFFFF;
+}
+
+.edit-remove-btn {
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:active {
+    opacity: 0.7;
+  }
+}
+
+.edit-remove-text {
+  font-size: 28px;
+  color: #ef4444;
+}

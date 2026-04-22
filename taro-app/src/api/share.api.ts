@@ -14,7 +14,10 @@ export interface InviteResult {
 export interface ShareCodePreview {
   scheduleId: string;
   scheduleName: string;
+  semester: string;
   studentName: string;
+  studentSchool: string;
+  studentGrade: string;
 }
 
 export interface InviteScheduleSummary {
@@ -64,7 +67,15 @@ export async function generateCode(scheduleId: string): Promise<ShareCodeResult>
 }
 
 export async function verifyCode(code: string): Promise<ShareCodePreview> {
-  return cloud.call<ShareCodePreview>('share', { action: 'verifyCode', payload: { code } });
+  const data = await cloud.call<any>('share', { action: 'verifyCode', payload: { code } });
+  return {
+    scheduleId: data.schedule_id,
+    scheduleName: data.schedule_name,
+    semester: data.semester || '',
+    studentName: data.student_name,
+    studentSchool: data.student_school || '',
+    studentGrade: data.student_grade || '',
+  };
 }
 
 export async function acceptCode(code: string): Promise<void> {
@@ -116,4 +127,29 @@ export async function acceptInvite(token: string): Promise<AcceptInviteResult> {
     joinedCount: data.joined_count || 0,
     permission: data.permission || 'view',
   };
+}
+
+export interface InviteCodePreview {
+  scheduleId: string;
+  scheduleName: string;
+  semester: string;
+  studentName: string;
+  studentSchool: string;
+  studentGrade: string;
+}
+
+export async function verifyInviteCode(code: string): Promise<InviteCodePreview> {
+  const data = await cloud.call<any>('share', { action: 'verifyInviteCode', payload: { code } });
+  return {
+    scheduleId: data.schedule_id,
+    scheduleName: data.schedule_name,
+    semester: data.semester || '',
+    studentName: data.student_name,
+    studentSchool: data.student_school || '',
+    studentGrade: data.student_grade || '',
+  };
+}
+
+export async function copyByInviteCode(code: string): Promise<any> {
+  return cloud.call<any>('share', { action: 'copyByInviteCode', payload: { code } });
 }

@@ -8,7 +8,6 @@ import * as studentApi from '../../api/student.api'
 import type { MemberInfo } from '../../api/family.api'
 import type { Student, Schedule } from '../../types/index'
 import { ROUTES } from '../../constants/routes'
-import { theme } from '../../theme'
 import './index.scss'
 
 const AVATAR_COLORS = ['#A0A4F0', '#E8C86A', '#7EC8A0', '#E88A8A', '#8AB4E8', '#D4A0E8']
@@ -36,6 +35,12 @@ export default function FamilyManagePage() {
   const [inviteOptions, setInviteOptions] = useState<InviteOption[]>([])
   const [selectedStudentId, setSelectedStudentId] = useState<string>('')
   const [pendingToken, setPendingToken] = useState('')
+
+  const [showEditSheet, setShowEditSheet] = useState(false)
+  const [editingMember, setEditingMember] = useState<AggregatedMember | null>(null)
+  const [editStudentIds, setEditStudentIds] = useState<string[]>([])
+  const [ownStudents, setOwnStudents] = useState<Student[]>([])
+  const [editSaving, setEditSaving] = useState(false)
 
   const selectedOption = inviteOptions.find(o => o.studentId === selectedStudentId) || null
 
@@ -194,32 +199,84 @@ export default function FamilyManagePage() {
     }
   }
 
-  const handleMemberClick = (member: AggregatedMember) => {
-    Taro.showActionSheet({
-      itemList: ['移除该成员'],
-      success: async (res) => {
-        if (res.tapIndex === 0) {
-          Taro.showModal({
-            title: '移除成员',
-            content: `确定移除「${member.nickname}」吗？移除后将从所有课表中删除该成员的访问权限。`,
-            confirmColor: theme.light.danger,
-            success: async (modalRes) => {
-              if (modalRes.confirm) {
-                try {
-                  const schedules = await scheduleApi.listSchedules()
-                  await Promise.all(
-                    schedules.map(sch =>
-                      familyApi.removeMember(sch.id, member.openid).catch(() => {})
-                    )
-                  )
-                  Taro.showToast({ title: '已移除' })
-                  await loadFamilyData()
-                } catch {
-                  Taro.showToast({ title: '操作失败', icon: 'none' })
-                }
-              }
-            },
-          })
+  const handleMemberClick = async (member: AggregatedMember) => {
+    try {
+      Taro.showLoading({ title: '加载中...' })
+      const [, students] = await Promise.all([
+        scheduleApi.listSchedules(),
+        studentApi.listStudents(),
+      ])
+      Taro.hideLoading()
+
+      const myStudents = students.filter((s: Student) => !s.isShared)
+
+      // 根据 visibleStudents（学生名列表）找出对应的学生 id
+      const currentIds = myStudents
+        .filter((s: Student) => member.visibleStudents.includes(s.name))
+        .map((s: Student) => s.id)
+
+      setOwnStudents(myStudents)
+      setEditStudentIds(currentIds)
+      setEditingMember(member)
+      setShowEditSheet(true)
+    } catch {
+      Taro.hideLoading()
+      Taro.showToast({ title: '加载失败', icon: 'none' })
+    }
+  }
+
+  const closeEditSheet = () => {
+    setShowEditSheet(false)
+    setTimeout(() => {
+      setEditingMember(null)
+      setEditStudentIds([])
+      setOwnStudents([])
+    }, 200)
+  }
+
+  const toggleEditStudent = (id: string) => {
+    setEditStudentIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    )
+  }
+
+  const confirmEditStudents = async () => {
+    if (!editingMember) return
+    setEditSaving(true)
+    try {
+      await familyApi.updateMemberStudents(editingMember.openid, editStudentIds)
+      Taro.showToast({ title: '修改成功' })
+      closeEditSheet()
+      await loadFamilyData()
+    } catch (err: any) {
+      Taro.showToast({ title: err?.message || '修改失败', icon: 'none' })
+    } finally {
+      setEditSaving(false)
+    }
+  }
+
+  const handleRemoveMember = () => {
+    if (!editingMember) return
+    const member = editingMember
+    Taro.showModal({
+      title: '取消共享',
+      content: `确定取消与「${member.nickname}」的共享吗？将从所有课表中移除该成员的访问权限。`,
+      confirmColor: '#ef4444',
+      success: async (modalRes) => {
+        if (modalRes.confirm) {
+          try {
+            const schedules = await scheduleApi.listSchedules()
+            await Promise.all(
+              schedules.map((sch: Schedule) =>
+                familyApi.removeMember(sch.id, member.openid).catch(() => {})
+              )
+            )
+            Taro.showToast({ title: '已取消共享' })
+            closeEditSheet()
+            await loadFamilyData()
+          } catch {
+            Taro.showToast({ title: '操作失败', icon: 'none' })
+          }
         }
       },
     })
@@ -348,6 +405,50 @@ export default function FamilyManagePage() {
               </Button>
             </>
           )}
+        </View>
+      </PageContainer>
+
+      {/* 修改课表范围弹窗 */}
+      <PageContainer
+        show={showEditSheet}
+        position='bottom'
+        round
+        zIndex={1000}
+        onClickOverlay={closeEditSheet}
+        onAfterLeave={closeEditSheet}
+      >
+        <View className='edit-sheet-content'>
+          <View className='edit-sheet-header'>
+            <Text className='edit-sheet-title'>修改课表范围</Text>
+            <View className='edit-sheet-close' onClick={closeEditSheet}>×</View>
+          </View>
+          <View className='edit-sheet-subtitle'>
+            修改「{editingMember?.nickname}」可看的学生课表
+          </View>
+          <View className='edit-student-list'>
+            {ownStudents.map(student => {
+              const checked = editStudentIds.includes(student.id)
+              return (
+                <View
+                  key={student.id}
+                  className={`edit-student-item ${checked ? 'checked' : ''}`}
+                  onClick={() => toggleEditStudent(student.id)}
+                >
+                  <Text className='edit-student-name'>{student.name}</Text>
+                  {checked && <Text className='edit-student-check'>✓</Text>}
+                </View>
+              )
+            })}
+          </View>
+          <View
+            className={`edit-confirm-btn ${editSaving ? 'disabled' : ''}`}
+            onClick={editSaving ? undefined : confirmEditStudents}
+          >
+            <Text className='edit-confirm-text'>{editSaving ? '保存中...' : '确认修改'}</Text>
+          </View>
+          <View className='edit-remove-btn' onClick={handleRemoveMember}>
+            <Text className='edit-remove-text'>取消共享</Text>
+          </View>
         </View>
       </PageContainer>
     </View>
