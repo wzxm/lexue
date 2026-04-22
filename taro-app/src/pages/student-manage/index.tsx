@@ -1,7 +1,7 @@
 import { View, Text } from '@tarojs/components'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { useMemo } from 'react'
-import { listStudents } from '../../api/student.api'
+import { listStudents, deleteStudent } from '../../api/student.api'
 import { useStudentStore } from '../../store/student.store'
 import { ROUTES } from '../../constants/routes'
 import type { Student } from '../../types/index'
@@ -46,6 +46,34 @@ export default function StudentManagePage() {
     Taro.navigateTo({ url: `${ROUTES.STUDENT_FORM}?mode=edit&studentId=${student.id}` })
   }
 
+  const handleDelete = (e: any, student: Student) => {
+    e.stopPropagation()
+    if (student.source === 'init') {
+      Taro.showToast({ title: '默认学生不可删除', icon: 'none' })
+      return
+    }
+    if (ownStudents.length <= 1) {
+      Taro.showToast({ title: '至少保留 1 位学生', icon: 'none' })
+      return
+    }
+    Taro.showModal({
+      title: '删除学生',
+      content: `确定删除「${student.name}」？相关课表和课程也会一并删除。`,
+      confirmText: '删除',
+      confirmColor: '#ff4d4f',
+      success: async ({ confirm }) => {
+        if (!confirm) return
+        try {
+          await deleteStudent(student.id)
+          await fetchStudents()
+          Taro.showToast({ title: '已删除', icon: 'success' })
+        } catch (err: any) {
+          Taro.showToast({ title: err.message || '删除失败', icon: 'none' })
+        }
+      },
+    })
+  }
+
   const renderStudentCard = (student: Student) => (
     <View
       key={student.id}
@@ -60,6 +88,7 @@ export default function StudentManagePage() {
           <View className='name-row'>
             <Text className='name'>{student.name}</Text>
             {student.isShared && <Text className='shared-tag'>共享</Text>}
+            {student.source === 'init' && <Text className='init-tag'>默认</Text>}
           </View>
           <Text className='desc'>
             {student.school || '未完善学校'}
@@ -72,8 +101,11 @@ export default function StudentManagePage() {
           <Text className='readonly-hint'>只读</Text>
         ) : (
           <>
-            <Text className='iconfont card-side-icon'>&#xe704;</Text>
-            <Text className='iconfont card-side-icon'>&#xe631;</Text>
+            <Text className='iconfont card-side-icon' onClick={(e) => { e.stopPropagation(); goToEdit(student) }}>&#xe704;</Text>
+            <Text
+              className={`iconfont card-side-icon ${student.source === 'init' ? 'card-side-icon--disabled' : ''}`}
+              onClick={(e) => handleDelete(e, student)}
+            >&#xe631;</Text>
           </>
         )}
       </View>

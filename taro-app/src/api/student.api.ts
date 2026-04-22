@@ -10,6 +10,7 @@ type BackendStudent = {
   gender?: number;
   is_shared?: boolean;
   owner_openid?: string;
+  source?: 'init' | 'user';
 };
 
 function toFrontendStudent(data: BackendStudent): Student {
@@ -22,6 +23,7 @@ function toFrontendStudent(data: BackendStudent): Student {
     gender: data.gender || 0,
     isShared: !!data.is_shared,
     ownerOpenId: data.owner_openid || '',
+    source: data.source ?? 'user',
   };
 }
 

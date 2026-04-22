@@ -168,6 +168,21 @@
   line-height: 1.4;
 }
 
+.init-tag {
+  margin-left: 16px;
+  font-size: 22px;
+  color: #9ca3af;
+  background: #f3f4f6;
+  padding: 4px 16px;
+  border-radius: 12px;
+  line-height: 1.4;
+}
+
+.card-side-icon--disabled {
+  color: #d1d5db !important;
+  opacity: 0.5;
+}
+
 .readonly-hint {
   font-size: 24px;
   color: #BDBDBD;

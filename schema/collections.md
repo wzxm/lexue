@@ -22,6 +22,7 @@
 | name | string | 是 | 学生姓名 |
 | grade | string | 否 | 年级（如：三年级、初一） |
 | avatar | string | 否 | 学生头像（emoji 或 URL） |
+| source | string | 否 | 来源：`init`=系统初始化，`user`=用户手动新增（旧数据无此字段视为 `user`） |
 | created_at | date | 是 | 创建时间 |
 | updated_at | date | 是 | 最后更新时间 |
 

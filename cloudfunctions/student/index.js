@@ -72,6 +72,7 @@ async function create(openid, payload) {
     grade: payload.grade || '',
     gender: payload.gender || 0,
     avatar_url: payload.avatar_url || '',
+    source: 'user',
   });
 
   const student = await db.getOne('students', _id);

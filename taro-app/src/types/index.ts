@@ -76,6 +76,8 @@ export interface Student {
   school: string;
   grade: string;
   gender?: number; // 1: 男, 2: 女
+  /** 来源：init=系统初始化，user=用户手动新增，旧数据无此字段视为 user */
+  source?: 'init' | 'user';
   /** 是否为共享学生（他人通过邀请共享给我的） */
   isShared?: boolean;
   /** 学生的实际 owner openid（用于前端权限判断） */

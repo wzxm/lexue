@@ -30,6 +30,7 @@ export default function StudentFormPage() {
   const [gender, setGender] = useState<number>(0) // 0=未选, 1=男, 2=女
   const [gradeIndex, setGradeIndex] = useState(0)
   const [loading, setLoading] = useState(false)
+  const targetStudent = students.find(s => s.id === studentId)
 
   useEffect(() => {
     if (mode === 'edit' && studentId) {
@@ -39,7 +40,7 @@ export default function StudentFormPage() {
         setSchool(student.school || '')
         setGrade(student.grade || '小学，一年级')
         setGender(student.gender || 0)
-        
+
         const gIdx = GRADE_OPTIONS.indexOf(student.grade)
         setGradeIndex(gIdx >= 0 ? gIdx : 0)
       }
@@ -81,7 +82,6 @@ export default function StudentFormPage() {
   }
 
   const onDelete = () => {
-    const targetStudent = students.find(s => s.id === studentId)
     const targetName = targetStudent?.name || '该学生'
 
     Taro.showModal({
@@ -113,13 +113,13 @@ export default function StudentFormPage() {
       <ScrollView scrollY className='form-body'>
         <View className='form-group-title'>昵称或姓名</View>
         <View className='form-card'>
-          <Input 
-            className='name-input' 
-            placeholder='请输入学生姓名' 
+          <Input
+            className='name-input'
+            placeholder='请输入学生姓名'
             placeholderClass='input-placeholder'
-            value={name} 
-            onInput={(e) => setName(e.detail.value)} 
-            maxlength={20} 
+            value={name}
+            onInput={(e) => setName(e.detail.value)}
+            maxlength={20}
           />
         </View>
 
@@ -139,13 +139,13 @@ export default function StudentFormPage() {
           <View className='form-row'>
             <Text className='row-label'>学校</Text>
             <View className='row-value-wrap' style={{ flex: 1 }}>
-              <Input 
-                className='school-input' 
-                placeholder='请完善' 
+              <Input
+                className='school-input'
+                placeholder='请完善'
                 placeholderClass='input-placeholder'
-                value={school} 
-                onInput={(e) => setSchool(e.detail.value)} 
-                maxlength={30} 
+                value={school}
+                onInput={(e) => setSchool(e.detail.value)}
+                maxlength={30}
               />
               <Text className='row-arrow'>›</Text>
             </View>
@@ -170,8 +170,10 @@ export default function StudentFormPage() {
       </ScrollView>
 
       <View className='form-footer'>
-        <Button className='btn-save' onClick={onSave} loading={loading} disabled={loading}>保存</Button>
-        {mode === 'edit' && students.length > 1 && (
+        <Button className='btn-save' onClick={onSave} loading={loading} disabled={loading}>
+          {loading ? '' : '保存'}
+        </Button>
+        {mode === 'edit' && students.length > 1 && targetStudent?.source !== 'init' && (
           <View className='btn-delete' onClick={onDelete}>删除</View>
         )}
       </View>

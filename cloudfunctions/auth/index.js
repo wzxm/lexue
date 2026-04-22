@@ -65,6 +65,7 @@ async function login(openid, unionid) {
       class_name: '',
       avatar_url: '',
       remark: '',
+      source: 'init',
     });
     logger.info(FN, 'login:default_student_created', { openid });
   }

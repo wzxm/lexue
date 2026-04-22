@@ -103,7 +103,7 @@ export default function ScheduleSwitchDrawer ({
             }}
           >
             <View className='ssd-manage-btn' onClick={onManageSchedule}>
-              <Text className='ssd-manage-icon iconfont'>&#xe696;</Text>
+              <Text className='iconfont ssd-manage-icon'>&#xe696;</Text>
               <Text className='ssd-manage-text'>课表管理</Text>
             </View>
             <View
@@ -115,7 +115,7 @@ export default function ScheduleSwitchDrawer ({
               }}
             />
             <View className='ssd-manage-btn' onClick={onManageStudent}>
-              <Text className='ssd-manage-icon iconfont'>&#xe600;</Text>
+              <Text className='iconfont ssd-manage-icon'>&#xe600;</Text>
               <Text className='ssd-manage-text'>学生管理</Text>
             </View>
           </View>
