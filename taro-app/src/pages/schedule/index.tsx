@@ -477,37 +477,33 @@ export default function SchedulePage () {
       )}
 
       {/* 添加课程方式弹窗 */}
-      {showAddCourseSheet && (
-        <PageContainer
-          show={showAddCourseSheet}
-          position='bottom'
-          round
-          zIndex={1000}
-          onClickOverlay={() => setShowAddCourseSheet(false)}
-          onAfterLeave={() => {
-            setShowAddCourseSheet(false)
-            tabState.setVisible(true)
-          }}
-          customStyle='background-color: #F7F7F7;'
-        >
-          <View className='add-course-sheet'>
-            <View className='add-course-sheet-header'>
-              <Text className='add-course-sheet-title'>选择添加课程方式</Text>
-              <Text
-                className='add-course-sheet-close'
-                onClick={() => setShowAddCourseSheet(false)}
-              >
-                ×
-              </Text>
-            </View>
-            <EmptySchedule
-              scheduleId={currentSchedule?.id}
-              useRedirect={false}
-              hideTitle
-            />
+      <PageContainer
+        show={showAddCourseSheet}
+        position='bottom'
+        round
+        zIndex={1000}
+        onClickOverlay={() => { setShowAddCourseSheet(false); tabState.setVisible(true) }}
+        onAfterLeave={() => tabState.setVisible(true)}
+        customStyle='background-color: #F7F7F7;'
+      >
+        <View className='add-course-sheet'>
+          <View className='add-course-sheet-header'>
+            <Text className='add-course-sheet-title'>选择添加课程方式</Text>
+            <Text
+              className='add-course-sheet-close'
+              onClick={() => { setShowAddCourseSheet(false); tabState.setVisible(true) }}
+            >
+              ×
+            </Text>
           </View>
-        </PageContainer>
-      )}
+          <EmptySchedule
+            scheduleId={currentSchedule?.id}
+            useRedirect={false}
+            onSelectMethod={() => { setShowAddCourseSheet(false); tabState.setVisible(true) }}
+            hideTitle
+          />
+        </View>
+      </PageContainer>
 
       {/* 日视图周选择浮层 */}
       {showDayWeekPicker && (() => {
