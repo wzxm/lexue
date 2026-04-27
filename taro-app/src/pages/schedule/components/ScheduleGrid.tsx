@@ -130,7 +130,7 @@ export default function ScheduleGrid({
                         className='course-block'
                         style={{
                           background: course.color ? `${course.color}22` : '#C8F0D8',
-                          color: course.color || '#00C853',
+                          color: 'var(--color-primary)',
                         }}
                         onClick={() => onTapCourse(course)}
                       >

@@ -3,11 +3,13 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 import Taro, { useRouter } from '@tarojs/taro'
 import { createCourse, updateCourse, listCourses } from '../../api/course.api'
 import { useScheduleStore } from '../../store/schedule.store'
+import { useStudentStore } from '../../store/student.store'
 import type { WeekDay, PeriodIndex, Course } from '../../types/index'
 import { resolveCourseId } from '../../utils/courseId'
 import CourseNameSheet from './components/CourseNameSheet'
 import PeriodGridSheet, { type SlotSelection } from './components/PeriodGridSheet'
 import WeekPickerSheet from './components/WeekPickerSheet'
+import type { GradeLevel } from '../../constants/course-presets'
 import './index.scss'
 
 const WEEKDAY_SHORT = ['一', '二', '三', '四', '五', '六', '日']
@@ -34,6 +36,15 @@ function formatWeeksSummary(weeks: number[], totalWeeks: number): string {
   return `${weeks.length}周`
 }
 
+function resolveGradeLevelFromStudentGrade(grade?: string): GradeLevel {
+  const text = (grade || '').trim()
+  if (text.includes('小学')) return 'elementary'
+  if (text.includes('初中')) return 'middle'
+  if (text.includes('高中')) return 'high'
+  if (text.includes('大学') || text.includes('本科') || text.includes('硕士') || text.includes('博士')) return 'college'
+  return 'middle'
+}
+
 export default function CourseFormPage() {
   const router = useRouter()
   const mode = (router.params.mode || 'add') as 'add' | 'edit'
@@ -45,6 +56,8 @@ export default function CourseFormPage() {
   const currentSchedule = useScheduleStore(s => s.currentSchedule)
   const addCourseToStore = useScheduleStore(s => s.addCourse)
   const updateCourseInStore = useScheduleStore(s => s.updateCourse)
+  const students = useStudentStore(s => s.students)
+  const currentStudent = useStudentStore(s => s.currentStudent)
 
   const totalWeeks = currentSchedule?.total_weeks || currentSchedule?.totalWeeks || 20
   const periodCount = currentSchedule?.periods?.length || 8
@@ -59,6 +72,13 @@ export default function CourseFormPage() {
       )
       .map(c => ({ day_of_week: c.day_of_week, slot: c.slot }))
   }, [currentSchedule, mode, routeCourseId])
+
+  const defaultCourseGradeLevel = useMemo<GradeLevel>(() => {
+    const sid = currentSchedule?.studentId || currentSchedule?.student_id
+    const scheduleStudent = sid ? students.find(s => s.id === sid) : null
+    const grade = scheduleStudent?.grade || currentStudent?.grade
+    return resolveGradeLevelFromStudentGrade(grade)
+  }, [currentSchedule, students, currentStudent])
 
   const [name, setName] = useState('')
   const [teacher, setTeacher] = useState('')
@@ -380,6 +400,7 @@ export default function CourseFormPage() {
       {mountedSheet?.type === 'name' && (
         <CourseNameSheet
           show={shownSheet?.type === 'name'}
+          defaultGradeLevel={defaultCourseGradeLevel}
           onClose={closeSheet}
           onAfterLeave={unmountSheet}
           onSelect={n => {

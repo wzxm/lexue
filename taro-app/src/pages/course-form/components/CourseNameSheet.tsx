@@ -10,9 +10,16 @@ export interface CourseNameSheetProps {
   onClose: () => void
   onSelect: (name: string) => void
   onAfterLeave?: () => void
+  defaultGradeLevel?: GradeLevel
 }
 
-export default function CourseNameSheet({ show, onClose, onSelect, onAfterLeave }: CourseNameSheetProps) {
+export default function CourseNameSheet({
+  show,
+  onClose,
+  onSelect,
+  onAfterLeave,
+  defaultGradeLevel = 'middle',
+}: CourseNameSheetProps) {
   const [gradeLevel, setGradeLevel] = useState<GradeLevel>('middle')
   const [inputValue, setInputValue] = useState('')
   const [presets, setPresets] = useState<CourseNamePreset[]>([])
@@ -31,8 +38,9 @@ export default function CourseNameSheet({ show, onClose, onSelect, onAfterLeave 
   useEffect(() => {
     if (!show) return
     setInputValue('')
+    setGradeLevel(defaultGradeLevel)
     loadPresets()
-  }, [show, loadPresets])
+  }, [show, loadPresets, defaultGradeLevel])
 
   const gradePreset = GRADE_PRESETS.find(g => g.key === gradeLevel)
   const systemCourses = gradePreset?.courses ?? []

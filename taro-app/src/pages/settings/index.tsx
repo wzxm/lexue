@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { View, Text, PageContainer, Image, Input } from '@tarojs/components'
+import { View, Text, PageContainer, Image, Input, Button } from '@tarojs/components'
 import Taro, { useDidHide, useDidShow, useUnload } from '@tarojs/taro'
 import { tabState } from '../../utils/tabState'
 import { ROUTES } from '../../constants/routes'
@@ -50,6 +50,7 @@ export default function SettingsPage() {
   const logout = useAuthStore(s => s.logout)
   const [activeSheet, setActiveSheet] = useState<'none' | 'menu' | 'rename'>('none')
   const [renaming, setRenaming] = useState(false)
+  const [updatingAvatar, setUpdatingAvatar] = useState(false)
   const [draftNickname, setDraftNickname] = useState('')
   const [settingsSummary, setSettingsSummary] = useState<SettingsSummary | null>(null)
 
@@ -133,6 +134,25 @@ export default function SettingsPage() {
       Taro.showToast({ title: err?.message || '修改失败', icon: 'none' })
     } finally {
       setRenaming(false)
+    }
+  }
+
+  const handleChooseAvatar = async (e: any) => {
+    if (updatingAvatar) return
+    const avatarUrl = e?.detail?.avatarUrl || ''
+    if (!avatarUrl) {
+      Taro.showToast({ title: '未获取到头像', icon: 'none' })
+      return
+    }
+    setUpdatingAvatar(true)
+    try {
+      const profile = await updateProfile({ avatarUrl })
+      setUserInfo(profile)
+      Taro.showToast({ title: '头像已更新', icon: 'success' })
+    } catch (err: any) {
+      Taro.showToast({ title: err?.message || '头像更新失败', icon: 'none' })
+    } finally {
+      setUpdatingAvatar(false)
     }
   }
 
@@ -281,7 +301,7 @@ export default function SettingsPage() {
           <View className='logout-sheet-content'>
             <View className='logout-btn' onClick={openRenameSheet}>
               <Text className='iconfont logout-icon'>&#xe729;</Text>
-              <Text className='logout-text'>修改名称</Text>
+              <Text className='logout-text'>修改资料</Text>
             </View>
             <View className='logout-btn' onClick={handleLogout}>
               <Text className='iconfont logout-icon'>&#xe759;</Text>
@@ -293,7 +313,18 @@ export default function SettingsPage() {
           </View>
         ) : (
           <View className='rename-sheet-content'>
-            <Text className='rename-title'>修改名称</Text>
+            <Text className='rename-title'>修改资料</Text>
+            <View className='rename-avatar-row'>
+              <Image className='rename-avatar-img' src={avatarUrl} mode='aspectFill' />
+              <Button
+                className='rename-avatar-btn'
+                openType='chooseAvatar'
+                loading={updatingAvatar}
+                onChooseAvatar={handleChooseAvatar}
+              >
+                {updatingAvatar ? '同步中...' : '同步微信头像'}
+              </Button>
+            </View>
             <Input
               className='rename-input'
               maxlength={20}

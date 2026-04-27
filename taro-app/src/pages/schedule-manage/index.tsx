@@ -24,6 +24,15 @@ function formatCreateTime(timestamp?: number) {
   return `创建于 ${year}-${month}-${day} ${hours}:${minutes}`
 }
 
+function formatSemesterDisplay(value?: string): string {
+  if (!value) return ''
+  const match = /^(\d{4})-(\d{4})-([12])$/.exec(value)
+  if (!match) return value
+  const [, startYear, endYear, term] = match
+  const termText = term === '1' ? '上学期' : '下学期'
+  return `${startYear}～${endYear} ${termText}`
+}
+
 export default function ScheduleManagePage() {
   const userInfo = useAuthStore(s => s.userInfo)
   const currentOpenId = userInfo?.openId || loadOpenId() || ''
@@ -165,7 +174,9 @@ export default function ScheduleManagePage() {
                         <View className='card-left'>
                           <View className='card-title-wrap'>
                             <Text className='card-subtitle'>{group.studentName}</Text>
-                            <Text className='card-title'>{schedule.semester || schedule.name}</Text>
+                            <Text className='card-title'>
+                              {formatSemesterDisplay(schedule.semester) || schedule.name}
+                            </Text>
                           </View>
                           <Text className='card-meta'>
                             {schedule.total_weeks || schedule.totalWeeks || 20}周

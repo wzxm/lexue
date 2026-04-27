@@ -407,6 +407,40 @@
   margin-bottom: 20px;
 }
 
+.rename-avatar-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.rename-avatar-img {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  border: 2px solid #e5e7eb;
+  background: #f3f4f6;
+  flex-shrink: 0;
+}
+
+.rename-avatar-btn {
+  flex: 1;
+  height: 88px;
+  border-radius: 16px;
+  background: #eff6ff;
+  color: #3b82f6;
+  border: none;
+  font-size: 30px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rename-avatar-btn::after {
+  border: none;
+}
+
 .rename-input {
   width: 100%;
   height: 88px;
