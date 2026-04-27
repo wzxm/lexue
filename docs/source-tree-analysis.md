@@ -109,11 +109,11 @@ cloudfunctions/
 │   ├── package.json
 │   └── config.json
 ├── family/                             # 家庭成员管理
-│   ├── index.js                        # listMembers / updatePermission / removeMember / leave
+│   ├── index.js                        # listMembers / removeMember / leave
 │   ├── package.json
 │   └── config.json
 ├── share/                              # 分享口令
-│   ├── index.js                        # generateCode / verifyCode / acceptCode / generateInvite / verifyInvite / acceptInvite
+│   ├── index.js                        # generateCode / verifyCode / acceptCode / verifyInvite / acceptInvite
 │   ├── package.json
 │   └── config.json
 ├── notify/                             # 消息通知设置

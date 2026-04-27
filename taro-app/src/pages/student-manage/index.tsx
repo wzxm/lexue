@@ -7,6 +7,27 @@ import { ROUTES } from '../../constants/routes'
 import type { Student } from '../../types/index'
 import './index.scss'
 
+type SharedStudentGroup = {
+  key: string
+  parentName: string
+  students: Student[]
+}
+
+const MAX_NAME_LENGTH = 7
+
+function getDisplayName(name: string) {
+  if (name.length <= MAX_NAME_LENGTH) return name
+  return `${name.slice(0, MAX_NAME_LENGTH)}...`
+}
+
+function getSharedParentKey(student: Student) {
+  return student.sharedFromOpenId || student.ownerOpenId || `unknown-${student.id}`
+}
+
+function getSharedParentName(student: Student) {
+  return student.sharedFromNickname || '家长'
+}
+
 export default function StudentManagePage() {
   const students = useStudentStore(s => s.students)
   const setStudents = useStudentStore(s => s.setStudents)
@@ -24,14 +45,23 @@ export default function StudentManagePage() {
     }
   }
 
-  const { ownStudents, sharedStudents } = useMemo(() => {
+  const { ownStudents, sharedGroups } = useMemo(() => {
     const own: Student[] = []
-    const shared: Student[] = []
+    const sharedMap = new Map<string, SharedStudentGroup>()
     for (const s of students) {
-      if (s.isShared) shared.push(s)
-      else own.push(s)
+      if (!s.isShared) {
+        own.push(s)
+        continue
+      }
+
+      const key = getSharedParentKey(s)
+      const parentName = getSharedParentName(s)
+      if (!sharedMap.has(key)) {
+        sharedMap.set(key, { key, parentName, students: [] })
+      }
+      sharedMap.get(key)!.students.push(s)
     }
-    return { ownStudents: own, sharedStudents: shared }
+    return { ownStudents: own, sharedGroups: Array.from(sharedMap.values()) }
   }, [students])
 
   const goToAdd = () => {
@@ -39,10 +69,6 @@ export default function StudentManagePage() {
   }
 
   const goToEdit = (student: Student) => {
-    if (student.isShared) {
-      Taro.showToast({ title: '共享学生不可编辑', icon: 'none' })
-      return
-    }
     Taro.navigateTo({ url: `${ROUTES.STUDENT_FORM}?mode=edit&studentId=${student.id}` })
   }
 
@@ -52,7 +78,7 @@ export default function StudentManagePage() {
       Taro.showToast({ title: '默认学生不可删除', icon: 'none' })
       return
     }
-    if (ownStudents.length <= 1) {
+    if (!student.isShared && ownStudents.length <= 1) {
       Taro.showToast({ title: '至少保留 1 位学生', icon: 'none' })
       return
     }
@@ -86,7 +112,7 @@ export default function StudentManagePage() {
         </View>
         <View className='info'>
           <View className='name-row'>
-            <Text className='name'>{student.name}</Text>
+            <Text className='name'>{getDisplayName(student.name)}</Text>
             {student.isShared && <Text className='shared-tag'>共享</Text>}
             {student.source === 'init' && <Text className='init-tag'>默认</Text>}
           </View>
@@ -97,17 +123,13 @@ export default function StudentManagePage() {
         </View>
       </View>
       <View className='card-right'>
-        {student.isShared ? (
-          <Text className='readonly-hint'>只读</Text>
-        ) : (
-          <>
-            <Text className='iconfont card-side-icon' onClick={(e) => { e.stopPropagation(); goToEdit(student) }}>&#xe704;</Text>
-            <Text
-              className={`iconfont card-side-icon ${student.source === 'init' ? 'card-side-icon--disabled' : ''}`}
-              onClick={(e) => handleDelete(e, student)}
-            >&#xe631;</Text>
-          </>
-        )}
+        <>
+          <Text className='iconfont card-side-icon' onClick={(e) => { e.stopPropagation(); goToEdit(student) }}>&#xe704;</Text>
+          <Text
+            className={`iconfont card-side-icon card-side-icon--delete ${student.source === 'init' ? 'card-side-icon--disabled' : ''}`}
+            onClick={(e) => handleDelete(e, student)}
+          >&#xe7c3;</Text>
+        </>
       </View>
     </View>
   )
@@ -129,7 +151,7 @@ export default function StudentManagePage() {
         </View>
         <View className='tip-item'>
           <Text className='tip-dot'>•</Text>
-          <Text className='tip-text'>家人共享的学生仅供查看，不支持编辑或删除。</Text>
+          <Text className='tip-text'>家人共享的数据可共同维护，修改后会同步给对应家人。</Text>
         </View>
       </View>
 
@@ -145,14 +167,18 @@ export default function StudentManagePage() {
         {ownStudents.map(renderStudentCard)}
       </View>
 
-      {sharedStudents.length > 0 && (
+      {sharedGroups.length > 0 && (
         <>
-          <View className='list-header list-header--shared'>
-            <Text className='list-count'>家人共享 {sharedStudents.length} 位</Text>
-          </View>
-          <View className='student-list'>
-            {sharedStudents.map(renderStudentCard)}
-          </View>
+          {sharedGroups.map((group) => (
+            <View key={group.key} className='shared-section'>
+              <View className='list-header list-header--shared'>
+                <Text className='list-count'>{group.parentName}共享 {group.students.length} 位</Text>
+              </View>
+              <View className='student-list'>
+                {group.students.map(renderStudentCard)}
+              </View>
+            </View>
+          ))}
         </>
       )}
     </View>

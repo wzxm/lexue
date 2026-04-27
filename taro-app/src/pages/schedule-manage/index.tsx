@@ -11,13 +11,26 @@ import './index.scss'
 import { useMemo, useState } from 'react'
 import type { Schedule } from '../../types/index'
 
+function formatCreateTime(timestamp?: number) {
+  if (!timestamp) return '创建时间未知'
+  const date = new Date(timestamp)
+  if (Number.isNaN(date.getTime())) return '创建时间未知'
+
+  const year = date.getFullYear()
+  const month = `${date.getMonth() + 1}`.padStart(2, '0')
+  const day = `${date.getDate()}`.padStart(2, '0')
+  const hours = `${date.getHours()}`.padStart(2, '0')
+  const minutes = `${date.getMinutes()}`.padStart(2, '0')
+  return `创建于 ${year}-${month}-${day} ${hours}:${minutes}`
+}
+
 export default function ScheduleManagePage() {
   const userInfo = useAuthStore(s => s.userInfo)
   const currentOpenId = userInfo?.openId || loadOpenId() || ''
   const schedules = useScheduleStore(s => s.schedules)
   const setSchedules = useScheduleStore(s => s.setSchedules)
   const students = useStudentStore(s => s.students)
-  
+
   const [loading, setLoading] = useState(false)
 
   const fetchSchedules = async () => {
@@ -74,19 +87,6 @@ export default function ScheduleManagePage() {
     }
   }
 
-  const handleExitShare = async (e: any) => {
-    e.stopPropagation()
-    const res = await Taro.showModal({
-      title: '退出共享',
-      content: '确定要退出该共享课表吗？',
-      confirmColor: '#FF4D4F'
-    })
-    if (res.confirm) {
-      Taro.showToast({ title: '退出共享(需完善API)', icon: 'none' })
-      // TODO: implement exit share API
-    }
-  }
-
   const handleShare = (e: any, schedule: Schedule) => {
     e.stopPropagation()
     Taro.navigateTo({ url: `${ROUTES.SHARE_SCHEDULE}?id=${schedule.id || schedule._id}` })
@@ -98,14 +98,14 @@ export default function ScheduleManagePage() {
       const isOwner = !s.owner_openid || s.owner_openid === currentOpenId
       const studentInfo = students.find(st => st.id === (s.studentId || s.student_id))
       const key = s.studentId || s.student_id || 'unknown'
-      
+
       if (!map.has(key)) {
         let stuName = studentInfo?.name || '未知学生'
-        map.set(key, { 
-          studentName: stuName, 
+        map.set(key, {
+          studentName: stuName,
           isShared: !isOwner,
           ownerName: !isOwner ? '他人' : undefined,
-          items: [] 
+          items: []
         })
       }
       if (isOwner) {
@@ -126,7 +126,7 @@ export default function ScheduleManagePage() {
         </View>
         <View className='hint-item'>
           <View className='dot' />
-          <Text>共享课表不支持修改，请联系分享人。</Text>
+          <Text>家人共享的课表支持共同维护，修改后会同步给所有相关家人。</Text>
         </View>
       </View>
 
@@ -147,38 +147,39 @@ export default function ScheduleManagePage() {
 
           {groupedSchedules.map((group, idx) => (
             <View key={idx} className='student-group'>
-              <View className='student-name'>
+              {/* <View className='student-name'>
                 {group.studentName}
                 {group.isShared && <Text className='shared-tag'>({group.ownerName}共享)</Text>}
-              </View>
-              
+              </View> */}
+
               <View className='schedule-cards'>
                 {group.items.map(schedule => {
                   const isOwner = !schedule.owner_openid || schedule.owner_openid === currentOpenId;
-                  
+
                   return (
                     <View className='schedule-card-wrap' key={schedule.id || schedule._id}>
-                      <View 
-                        className='schedule-card' 
-                        onClick={() => {
-                          if (isOwner) goEditSchedule(schedule.id || schedule._id!)
-                        }}
+                      <View
+                        className='schedule-card'
+                        onClick={() => goEditSchedule(schedule.id || schedule._id!)}
                       >
                         <View className='card-left'>
-                          <Text className='card-title'>{schedule.semester || schedule.name}</Text>
-                          <Text className='card-subtitle'>{schedule.total_weeks || schedule.totalWeeks || 20}周</Text>
+                          <View className='card-title-wrap'>
+                            <Text className='card-subtitle'>{group.studentName}</Text>
+                            <Text className='card-title'>{schedule.semester || schedule.name}</Text>
+                          </View>
+                          <Text className='card-meta'>
+                            {schedule.total_weeks || schedule.totalWeeks || 20}周
+                            {` • `}
+                            {formatCreateTime(schedule.createdAt)}
+                          </Text>
                         </View>
                       </View>
-                      
+
                       <View className='card-actions'>
                         {isOwner && (
                           <View className='action-btn action-share' onClick={(e) => handleShare(e, schedule)} />
                         )}
-                        {isOwner ? (
-                          <View className='action-btn action-delete' onClick={(e) => handleDelete(e, schedule)} />
-                        ) : (
-                          <View className='action-btn action-exit' onClick={handleExitShare} />
-                        )}
+                        <View className='action-btn action-delete' onClick={(e) => handleDelete(e, schedule)} />
                       </View>
                     </View>
                   )

@@ -1,6 +1,6 @@
 import { cloud } from './cloud';
 
-export type FamilyPermission = 'view' | 'edit';
+export type FamilyPermission = 'edit';
 
 export interface MemberInfo {
   openid: string;
@@ -11,22 +11,14 @@ export interface MemberInfo {
   join_time?: number;
 }
 
-export async function listMembers(scheduleId: string): Promise<MemberInfo[]> {
-  return cloud.call<MemberInfo[]>('family', { action: 'listMembers', payload: { scheduleId } });
+export async function listMembers(): Promise<MemberInfo[]> {
+  return cloud.call<MemberInfo[]>('family', { action: 'listMembers', payload: {} });
 }
 
-export async function updatePermission(scheduleId: string, targetOpenid: string, permission: FamilyPermission): Promise<void> {
-  return cloud.call<void>('family', { action: 'updatePermission', payload: { scheduleId, targetOpenid, permission } });
+export async function removeMember(targetOpenid: string): Promise<void> {
+  return cloud.call<void>('family', { action: 'removeMember', payload: { targetOpenid } });
 }
 
-export async function removeMember(scheduleId: string, targetOpenid: string): Promise<void> {
-  return cloud.call<void>('family', { action: 'removeMember', payload: { scheduleId, targetOpenid } });
-}
-
-export async function leave(scheduleId: string): Promise<void> {
-  return cloud.call<void>('family', { action: 'leave', payload: { scheduleId } });
-}
-
-export async function updateMemberStudents(targetOpenid: string, studentIds: string[]): Promise<void> {
-  return cloud.call<void>('family', { action: 'updateMemberStudents', payload: { targetOpenid, studentIds } });
+export async function leave(ownerOpenid: string): Promise<void> {
+  return cloud.call<void>('family', { action: 'leave', payload: { ownerOpenid } });
 }

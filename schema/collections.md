@@ -6,6 +6,7 @@
 |--------|------|------|------|
 | _id | string | 是 | 云数据库自动生成的文档ID |
 | openid | string | 是 | 微信用户唯一标识 |
+| status | string | 否 | 账号状态：`active`（默认）/ `disabled` / `deleted` |
 | nickname | string | 否 | 用户昵称 |
 | avatar_url | string | 否 | 用户头像URL |
 | created_at | date | 是 | 注册时间 |
@@ -48,8 +49,8 @@
 | is_default | boolean | 是 | 是否为当前显示课表，默认 false，同一学生下只有一个为 true |
 | shared_with | array | 否 | 已共享的用户列表，元素结构见下 |
 | shared_with[].openid | string | 是 | 共享用户的 openid |
-| shared_with[].nickname | string | 否 | 共享用户昵称 |
-| shared_with[].joined_at | date | 是 | 加入共享时间 |
+| shared_with[].permission | string | 是 | 课表级权限（`edit` / `view`） |
+| shared_with[].join_time | date | 是 | 加入时间 |
 | created_at | date | 是 | 创建时间 |
 | updated_at | date | 是 | 最后更新时间 |
 
@@ -64,14 +65,14 @@
 | student_id | string | 是 | 关联的学生ID |
 | owner_openid | string | 是 | 创建者的 openid |
 | name | string | 是 | 课程名称 |
-| day_of_week | number | 是 | 星期几（1=周一，7=周日） |
-| period | number | 是 | 第几节课（1起） |
-| start_time | string | 否 | 上课时间（格式：HH:mm） |
-| end_time | string | 否 | 下课时间（格式：HH:mm） |
+| day_of_week | number | 是 | 星期几（0=周日，1=周一，...，6=周六） |
+| slot | number | 是 | 第几节课（1-12） |
 | teacher | string | 否 | 教师姓名 |
 | room | string | 否 | 教室/地点 |
 | contact | string | 否 | 联系方式 |
 | color | string | 否 | 课程颜色标识（hex色值） |
+| weeks | array | 否 | 上课周次，空数组表示每周都上 |
+| remark | string | 否 | 备注 |
 | created_at | date | 是 | 创建时间 |
 | updated_at | date | 是 | 最后更新时间 |
 
@@ -99,24 +100,23 @@
 | member_nickname | string | 否 | 成员昵称 |
 | member_avatar | string | 否 | 成员头像URL |
 | role | string | 否 | 成员角色（如：爸爸、妈妈、爷爷） |
-| student_id | string | 是 | 关联的学生ID |
 | created_at | date | 是 | 加入时间 |
 
 ---
 
-## share_codes（口令分享）
+## share_codes（课表口令）
 
 | 字段名 | 类型 | 必填 | 说明 |
 |--------|------|------|------|
 | _id | string | 是 | 云数据库自动生成的文档ID |
 | code | string | 是 | 6位随机口令（大写字母+数字） |
+| type | string | 是 | 口令类型，当前仅使用 `code` |
 | schedule_id | string | 是 | 要分享的课表ID |
-| student_id | string | 是 | 关联的学生ID |
-| owner_openid | string | 是 | 创建口令的用户 openid |
-| expires_at | date | 是 | 口令过期时间（默认24小时） |
-| used_count | number | 是 | 已使用次数，默认 0 |
-| max_uses | number | 否 | 最大使用次数，null 表示不限 |
+| creator_openid | string | 是 | 创建口令的用户 openid |
+| used_count | number | 是 | 已使用次数，默认 0（仅统计用途，不影响可用性） |
 | created_at | date | 是 | 创建时间 |
+
+> 口令默认长期有效，可无限次使用；当课表 owner 重新生成口令时，旧口令立即失效。
 
 ---
 

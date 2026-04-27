@@ -1,5 +1,5 @@
 import { View, Text, PageContainer } from '@tarojs/components'
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import Taro from '@tarojs/taro'
 import { tabState } from '../../utils/tabState'
 import { useScheduleStore, buildGrid } from '../../store/schedule.store'
@@ -56,6 +56,7 @@ export default function SchedulePage () {
   const [selectedDayIndex, setSelectedDayIndex] = useState(0)
   const [showDayWeekPicker, setShowDayWeekPicker] = useState(false)
   const [tempDayWeek, setTempDayWeek] = useState(1)
+  const loadPromiseRef = useRef<Promise<void> | null>(null)
 
   /** 课程详情弹层打开时隐藏底部自定义 TabBar，关闭或卸载时恢复 */
   useEffect(() => {
@@ -74,6 +75,14 @@ export default function SchedulePage () {
     () => groupSchedulesByStudent(schedules, students),
     [schedules, students]
   )
+  const headerStudent = useMemo(() => {
+    const sid = currentSchedule?.studentId || currentSchedule?.student_id
+    if (sid) {
+      const fromList = students.find(s => s.id === sid)
+      if (fromList) return fromList
+    }
+    return currentStudent
+  }, [currentSchedule, students, currentStudent])
 
   /** 根据课表 start_date 算出当前周 offset，clamp 到 [0, totalWeeks-1] */
   const calcInitialOffset = (schedule: typeof currentSchedule): number => {
@@ -178,42 +187,73 @@ export default function SchedulePage () {
     syncView()
     tabState.setSelected(0)
     if (useAuthStore.getState().isLoggedIn) {
-      loadData()
+      const { students: cachedStudents } = useStudentStore.getState()
+      const { schedules: cachedSchedules, currentSchedule: cachedCurrentSchedule } =
+        useScheduleStore.getState()
+
+      // Tab 间切换优先复用现有数据，避免每次回到课表页都串行重拉。
+      if (
+        cachedStudents.length === 0 ||
+        cachedSchedules.length === 0 ||
+        !cachedCurrentSchedule
+      ) {
+        void loadData()
+      }
     }
   })
 
   /** 加载数据 */
-  const loadData = async () => {
-    Taro.showLoading({ title: '加载中', mask: true })
-    try {
-      const studentList = await listStudents()
-      setStudents(studentList)
-      const cur = useStudentStore.getState().currentStudent
-      if (!cur) {
-        setSchedules([])
-        setCurrentSchedule(null)
+  const loadData = async (options?: { silent?: boolean }) => {
+    if (loadPromiseRef.current) return loadPromiseRef.current
+
+    const promise = (async () => {
+      if (!options?.silent) {
+        Taro.showLoading({ title: '加载中', mask: true })
+      }
+      try {
+        const studentList = await listStudents()
+        setStudents(studentList)
+        const cur = useStudentStore.getState().currentStudent
+        if (!cur) {
+          setSchedules([])
+          setCurrentSchedule(null)
+          syncView()
+          return
+        }
+        const schedules = await listSchedules(cur.id)
+        setSchedules(schedules)
+        const defaultSchedule = schedules.find(s => s.isDefault) || schedules[0]
+        if (defaultSchedule) {
+          const full = await getSchedule(defaultSchedule.id)
+          const sid = full.studentId || full.student_id
+          if (sid) {
+            const st = studentList.find(s => s.id === sid)
+            if (st) setCurrentStudent(st)
+          }
+          setCurrentSchedule(full)
+          setWeekOffset(calcInitialOffset(full))
+        } else {
+          setCurrentSchedule(null)
+        }
         syncView()
-        return
+      } catch (err: any) {
+        Taro.showToast({
+          title: err.message || '加载失败',
+          icon: 'none',
+          duration: 3000
+        })
+      } finally {
+        if (!options?.silent) {
+          Taro.hideLoading()
+        }
       }
-      const schedules = await listSchedules(cur.id)
-      setSchedules(schedules)
-      const defaultSchedule = schedules.find(s => s.isDefault) || schedules[0]
-      if (defaultSchedule) {
-        const full = await getSchedule(defaultSchedule.id)
-        setCurrentSchedule(full)
-        setWeekOffset(calcInitialOffset(full))
-      } else {
-        setCurrentSchedule(null)
-      }
-      syncView()
-    } catch (err: any) {
-      Taro.showToast({
-        title: err.message || '加载失败',
-        icon: 'none',
-        duration: 3000
-      })
+    })()
+
+    loadPromiseRef.current = promise
+    try {
+      await promise
     } finally {
-      Taro.hideLoading()
+      loadPromiseRef.current = null
     }
   }
 
@@ -394,7 +434,7 @@ export default function SchedulePage () {
             }}
           >
             <Text className='student-name'>
-              <Text>{currentStudent?.name || '未选择学生'}</Text>
+              <Text>{headerStudent?.name || '未选择学生'}</Text>
               <Text className='student-sub-icon'>⇌</Text>
             </Text>
             <Text className='student-sub'>{currentSchedule.name}</Text>

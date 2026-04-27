@@ -51,6 +51,7 @@ pnpm build:weapp  # 生产构建
 # 根目录执行，需要先在微信开发者工具完成登录授权
 npm run deploy              # 部署全部云函数
 npm run deploy:auth         # 部署单个云函数（auth/schedule/course/student/family/notify/reminder/share）
+npm run deploy:init-db      # 部署一次性初始化函数（首次环境初始化时再执行）
 ```
 
 ### 发布上传
@@ -77,7 +78,7 @@ pnpm ci:upload    # 上传到微信后台
 
 集合说明见 [`schema/collections.md`](schema/collections.md)，索引配置见 [`schema/indexes.md`](schema/indexes.md)。
 
-首次部署需在云开发控制台触发 `init-db` 云函数初始化所有集合。
+首次环境初始化时，先执行 `npm run deploy:init-db` 上传 `init-db`，再在云开发控制台手动触发该函数初始化集合。
 
 ## 权限模型
 

@@ -82,6 +82,12 @@ export interface Student {
   isShared?: boolean;
   /** 学生的实际 owner openid（用于前端权限判断） */
   ownerOpenId?: string;
+  /** 共享来源家长 openid */
+  sharedFromOpenId?: string;
+  /** 共享来源家长昵称 */
+  sharedFromNickname?: string;
+  /** 共享来源家长头像 */
+  sharedFromAvatar?: string;
 }
 
 export interface FamilyMember {

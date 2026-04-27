@@ -9,10 +9,23 @@ cloud.init({ env: 'cloud1-1g0kf2p8b07af20f' });
 const db = require('../../shared/db');
 const { ERRORS, success, fail } = require('../../shared/errors');
 const { getOpenId } = require('../../shared/auth');
+const { isFamilyMember } = require('../../shared/family');
 const validator = require('../../shared/validator');
 const logger = require('../../shared/logger');
 
 const FN = 'student';
+
+function attachSharedOwnerInfo(student, ownerUserMap) {
+  const ownerOpenid = student.owner_openid || '';
+  const owner = ownerUserMap[ownerOpenid] || {};
+  return {
+    ...student,
+    is_shared: true,
+    shared_from_openid: ownerOpenid,
+    shared_from_nickname: owner.nickname || '',
+    shared_from_avatar_url: owner.avatar_url || '',
+  };
+}
 
 /**
  * 获取当前用户可见的学生列表
@@ -28,27 +41,55 @@ async function list(openid) {
 
   // 2. 共享课表里涉及到的他人学生（去重）
   const _ = db.getCommand();
+  const familyRelations = await db.getList('families', { member_openid: openid });
+  const familyOwnerOpenids = Array.from(new Set(familyRelations.map((item) => item.owner_openid).filter(Boolean)));
   const sharedSchedules = await db.getList('schedules', {
     shared_with: _.elemMatch({ openid }),
     owner_openid: _.neq(openid),
   });
 
   const sharedStudentIdSet = new Set();
+  const sharedStudentOwnerMap = new Map();
+  if (familyOwnerOpenids.length > 0) {
+    const familyStudents = await db.getList('students', { owner_openid: _.in(familyOwnerOpenids) });
+    for (const student of familyStudents) {
+      sharedStudentIdSet.add(student._id);
+      if (student._id && student.owner_openid) {
+        sharedStudentOwnerMap.set(student._id, student.owner_openid);
+      }
+    }
+  }
   for (const sch of sharedSchedules) {
-    if (sch.student_id) sharedStudentIdSet.add(sch.student_id);
+    if (sch.student_id) {
+      sharedStudentIdSet.add(sch.student_id);
+      if (sch.owner_openid && !sharedStudentOwnerMap.has(sch.student_id)) {
+        sharedStudentOwnerMap.set(sch.student_id, sch.owner_openid);
+      }
+    }
   }
 
   const sharedStudents = [];
   for (const sid of sharedStudentIdSet) {
     const st = await db.getOne('students', sid);
     if (st) {
-      sharedStudents.push({ ...st, is_shared: true });
+      const fallbackOwnerOpenid = sharedStudentOwnerMap.get(sid) || '';
+      sharedStudents.push({
+        ...st,
+        owner_openid: st.owner_openid || fallbackOwnerOpenid,
+        is_shared: true,
+      });
     }
   }
+  const sharedOwnerOpenids = Array.from(new Set(sharedStudents.map((s) => s.owner_openid).filter(Boolean)));
+  const ownerUsers = sharedOwnerOpenids.length > 0
+    ? await db.getList('users', { openid: _.in(sharedOwnerOpenids) })
+    : [];
+  const ownerUserMap = {};
+  ownerUsers.forEach((user) => { ownerUserMap[user.openid] = user; });
 
   const result = [
     ...ownStudents.map(s => ({ ...s, id: s._id, is_shared: false })),
-    ...sharedStudents.map(s => ({ ...s, id: s._id, is_shared: true })),
+    ...sharedStudents.map(s => attachSharedOwnerInfo({ ...s, id: s._id }, ownerUserMap)),
   ];
 
   return success(result);
@@ -94,6 +135,10 @@ async function get(openid, payload) {
     return success({ ...student, id: student._id, is_shared: false });
   }
 
+  if (await isFamilyMember(student.owner_openid, openid)) {
+    return success({ ...student, id: student._id, is_shared: true });
+  }
+
   // 非 owner：检查当前用户是否通过该学生的任一课表以共享身份加入
   const _ = db.getCommand();
   const sharedSchedule = await db.findOne('schedules', {
@@ -106,14 +151,15 @@ async function get(openid, payload) {
 }
 
 /**
- * 修改学生信息（需要是 owner）
+ * 修改学生信息（owner 或家庭成员）
  */
 async function update(openid, payload) {
   validator.requireFields(payload, ['studentId']);
 
   const student = await db.getOne('students', payload.studentId);
   if (!student) return fail(ERRORS.NOT_FOUND, '学生不存在');
-  if (student.owner_openid !== openid) return fail(ERRORS.FORBIDDEN);
+  const canManageStudent = student.owner_openid === openid || await isFamilyMember(student.owner_openid, openid);
+  if (!canManageStudent) return fail(ERRORS.FORBIDDEN);
 
   logger.info(FN, 'update', { openid, studentId: payload.studentId });
 
@@ -135,7 +181,7 @@ async function update(openid, payload) {
 }
 
 /**
- * 删除学生（需要是 owner）
+ * 删除学生（owner 或家庭成员）
  * 同时级联删除该学生下的所有课表和课程，不删干净不行
  */
 async function remove(openid, payload) {
@@ -143,7 +189,8 @@ async function remove(openid, payload) {
 
   const student = await db.getOne('students', payload.studentId);
   if (!student) return fail(ERRORS.NOT_FOUND, '学生不存在');
-  if (student.owner_openid !== openid) return fail(ERRORS.FORBIDDEN);
+  const canManageStudent = student.owner_openid === openid || await isFamilyMember(student.owner_openid, openid);
+  if (!canManageStudent) return fail(ERRORS.FORBIDDEN);
 
   logger.info(FN, 'delete', { openid, studentId: payload.studentId });
 

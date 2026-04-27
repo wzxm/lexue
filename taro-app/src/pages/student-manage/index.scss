@@ -94,6 +94,7 @@
   align-items: center;
   gap: 24px;
   flex: 1;
+  min-width: 0;
 }
 
 .avatar {
@@ -115,17 +116,20 @@
   flex-direction: column;
   justify-content: center;
   gap: 8px;
+  min-width: 0;
 }
 
 .name-row {
   display: flex;
   align-items: center;
+  min-width: 0;
 }
 
 .name {
   font-size: 32px;
   font-weight: 500;
   color: #333333;
+  flex-shrink: 0;
 }
 
 .desc {
@@ -145,6 +149,10 @@
   font-size: 40px;
   color: #666666;
   line-height: 1;
+}
+
+.card-side-icon--delete {
+  color: #ff4d4f;
 }
 
 /* 共享学生样式 */

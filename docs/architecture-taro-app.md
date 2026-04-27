@@ -103,7 +103,7 @@ Pages / Components（视图层）
 ### useFamilyStore
 ```
 状态: { members }
-动作: loadMembers(), updatePermission(), removeMember()
+动作: loadMembers(), removeMember()
 ```
 
 ---

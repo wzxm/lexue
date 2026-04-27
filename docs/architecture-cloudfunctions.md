@@ -25,8 +25,8 @@
 | `schedule` | list, create, get, update, delete, setDefault | 课表管理 |
 | `course` | list, create, update, delete, batchCreate | 课程管理 |
 | `student` | list, create, get, update, delete | 学生管理 |
-| `family` | listMembers, updatePermission, removeMember, leave | 家庭成员 |
-| `share` | generateCode, verifyCode, acceptCode, generateInvite, verifyInvite, acceptInvite | 分享口令 |
+| `family` | listMembers, removeMember, leave | 家庭成员 |
+| `share` | generateCode, verifyCode, acceptCode, verifyInvite, acceptInvite | 分享口令 |
 | `notify` | getSettings, updateSettings, recordSubscribe | 消息通知设置 |
 | `reminder` | （定时触发，无 action 路由） | 发送上课提醒 |
 | `init-db` | （一次性运行） | 数据库初始化 |
@@ -139,8 +139,8 @@ validateLength(value, min, max, name) // 长度校验
 
 **权限层级：**
 - `owner`：课表创建者，拥有全部权限
-- `edit`：共享成员，`shared_with[].permission === 'edit'`，可读写课程，不可管理成员
-- `view`：共享成员，`shared_with[].permission === 'view'`，只读
+- `edit`：共享成员，`shared_with[].permission === 'edit'`，账户级家人共享固定同步为该权限
+- `view`：仅课表口令加入时可能出现的只读权限
 
 ---
 

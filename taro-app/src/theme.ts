@@ -8,8 +8,9 @@
  */
 
 export type ThemeMode = 'light' | 'dark'
+type ThemeColorShape = Record<string, string>
 
-const light = {
+const light: ThemeColorShape = {
   /** 品牌主色（MiniMax 蓝）— pen: --lx-brand */
   brand: '#3b82f6',
   /** 品牌深蓝 — DESIGN.md brand-6 */
@@ -58,7 +59,7 @@ const light = {
   textGray: '#8e8e93',
 } as const
 
-const dark = {
+const dark: ThemeColorShape = {
   brand: '#60a5fa',
   brandDeep: '#3b82f6',
   brandSubtle: '#1e3a5f',

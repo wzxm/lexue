@@ -14,8 +14,8 @@
 | `students` | 学生信息 | → users（owner_openid） |
 | `schedules` | 课表 | → students（student_id），含共享成员数组 |
 | `courses` | 课程 | → schedules（schedule_id），→ students（student_id） |
-| `families` | 家庭关系 | → users（owner_openid, member_openid），→ students |
-| `share_codes` | 分享口令 | → schedules（schedule_id），→ students |
+| `families` | 家庭关系 | → users（owner_openid, member_openid） |
+| `share_codes` | 课表口令 | → schedules（schedule_id） |
 | `reminders` | 提醒记录 | → users（openid），→ courses（course_id） |
 | `tools_data` | 百宝箱数据 | → users（openid），→ students（可选） |
 
@@ -67,12 +67,12 @@
 | `student_id` | string | 是 | 关联学生 ID |
 | `name` | string | 是 | 课表名称（如：2024春季学期） |
 | `semester` | string | 否 | 学期标识 |
-| `is_active` | boolean | 是 | 是否为当前启用课表，默认 false |
+| `invite_code` | string | 是 | 永久分享口令，可用于复制课表 |
+| `is_default` | boolean | 是 | 是否为当前默认课表，默认 false |
 | `shared_with` | array | 否 | 共享成员列表 |
 | `shared_with[].openid` | string | 是 | 成员 openid |
-| `shared_with[].nickname` | string | 否 | 成员昵称 |
 | `shared_with[].permission` | string | 是 | 权限：`'edit'` 或 `'view'` |
-| `shared_with[].joined_at` | date | 是 | 加入时间 |
+| `shared_with[].join_time` | date | 是 | 加入时间 |
 | `created_at` | date | 是 | 创建时间 |
 | `updated_at` | date | 是 | 最后更新时间 |
 
@@ -126,7 +126,6 @@
 | `member_nickname` | string | 否 | 成员昵称 |
 | `member_avatar` | string | 否 | 成员头像 URL |
 | `role` | string | 否 | 成员角色（如：爸爸、妈妈） |
-| `student_id` | string | 是 | 关联学生 ID |
 | `created_at` | date | 是 | 加入时间 |
 
 **索引：**
@@ -137,19 +136,17 @@
 
 ---
 
-## share_codes（分享口令）
+## share_codes（课表口令）
 
 | 字段名 | 类型 | 必填 | 说明 |
 |--------|------|------|------|
 | `_id` | string | 是 | 自动生成 |
 | `code` | string | 是 | 6位大写口令（唯一索引） |
+| `type` | string | 是 | 口令类型，当前仅使用 `code` |
 | `schedule_id` | string | 是 | 要分享的课表 ID |
-| `student_id` | string | 是 | 关联学生 ID |
-| `owner_openid` | string | 是 | 创建口令的用户 openid |
-| `permission` | string | 是 | 授予的权限：`'edit'` 或 `'view'` |
-| `expires_at` | date | 是 | 过期时间（默认24小时） |
+| `creator_openid` | string | 是 | 创建口令的用户 openid |
+| `expire_at` | date | 是 | 过期时间 |
 | `used_count` | number | 是 | 已使用次数，默认 0 |
-| `max_uses` | number | 否 | 最大使用次数，null = 不限 |
 | `created_at` | date | 是 | 创建时间 |
 
 > **注意**：微信云数据库不支持原生 TTL 自动删除，需定时云函数清理过期口令
@@ -157,7 +154,7 @@
 **索引：**
 ```js
 { code: 1 }        // unique
-{ expires_at: 1 }  // 用于清理过期数据
+{ expire_at: 1 }  // 用于清理过期数据
 ```
 
 ---
@@ -223,8 +220,8 @@ users
                ↓
            reminders (course_id)
 
-share_codes (schedule_id, owner_openid)
-families (owner_openid, member_openid, student_id)
+share_codes (schedule_id, creator_openid)
+families (owner_openid, member_openid)
 tools_data (openid, student_id?)
 ```
 

@@ -21,6 +21,12 @@ const VALID_DAYS = [0, 1, 2, 3, 4, 5, 6];
 const VALID_SLOTS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 const GRADE_LEVELS = ['elementary', 'middle', 'high', 'college'];
 
+function buildAllWeeks(totalWeeks) {
+  const count = Number(totalWeeks);
+  const safeCount = Number.isFinite(count) && count > 0 ? count : 20;
+  return Array.from({ length: safeCount }, (_, i) => i + 1);
+}
+
 /**
  * 获取课表下所有课程
  */
@@ -47,20 +53,25 @@ async function create(openid, payload) {
   validator.enumValue(payload.slot, VALID_SLOTS, 'slot');
   validator.maxLength(payload.color, 20, 'color');
 
-  // 需要编辑权限
-  await requireEdit(openid, payload.schedule_id);
+  // 需要编辑权限，同时拿到所属课表用于补齐归属字段
+  const schedule = await requireEdit(openid, payload.schedule_id);
+  const normalizedWeeks = Array.isArray(payload.weeks) && payload.weeks.length > 0
+    ? payload.weeks
+    : buildAllWeeks(schedule.total_weeks);
 
   logger.info(FN, 'create', { openid, scheduleId: payload.schedule_id, name: payload.name });
 
   const { _id } = await db.create('courses', {
     schedule_id: payload.schedule_id,
+    student_id: schedule.student_id,
+    owner_openid: schedule.owner_openid,
     name: payload.name,
     teacher: payload.teacher || '',
     room: payload.room || '',
     day_of_week: payload.day_of_week,
     slot: payload.slot,
     color: payload.color,
-    weeks: payload.weeks || [], // 可选：指定哪几周上课，空数组表示每周都上
+    weeks: normalizedWeeks,
     remark: payload.remark || '',
     contact: payload.contact !== undefined && payload.contact !== null ? String(payload.contact) : '',
   });
@@ -131,7 +142,7 @@ async function batchCreate(openid, payload) {
     return fail(ERRORS.PARAM_ERROR, '单次批量添加不能超过100个课程');
   }
 
-  await requireEdit(openid, payload.schedule_id);
+  const schedule = await requireEdit(openid, payload.schedule_id);
 
   logger.info(FN, 'batchCreate', { openid, scheduleId: payload.schedule_id, count: payload.courses.length });
 
@@ -148,15 +159,20 @@ async function batchCreate(openid, payload) {
   // 批量创建，云开发没有批量 add，用循环（50条以内影响不大）
   const results = [];
   for (const c of payload.courses) {
+    const normalizedWeeks = Array.isArray(c.weeks) && c.weeks.length > 0
+      ? c.weeks
+      : buildAllWeeks(schedule.total_weeks);
     const { _id } = await db.create('courses', {
       schedule_id: payload.schedule_id,
+      student_id: schedule.student_id,
+      owner_openid: schedule.owner_openid,
       name: c.name,
       teacher: c.teacher || '',
       room: c.room || '',
       day_of_week: c.day_of_week,
       slot: c.slot,
       color: c.color,
-      weeks: c.weeks || [],
+      weeks: normalizedWeeks,
       remark: c.remark || '',
       contact: c.contact !== undefined && c.contact !== null ? String(c.contact) : '',
     });

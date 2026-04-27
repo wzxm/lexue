@@ -1,26 +1,37 @@
-import Taro from '@tarojs/taro'
-import { PropsWithChildren, useEffect } from 'react'
+import { PropsWithChildren, useEffect, useRef } from 'react'
 import { useDidShow } from '@tarojs/taro'
 import { useAuthStore } from './store/auth.store'
+import { ensureCloudInitialized } from './api/cloud'
 import './app.scss'
 
+const SESSION_VALIDATE_INTERVAL = 60 * 1000
+
 function App({ children }: PropsWithChildren) {
+  const lastValidatedAtRef = useRef(0)
+
+  const rehydrateAndValidate = async () => {
+    const auth = useAuthStore.getState()
+    auth.hydrate()
+    await auth.validateSession()
+    lastValidatedAtRef.current = Date.now()
+  }
+
   useEffect(() => {
-    useAuthStore.getState().hydrate()
-    // 云开发初始化（Taro.cloud.init 等效于 wx.cloud.init）
-    if (Taro.cloud) {
-      Taro.cloud.init({
-        env: 'cloud1-1g0kf2p8b07af20f',
-        traceUser: true,
+    void ensureCloudInitialized()
+      .then(() => {
+        void rehydrateAndValidate()
       })
-      console.log('[app] 云开发初始化完成')
-    } else {
-      console.error('[app] 当前环境不支持云开发')
-    }
+      .catch(() => {
+        console.error('[app] 当前环境不支持云开发')
+        useAuthStore.getState().hydrate()
+      })
   }, [])
 
   useDidShow(() => {
-    useAuthStore.getState().hydrate()
+    if (Date.now() - lastValidatedAtRef.current < SESSION_VALIDATE_INTERVAL) {
+      return
+    }
+    void rehydrateAndValidate()
   })
 
   return children

@@ -65,7 +65,7 @@ export default function ToolsPage () {
   useDidShow(() => {
     tabState.setVisible(true)
     tabState.setSelected(1)
-    if (useAuthStore.getState().isLoggedIn) {
+    if (useAuthStore.getState().isLoggedIn && useStudentStore.getState().students.length === 0) {
       listStudents()
         .then(setStudents)
         .catch(() => {})
@@ -178,7 +178,11 @@ export default function ToolsPage () {
             </View>
           ) : (
             <View className='user-info' onClick={openDrawer}>
-              <View className='avatar'>我</View>
+              <Image
+                className='avatar-img'
+                src={userInfo?.avatarUrl || defaultAvatar}
+                mode='aspectFill'
+              />
               <View className='user-text'>
                 <View className='name-row'>
                   <Text className='name'>
@@ -188,8 +192,8 @@ export default function ToolsPage () {
                 </View>
                 <Text className='school'>
                   {currentSchedule
-                    ? headerSchoolLine || '未填写学校'
-                    : '请选择课表'}
+                    ? headerSchoolLine || `家长：${userInfo?.nickname || '未设置昵称'}`
+                    : `家长：${userInfo?.nickname || '未设置昵称'}`}
                 </Text>
               </View>
             </View>

@@ -19,6 +19,7 @@ const COLLECTIONS = [
   { name: 'students',     desc: '学生表 - 一个用户可有多个孩子' },
   { name: 'schedules',    desc: '课表表 - 关联学生，支持共享' },
   { name: 'courses',      desc: '课程表 - 属于某个课表' },
+  { name: 'families',     desc: '家庭关系表 - 维护 owner 与成员映射' },
   { name: 'share_codes',  desc: '分享口令表 - 支持口令和邀请两种类型' },
   { name: 'reminders',    desc: '提醒表 - 定时发送订阅消息' },
 ];

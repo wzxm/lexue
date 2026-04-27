@@ -173,7 +173,7 @@ export default function StudentFormPage() {
         <Button className='btn-save' onClick={onSave} loading={loading} disabled={loading}>
           {loading ? '' : '保存'}
         </Button>
-        {mode === 'edit' && students.length > 1 && targetStudent?.source !== 'init' && (
+        {mode === 'edit' && (targetStudent?.isShared || students.filter((item) => !item.isShared).length > 1) && targetStudent?.source !== 'init' && (
           <View className='btn-delete' onClick={onDelete}>删除</View>
         )}
       </View>

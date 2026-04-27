@@ -50,6 +50,9 @@ db.collection("families").createIndex({ owner_openid: 1 })
 
 // 按成员查所有加入的家庭
 db.collection("families").createIndex({ member_openid: 1 })
+
+// 避免同一 owner/member 关系重复创建
+db.collection("families").createIndex({ owner_openid: 1, member_openid: 1 }, { unique: true })
 ```
 
 ## share_codes
@@ -57,12 +60,8 @@ db.collection("families").createIndex({ member_openid: 1 })
 ```js
 // 口令唯一索引，用于扫码/输入口令查找
 db.collection("share_codes").createIndex({ code: 1 }, { unique: true })
-
-// TTL 索引，自动清理过期口令（expires_at 字段）
-db.collection("share_codes").createIndex({ expires_at: 1 })
 ```
-
-> **注意**：微信云数据库不支持原生 TTL 索引自动删除，需配合定时云函数清理过期数据。
+> 口令不按时间过期；旧口令在同课表重新生成新口令时由业务逻辑失效（删除旧记录）。
 
 ## reminders
 

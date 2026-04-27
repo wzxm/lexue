@@ -18,6 +18,7 @@ const CF_ROOT = path.join(ROOT, 'cloudfunctions')
 const ENV_ID = 'cloud1-1g0kf2p8b07af20f'
 const APPID = 'wx8db7f3de48496906'
 const PRIVATE_KEY_PATH = path.join(ROOT, 'private.wx8db7f3de48496906.key')
+const ONE_OFF_FUNCTIONS = new Set(['init-db'])
 
 /** 需要部署的云函数列表（自动发现有 package.json 的目录） */
 function discoverFunctions() {
@@ -25,6 +26,10 @@ function discoverFunctions() {
     const pkgPath = path.join(CF_ROOT, name, 'package.json')
     return fs.existsSync(pkgPath)
   })
+}
+
+function isOneOffFunction(fnName) {
+  return ONE_OFF_FUNCTIONS.has(fnName)
 }
 
 // ─── 工具函数 ─────────────────────────────────────────────────────────────────
@@ -151,7 +156,8 @@ function deployFunction(fnName) {
 async function main() {
   const args = process.argv.slice(2)
   const allFunctions = discoverFunctions()
-  const targets = args.length > 0 ? args : allFunctions
+  const defaultFunctions = allFunctions.filter(fnName => !isOneOffFunction(fnName))
+  const targets = args.length > 0 ? args : defaultFunctions
 
   // 校验参数
   const invalid = targets.filter(n => !allFunctions.includes(n))
@@ -165,6 +171,11 @@ async function main() {
     console.error(`❌ 找不到私钥文件: ${PRIVATE_KEY_PATH}`)
     console.error('   请从微信公众平台下载上传密钥并放到项目根目录')
     process.exit(1)
+  }
+
+  if (args.length === 0 && defaultFunctions.length !== allFunctions.length) {
+    console.log(`ℹ️  默认跳过一次性云函数: ${[...ONE_OFF_FUNCTIONS].join(', ')}`)
+    console.log('   如需部署，请显式执行: node scripts/deploy-cloud-functions.js init-db\n')
   }
 
   console.log(`\n🚀 开始部署云函数 (共 ${targets.length} 个)\n`)

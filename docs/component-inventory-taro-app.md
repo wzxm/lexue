@@ -114,6 +114,6 @@ TabBar 三个主入口 + 8个二级页面，共11个页面。
 | `api/schedule.api.ts` | `schedule` | `listSchedules()`, `createSchedule()`, `setDefault()`, ... |
 | `api/course.api.ts` | `course` | `listCourses()`, `createCourse()`, `batchCreate()`, ... |
 | `api/student.api.ts` | `student` | `listStudents()`, `createStudent()`, ... |
-| `api/family.api.ts` | `family` | `listMembers()`, `updatePermission()`, ... |
-| `api/share.api.ts` | `share` | `generateCode()`, `acceptCode()`, `generateInvite()`, ... |
+| `api/family.api.ts` | `family` | `listMembers()`, `removeMember()`, `leave()` |
+| `api/share.api.ts` | `share` | `generateCode()`, `acceptCode()`, `verifyInvite()`, `acceptInvite()` |
 | `api/notify.api.ts` | `notify` | `getSettings()`, `updateSettings()`, `recordSubscribe()` |

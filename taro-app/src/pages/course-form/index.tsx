@@ -20,6 +20,10 @@ interface Section {
   room: string
 }
 
+function buildAllWeeks(totalWeeks: number): number[] {
+  return Array.from({ length: totalWeeks }, (_, i) => i + 1)
+}
+
 function formatWeeksSummary(weeks: number[], totalWeeks: number): string {
   if (weeks.length === 0 || weeks.length === totalWeeks) return '每周'
   const allOdd = Array.from({ length: totalWeeks }, (_, i) => i + 1).filter(w => w % 2 === 1)
@@ -94,6 +98,13 @@ export default function CourseFormPage() {
   const editHydratedCourseIdRef = useRef<string | null>(null)
 
   useEffect(() => {
+    const allWeeks = buildAllWeeks(totalWeeks)
+    setSections(prev => prev.map(section =>
+      section.weeks.length === 0 ? { ...section, weeks: allWeeks } : section,
+    ))
+  }, [totalWeeks])
+
+  useEffect(() => {
     Taro.setNavigationBarTitle({ title: mode === 'edit' ? '修改课程' : '添加课程' })
   }, [mode])
 
@@ -165,14 +176,19 @@ export default function CourseFormPage() {
       }
       return selections.map(sel => {
         const key = `${sel.day_of_week}-${sel.slot}`
-        return keepMap.get(key) ?? { day_of_week: sel.day_of_week, slot: sel.slot, weeks: [], room: '' }
+        return keepMap.get(key) ?? {
+          day_of_week: sel.day_of_week,
+          slot: sel.slot,
+          weeks: buildAllWeeks(totalWeeks),
+          room: '',
+        }
       })
     })
     closeSheet()
   }
 
   const addSection = () => {
-    setSections(prev => [...prev, { day_of_week: 0, slot: 0, weeks: [], room: '' }])
+    setSections(prev => [...prev, { day_of_week: 0, slot: 0, weeks: buildAllWeeks(totalWeeks), room: '' }])
   }
 
   // 已选课节的 slot（传给选格器用于高亮展示）
@@ -209,6 +225,9 @@ export default function CourseFormPage() {
 
     setLoading(true)
     try {
+      const normalizeWeeks = (weeks: number[]) =>
+        weeks.length > 0 ? weeks : buildAllWeeks(totalWeeks)
+
       if (mode === 'edit' && routeCourseId) {
         const s = sections[0]
         const existing = currentSchedule?.courses.find(
@@ -221,7 +240,7 @@ export default function CourseFormPage() {
           teacher: teacher.trim(),
           room: s.room.trim(),
           color: existing?.color ?? DEFAULT_COURSE_COLOR,
-          weeks: s.weeks,
+          weeks: normalizeWeeks(s.weeks),
           remark: '',
           ...(contact.trim() ? { contact: contact.trim() } : {}),
         }
@@ -239,7 +258,7 @@ export default function CourseFormPage() {
             teacher: teacher.trim(),
             room: s.room.trim(),
             color: DEFAULT_COURSE_COLOR,
-            weeks: s.weeks,
+            weeks: normalizeWeeks(s.weeks),
             remark: '',
             ...(contact.trim() ? { contact: contact.trim() } : {}),
           }

@@ -9,6 +9,7 @@
     "deploy:schedule": "node scripts/deploy-cloud-functions.js schedule",
     "deploy:student": "node scripts/deploy-cloud-functions.js student",
     "deploy:family": "node scripts/deploy-cloud-functions.js family",
+    "deploy:init-db": "node scripts/deploy-cloud-functions.js init-db",
     "deploy:notify": "node scripts/deploy-cloud-functions.js notify",
     "deploy:reminder": "node scripts/deploy-cloud-functions.js reminder",
     "deploy:share": "node scripts/deploy-cloud-functions.js share"

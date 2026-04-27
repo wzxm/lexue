@@ -9,16 +9,13 @@ export default function ShareCodePage() {
   const scheduleId = router.params.scheduleId || ''
 
   const [code, setCode] = useState('')
-  const [expireAt, setExpireAt] = useState('')
   const [loading, setLoading] = useState(true)
 
   const generateCode = async (sid?: string) => {
     setLoading(true)
     try {
       const res = await shareApi.generateCode(sid || scheduleId)
-      const expire = new Date(res.expiresAt)
       setCode(res.code)
-      setExpireAt(`${expire.getMonth() + 1}月${expire.getDate()}日`)
     } catch {
       Taro.showToast({ title: '生成失败，请重试', icon: 'none' })
     } finally {
@@ -65,7 +62,7 @@ export default function ShareCodePage() {
           <View className='code-card'>
             <Text className='code-text'>{code}</Text>
             <View className='expire-badge'>
-              <Text className='expire-text'>7天有效 · 到期 {expireAt}</Text>
+              <Text className='expire-text'>可无限次使用 · 重新生成后旧口令失效</Text>
             </View>
           </View>
 

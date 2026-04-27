@@ -1,14 +1,14 @@
 import { useState } from 'react'
-import { View, Text, PageContainer, Image } from '@tarojs/components'
+import { View, Text, PageContainer, Image, Input } from '@tarojs/components'
 import Taro, { useDidHide, useDidShow, useUnload } from '@tarojs/taro'
 import { tabState } from '../../utils/tabState'
 import { ROUTES } from '../../constants/routes'
 import { useAuthStore } from '../../store/auth.store'
-import { getSettingsSummary, type SettingsSummary } from '../../api/auth.api'
+import { getSettingsSummary, type SettingsSummary, updateProfile } from '../../api/auth.api'
 import defaultAvatar from '../../assets/default-avatar.png'
 import './index.scss'
 
-type MenuKey = 'notify' | 'family' | 'scheduleTab' | 'student' | 'shareSchedule' | 'feedback' | 'recommend'
+type MenuKey = 'notify' | 'family' | 'scheduleTab' | 'studentManage' | 'student' | 'shareSchedule' | 'feedback' | 'recommend'
 
 interface MenuRow {
   key: MenuKey
@@ -20,10 +20,11 @@ const menuRows: MenuRow[] = [
   { key: 'notify', label: '通知提醒', icon: '\ue759' },
   { key: 'family', label: '家人管理', icon: '\ue600' },
   { key: 'scheduleTab', label: '课表管理', icon: '\ue696' },
-  { key: 'student', label: '展示管理', icon: '\ue706' },
+  { key: 'studentManage', label: '学生管理', icon: '\ue706' },
+  // { key: 'student', label: '展示管理', icon: '\ue706' },
   { key: 'shareSchedule', label: '分享课表', icon: '\ue729' },
   { key: 'feedback', label: '意见反馈', icon: '\ue759' },
-  { key: 'recommend', label: '推荐小程序', icon: '\ue729' },
+  // { key: 'recommend', label: '推荐小程序', icon: '\ue729' },
 ]
 
 function menuSuffix(row: MenuRow, summary: SettingsSummary | null): string {
@@ -35,6 +36,8 @@ function menuSuffix(row: MenuRow, summary: SettingsSummary | null): string {
       return `${summary.familyMemberCount}位`
     case 'scheduleTab':
       return `${summary.scheduleCount}张`
+    case 'studentManage':
+      return `${summary.studentCount}位`
     default:
       return ''
   }
@@ -43,8 +46,11 @@ function menuSuffix(row: MenuRow, summary: SettingsSummary | null): string {
 export default function SettingsPage() {
   const isLoggedIn = useAuthStore(s => s.isLoggedIn)
   const userInfo = useAuthStore(s => s.userInfo)
+  const setUserInfo = useAuthStore(s => s.setUserInfo)
   const logout = useAuthStore(s => s.logout)
-  const [showLogoutSheet, setShowLogoutSheet] = useState(false)
+  const [activeSheet, setActiveSheet] = useState<'none' | 'menu' | 'rename'>('none')
+  const [renaming, setRenaming] = useState(false)
+  const [draftNickname, setDraftNickname] = useState('')
   const [settingsSummary, setSettingsSummary] = useState<SettingsSummary | null>(null)
 
   const loadSettingsSummary = async () => {
@@ -87,18 +93,47 @@ export default function SettingsPage() {
   const handleUserClick = () => {
     if (isLoggedIn) {
       tabState.setVisible(false)
-      setShowLogoutSheet(true)
+      setActiveSheet('menu')
     }
   }
 
-  const closeLogoutSheet = () => {
-    setShowLogoutSheet(false)
+  const closeSheet = () => {
+    setActiveSheet('none')
     tabState.setVisible(true)
+  }
+
+  const openRenameSheet = () => {
+    setDraftNickname(userInfo?.nickname || '')
+    setActiveSheet('rename')
   }
 
   const handleLogout = () => {
     logout()
-    closeLogoutSheet()
+    closeSheet()
+  }
+
+  const handleRename = async () => {
+    if (renaming) return
+    const nickname = draftNickname.trim()
+    if (!nickname) {
+      Taro.showToast({ title: '名称不能为空', icon: 'none' })
+      return
+    }
+    if (nickname.length > 20) {
+      Taro.showToast({ title: '名称最多20个字', icon: 'none' })
+      return
+    }
+    setRenaming(true)
+    try {
+      const profile = await updateProfile({ nickname })
+      setUserInfo(profile)
+      Taro.showToast({ title: '名称已更新', icon: 'success' })
+      closeSheet()
+    } catch (err: any) {
+      Taro.showToast({ title: err?.message || '修改失败', icon: 'none' })
+    } finally {
+      setRenaming(false)
+    }
   }
 
   const onMenu = (row: MenuRow) => {
@@ -116,6 +151,9 @@ export default function SettingsPage() {
       case 'scheduleTab':
         Taro.navigateTo({ url: ROUTES.SCHEDULE_MANAGE })
         break
+      case 'studentManage':
+        Taro.navigateTo({ url: ROUTES.STUDENT_MANAGE })
+        break
       case 'student':
         Taro.navigateTo({ url: ROUTES.DISPLAY_SETTINGS })
         break
@@ -132,6 +170,9 @@ export default function SettingsPage() {
         break
     }
   }
+
+  const avatarUrl = userInfo?.avatarUrl || defaultAvatar
+  const openIdTip = userInfo?.openId ? `id:${userInfo.openId.slice(0, 6)}*** ▾` : '点击管理账号 ▾'
 
   return (
     <View className={`settings-page ${!isLoggedIn ? 'settings-page--guest' : ''}`}>
@@ -159,12 +200,12 @@ export default function SettingsPage() {
             </View>
           ) : (
             <View className='user-info-nav' onClick={handleUserClick}>
-              <View className='avatar'>我</View>
+              <Image className='avatar-img' src={avatarUrl} mode='aspectFill' />
               <View className='user-text'>
                 <View className='name-row'>
                   <Text className='name'>{userInfo?.nickname || '微信昵称限6字...'}</Text>
                 </View>
-                <Text className='school'>id:123456 ▾</Text>
+                <Text className='school'>{openIdTip}</Text>
               </View>
             </View>
           )}
@@ -183,7 +224,7 @@ export default function SettingsPage() {
 
         <View className='menu-list'>
         <View className='menu-list-group'>
-          {menuRows.slice(0, 5).map((row) => {
+          {menuRows.slice(0, 4).map((row) => {
             const suffix = menuSuffix(row, settingsSummary)
             return (
             <View key={row.key} className='menu-item' onClick={() => onMenu(row)}>
@@ -203,7 +244,7 @@ export default function SettingsPage() {
         </View>
 
         <View className='menu-list-group'>
-          {menuRows.slice(5).map((row) => {
+          {menuRows.slice(4).map((row) => {
             const suffix = menuSuffix(row, settingsSummary)
             return (
             <View key={row.key} className='menu-item' onClick={() => onMenu(row)}>
@@ -230,22 +271,46 @@ export default function SettingsPage() {
 
       {/* 退出登录弹窗 */}
       <PageContainer
-        show={showLogoutSheet}
+        show={activeSheet !== 'none'}
         position='bottom'
         round
         zIndex={1000}
-        onClickOverlay={closeLogoutSheet}
-        onAfterLeave={closeLogoutSheet}
+        onClickOverlay={closeSheet}
       >
-        <View className='logout-sheet-content'>
-          <View className='logout-btn' onClick={handleLogout}>
-            <Text className='iconfont logout-icon'>&#xe759;</Text>
-            <Text className='logout-text'>退出登录</Text>
+        {activeSheet === 'menu' ? (
+          <View className='logout-sheet-content'>
+            <View className='logout-btn' onClick={openRenameSheet}>
+              <Text className='iconfont logout-icon'>&#xe729;</Text>
+              <Text className='logout-text'>修改名称</Text>
+            </View>
+            <View className='logout-btn' onClick={handleLogout}>
+              <Text className='iconfont logout-icon'>&#xe759;</Text>
+              <Text className='logout-text'>退出登录</Text>
+            </View>
+            <View className='logout-cancel' onClick={closeSheet}>
+              取消
+            </View>
           </View>
-          <View className='logout-cancel' onClick={closeLogoutSheet}>
-            取消
+        ) : (
+          <View className='rename-sheet-content'>
+            <Text className='rename-title'>修改名称</Text>
+            <Input
+              className='rename-input'
+              maxlength={20}
+              value={draftNickname}
+              placeholder='请输入新名称'
+              onInput={(e) => setDraftNickname(e.detail.value)}
+            />
+            <View className='rename-actions'>
+              <View className='rename-cancel' onClick={closeSheet}>
+                取消
+              </View>
+              <View className='rename-confirm' onClick={handleRename}>
+                {renaming ? '保存中...' : '保存'}
+              </View>
+            </View>
           </View>
-        </View>
+        )}
       </PageContainer>
     </View>
   )

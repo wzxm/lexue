@@ -10,6 +10,11 @@ cloud.init({ env: 'cloud1-1g0kf2p8b07af20f' });
 const db = require('../../shared/db');
 const { ERRORS, success, fail } = require('../../shared/errors');
 const { getOpenId, requireOwner, requireMember } = require('../../shared/auth');
+const {
+  listFamilyRelations,
+  syncOwnerSchedulesForMember,
+  upsertFamilyRelation,
+} = require('../../shared/family');
 const validator = require('../../shared/validator');
 const logger = require('../../shared/logger');
 
@@ -22,8 +27,6 @@ const MAX_FAMILY_MEMBERS = 10;
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 // 口令长度
 const CODE_LENGTH = 6;
-// 有效期（毫秒）：7天
-const CODE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 // invite_code 字符集和长度（与 schedule 云函数保持一致）
 const INVITE_CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -61,17 +64,6 @@ function generateCode() {
 }
 
 /**
- * 生成 UUID（用于邀请 token）
- * 云开发没有 uuid 包，手撸一个简单的
- */
-function generateUUID() {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
-    const r = Math.random() * 16 | 0;
-    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
-  });
-}
-
-/**
  * 生成口令（课表 owner 才能生成）
  */
 async function generateShareCode(openid, payload) {
@@ -98,18 +90,15 @@ async function generateShareCode(openid, payload) {
     }
   }
 
-  const expireAt = new Date(Date.now() + CODE_TTL_MS);
-
   await db.create('share_codes', {
     code,
     type: 'code',
     schedule_id: payload.scheduleId,
     creator_openid: openid,
-    expire_at: expireAt,
     used_count: 0,
   });
 
-  return success({ code, expire_at: expireAt });
+  return success({ code });
 }
 
 /**
@@ -124,9 +113,6 @@ async function verifyCode(openid, payload) {
   });
 
   if (!shareCode) return fail(ERRORS.NOT_FOUND, '口令不存在或已失效');
-  if (new Date() > new Date(shareCode.expire_at)) {
-    return fail(ERRORS.PARAM_ERROR, '口令已过期');
-  }
 
   // 本人口令不能自己用
   if (shareCode.creator_openid === openid) {
@@ -137,16 +123,10 @@ async function verifyCode(openid, payload) {
   const schedule = await db.getOne('schedules', shareCode.schedule_id);
   if (!schedule) return fail(ERRORS.NOT_FOUND, '课表不存在');
 
-  // 获取学生信息
-  const student = await db.getOne('students', schedule.student_id);
-
   return success({
     schedule_id: schedule._id,
     schedule_name: schedule.name,
     semester: schedule.semester || '',
-    student_name: student ? student.name : '未知',
-    student_school: student ? (student.school_name || '') : '',
-    student_grade: student ? (student.grade || '') : '',
     member_count: (schedule.shared_with || []).length + 1,
   });
 }
@@ -163,9 +143,6 @@ async function acceptCode(openid, payload) {
   });
 
   if (!shareCode) return fail(ERRORS.NOT_FOUND, '口令不存在或已失效');
-  if (new Date() > new Date(shareCode.expire_at)) {
-    return fail(ERRORS.PARAM_ERROR, '口令已过期');
-  }
 
   const schedule = await db.getOne('schedules', shareCode.schedule_id);
   if (!schedule) return fail(ERRORS.NOT_FOUND, '课表不存在');
@@ -176,13 +153,15 @@ async function acceptCode(openid, payload) {
   }
 
   // 检查是否已经是成员
-  const sharedWith = schedule.shared_with || [];
+  const sharedWith = Array.isArray(schedule.shared_with)
+    ? schedule.shared_with.filter((member) => member && typeof member.openid === 'string' && member.openid.trim())
+    : [];
   if (sharedWith.some(m => m.openid === openid)) {
     return fail(ERRORS.PARAM_ERROR, '你已经是该课表的成员了');
   }
 
   // 家庭成员上限校验（owner + shared_with 总数不超过 MAX_FAMILY_MEMBERS）
-  if (sharedWith.length + 1 >= MAX_FAMILY_MEMBERS) {
+  if (sharedWith.length + 1 > MAX_FAMILY_MEMBERS) {
     return fail(ERRORS.LIMIT_EXCEEDED, `课表成员已达上限 ${MAX_FAMILY_MEMBERS} 人`);
   }
 
@@ -223,15 +202,10 @@ async function verifyInviteCode(openid, payload) {
     return fail(ERRORS.PARAM_ERROR, '这是你自己的口令，分享给好友使用吧');
   }
 
-  const student = await db.getOne('students', schedule.student_id);
-
   return success({
     schedule_id: schedule._id,
     schedule_name: schedule.name,
-    semester: schedule.semester || '',
-    student_name: student ? student.name : '未知',
-    student_school: student ? (student.school_name || '') : '',
-    student_grade: student ? (student.grade || '') : '',
+    semester: schedule.semester || ''
   });
 }
 
@@ -270,6 +244,7 @@ async function copyByInviteCode(openid, payload) {
   // 判断是否为当前用户第一个课表
   const existingSchedules = await db.getList('schedules', { owner_openid: openid }, { limit: 1 });
   const isDefault = existingSchedules.length === 0;
+  const familyRelations = await listFamilyRelations(openid);
 
   logger.info(FN, 'copyByInviteCode', { openid, sourceScheduleId: sourceSchedule._id });
 
@@ -284,7 +259,11 @@ async function copyByInviteCode(openid, payload) {
     period_config: sourceSchedule.period_config,
     invite_code: newInviteCode,
     is_default: isDefault,
-    shared_with: [],
+    shared_with: familyRelations.map((relation) => ({
+      openid: relation.member_openid,
+      permission: 'edit',
+      join_time: relation.createTime || new Date(),
+    })),
     remark: '',
     view_mode: sourceSchedule.view_mode || 'week',
     start_date: sourceSchedule.start_date,
@@ -293,15 +272,14 @@ async function copyByInviteCode(openid, payload) {
   // 复制课程（teacher 和 contact 留空）
   const sourceCourses = await db.getList('courses', { schedule_id: sourceSchedule._id });
   for (const course of sourceCourses) {
+    const slot = Number(course.slot ?? course.period);
     await db.create('courses', {
       schedule_id: newScheduleId,
       student_id: defaultStudent._id,
       owner_openid: openid,
       name: course.name,
       day_of_week: course.day_of_week,
-      period: course.period,
-      start_time: course.start_time || '',
-      end_time: course.end_time || '',
+      slot: Number.isFinite(slot) && slot > 0 ? slot : 1,
       teacher: '',
       room: course.room || '',
       contact: '',
@@ -315,191 +293,76 @@ async function copyByInviteCode(openid, payload) {
 }
 
 /**
- * 生成家庭邀请 token
- * 按「学生维度」发起邀请：token 绑定 student_id 及该学生名下全部课表
- * 入参优先使用 studentId；为兼容旧逻辑，也保留 scheduleId（单课表邀请）
- */
-async function generateInvite(openid, payload) {
-  if (!payload.studentId && !payload.scheduleId) {
-    return fail(ERRORS.PARAM_ERROR, '缺少必填字段: studentId 或 scheduleId');
-  }
-
-  let studentId = payload.studentId || '';
-  let scheduleIds = [];
-
-  if (studentId) {
-    // 校验学生归属
-    const student = await db.getOne('students', studentId);
-    if (!student) return fail(ERRORS.NOT_FOUND, '学生不存在');
-    if (student.owner_openid !== openid) {
-      return fail(ERRORS.FORBIDDEN, '没有权限分享此学生');
-    }
-
-    // 聚合该学生名下当前用户创建的所有课表
-    const schedules = await db.getList('schedules', {
-      owner_openid: openid,
-      student_id: studentId,
-    });
-    scheduleIds = schedules.map(s => s._id);
-
-    if (scheduleIds.length === 0) {
-      return fail(ERRORS.PARAM_ERROR, '该学生下暂无可分享的课表');
-    }
-  } else {
-    // 兼容旧入参：单课表邀请
-    const schedule = await requireOwner(openid, payload.scheduleId);
-    scheduleIds = [schedule._id];
-    studentId = schedule.student_id;
-  }
-
-  logger.info(FN, 'generateInvite', { openid, studentId, scheduleCount: scheduleIds.length });
-
-  const token = generateUUID();
-  const expireAt = new Date(Date.now() + CODE_TTL_MS);
-
-  await db.create('share_codes', {
-    code: token,
-    type: 'invite',
-    student_id: studentId,
-    schedule_ids: scheduleIds,
-    // 兼容字段：保留第一个 schedule_id，便于旧代码/日志定位
-    schedule_id: scheduleIds[0],
-    creator_openid: openid,
-    expire_at: expireAt,
-    used_count: 0,
-  });
-
-  return success({ token, expire_at: expireAt, schedule_count: scheduleIds.length });
-}
-
-/**
- * 验证邀请 token，返回学生 + 课表摘要供邀请页展示
+ * 验证邀请人，返回账户级共享摘要
  */
 async function verifyInvite(openid, payload) {
-  validator.requireFields(payload, ['token']);
+  validator.requireFields(payload, ['inviterOpenId']);
 
-  const invite = await db.findOne('share_codes', {
-    code: payload.token,
-    type: 'invite',
-  });
+  const inviterOpenId = String(payload.inviterOpenId).trim();
+  if (!inviterOpenId) return fail(ERRORS.PARAM_ERROR, '邀请参数无效');
+  if (inviterOpenId === openid) return fail(ERRORS.PARAM_ERROR, '不能邀请自己');
 
-  if (!invite) return fail(ERRORS.NOT_FOUND, '邀请链接不存在或已失效');
-  if (new Date() > new Date(invite.expire_at)) {
-    return fail(ERRORS.PARAM_ERROR, '邀请链接已过期');
-  }
+  const inviter = await db.findOne('users', { openid: inviterOpenId });
+  if (!inviter) return fail(ERRORS.NOT_FOUND, '邀请人不存在');
 
-  // 优先使用新字段 schedule_ids；兼容旧记录只有 schedule_id
-  const scheduleIds = Array.isArray(invite.schedule_ids) && invite.schedule_ids.length > 0
-    ? invite.schedule_ids
-    : (invite.schedule_id ? [invite.schedule_id] : []);
-
-  if (scheduleIds.length === 0) {
-    return fail(ERRORS.NOT_FOUND, '邀请数据异常');
-  }
-
-  const schedules = [];
-  for (const sid of scheduleIds) {
-    const s = await db.getOne('schedules', sid);
-    if (s) schedules.push(s);
-  }
-  if (schedules.length === 0) return fail(ERRORS.NOT_FOUND, '课表不存在');
-
-  // 学生信息：优先 invite.student_id，回退到第一个课表的 student_id
-  const studentId = invite.student_id || schedules[0].student_id;
-  const student = studentId ? await db.getOne('students', studentId) : null;
-
-  // 邀请人昵称（用于邀请页头部展示）
-  const inviter = await db.findOne('users', { openid: invite.creator_openid });
+  const students = await db.getList('students', { owner_openid: inviterOpenId });
+  const schedules = await db.getList('schedules', { owner_openid: inviterOpenId });
 
   return success({
-    student_id: studentId || '',
-    student_name: student ? student.name : '未知',
-    schedules: schedules.map(s => ({
-      schedule_id: s._id,
-      schedule_name: s.name,
-      semester: s.semester,
+    inviter_openid: inviterOpenId,
+    inviter_nickname: inviter.nickname || '',
+    inviter_avatar_url: inviter.avatar_url || '',
+    student_count: students.length,
+    schedule_count: schedules.length,
+    students: students.map((student) => ({
+      student_id: student._id,
+      student_name: student.name,
+      schedule_count: schedules.filter((schedule) => schedule.student_id === student._id).length,
     })),
-    inviter_nickname: inviter ? (inviter.nickname || '') : '',
-    inviter_avatar_url: inviter ? (inviter.avatar_url || '') : '',
   });
 }
 
 /**
- * 接受邀请：将当前用户加入 token 关联的全部课表的 shared_with
- * 幂等：已是成员的课表会跳过；失败课表会被记录但不终止全流程
+ * 接受账户级邀请：建立家庭关系并同步全部课表权限
  */
 async function acceptInvite(openid, payload) {
-  validator.requireFields(payload, ['token']);
+  validator.requireFields(payload, ['inviterOpenId']);
 
-  const invite = await db.findOne('share_codes', {
-    code: payload.token,
-    type: 'invite',
+  const inviterOpenId = String(payload.inviterOpenId).trim();
+  if (!inviterOpenId) return fail(ERRORS.PARAM_ERROR, '邀请参数无效');
+  if (inviterOpenId === openid) return fail(ERRORS.PARAM_ERROR, '不能邀请自己');
+
+  const inviter = await db.findOne('users', { openid: inviterOpenId });
+  if (!inviter) return fail(ERRORS.NOT_FOUND, '邀请人不存在');
+
+  const schedules = await db.getList('schedules', { owner_openid: inviterOpenId });
+  for (const schedule of schedules) {
+    const sharedWith = Array.isArray(schedule.shared_with)
+      ? schedule.shared_with.filter((member) => member && typeof member.openid === 'string' && member.openid.trim())
+      : [];
+    const alreadyJoined = sharedWith.some((member) => member.openid === openid);
+    if (!alreadyJoined && sharedWith.length + 1 > MAX_FAMILY_MEMBERS) {
+      return fail(ERRORS.LIMIT_EXCEEDED, `课表《${schedule.name}》成员已达上限 ${MAX_FAMILY_MEMBERS} 人`);
+    }
+  }
+
+  await upsertFamilyRelation(inviterOpenId, openid, {
+    member_nickname: '',
+    member_avatar: '',
+  });
+  await syncOwnerSchedulesForMember(inviterOpenId, openid);
+
+  logger.info(FN, 'acceptInvite', {
+    openid,
+    inviterOpenId,
+    scheduleCount: schedules.length,
   });
 
-  if (!invite) return fail(ERRORS.NOT_FOUND, '邀请链接不存在或已失效');
-  if (new Date() > new Date(invite.expire_at)) {
-    return fail(ERRORS.PARAM_ERROR, '邀请链接已过期');
-  }
-
-  const scheduleIds = Array.isArray(invite.schedule_ids) && invite.schedule_ids.length > 0
-    ? invite.schedule_ids
-    : (invite.schedule_id ? [invite.schedule_id] : []);
-
-  if (scheduleIds.length === 0) return fail(ERRORS.NOT_FOUND, '邀请数据异常');
-
-  const _ = db.getCommand();
-
-  // 先通盘校验：若是自己邀请自己、或任一课表已达上限，直接失败
-  const schedulesInfo = [];
-  for (const sid of scheduleIds) {
-    const s = await db.getOne('schedules', sid);
-    if (!s) continue;
-    schedulesInfo.push(s);
-
-    if (s.owner_openid === openid) {
-      return fail(ERRORS.PARAM_ERROR, '这是你自己的课表');
-    }
-
-    const sharedWith = s.shared_with || [];
-    const already = sharedWith.some(m => m.openid === openid);
-    if (!already && sharedWith.length + 1 >= MAX_FAMILY_MEMBERS) {
-      return fail(ERRORS.LIMIT_EXCEEDED, `课表《${s.name}》成员已达上限 ${MAX_FAMILY_MEMBERS} 人`);
-    }
-  }
-
-  if (schedulesInfo.length === 0) return fail(ERRORS.NOT_FOUND, '课表不存在');
-
-  // 执行加入（跳过已是成员的课表）
-  let joinedCount = 0;
-  for (const s of schedulesInfo) {
-    const sharedWith = s.shared_with || [];
-    if (sharedWith.some(m => m.openid === openid)) continue;
-
-    await db.col('schedules').doc(s._id).update({
-      data: {
-        shared_with: _.push({
-          each: [{
-            openid,
-            permission: 'view',
-            join_time: new Date(),
-          }],
-        }),
-        updateTime: new Date(),
-      },
-    });
-    joinedCount += 1;
-  }
-
-  logger.info(FN, 'acceptInvite', { openid, studentId: invite.student_id, joinedCount, totalCount: schedulesInfo.length });
-
-  // 邀请是「家庭关系绑定」，一旦完成就作废
-  await db.remove('share_codes', invite._id);
-
   return success({
-    student_id: invite.student_id || '',
-    schedule_ids: schedulesInfo.map(s => s._id),
-    joined_count: joinedCount,
-    permission: 'view',
+    inviter_openid: inviterOpenId,
+    schedule_ids: schedules.map((schedule) => schedule._id),
+    joined_count: schedules.length,
+    permission: 'edit',
   });
 }
 
@@ -517,7 +380,6 @@ exports.main = async (event, context) => {
       case 'acceptCode':     return await acceptCode(openid, payload);
       case 'verifyInviteCode': return await verifyInviteCode(openid, payload);
       case 'copyByInviteCode': return await copyByInviteCode(openid, payload);
-      case 'generateInvite': return await generateInvite(openid, payload);
       case 'verifyInvite':   return await verifyInvite(openid, payload);
       case 'acceptInvite':   return await acceptInvite(openid, payload);
       default:               return fail(ERRORS.PARAM_ERROR, `未知的 action: ${action}`);
@@ -525,6 +387,10 @@ exports.main = async (event, context) => {
   } catch (e) {
     if (e && typeof e.code === 'number') return e;
     logger.error(FN, event.action, e);
+    const message = e && e.message ? String(e.message) : '';
+    if (message.includes('Db or Table not exist: families')) {
+      return fail(ERRORS.INTERNAL_ERROR, '数据库未初始化，请先创建 families 集合');
+    }
     return fail(ERRORS.INTERNAL_ERROR);
   }
 };

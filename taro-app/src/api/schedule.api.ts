@@ -1,12 +1,35 @@
 import { cloud } from './cloud';
 import type { Schedule, Period, PeriodConfig } from '../types/index';
 
+type BackendSchedule = Schedule & {
+  createTime?: string | number | Date;
+  updateTime?: string | number | Date;
+}
+
+function normalizeTimestamp(value?: string | number | Date): number {
+  if (typeof value === 'number') return value
+  if (value instanceof Date) return value.getTime()
+  if (typeof value === 'string') {
+    const parsed = Date.parse(value)
+    return Number.isNaN(parsed) ? 0 : parsed
+  }
+  return 0
+}
+
+function toFrontendSchedule(data: BackendSchedule): Schedule {
+  return {
+    ...data,
+    createdAt: data.createdAt || normalizeTimestamp(data.createTime),
+    updatedAt: data.updatedAt || normalizeTimestamp(data.updateTime),
+  }
+}
+
 export async function listSchedules(studentId?: string): Promise<Schedule[]> {
   const payload: Record<string, unknown> = {};
   if (studentId) payload.studentId = studentId;
-  const result = await cloud.call<{ own: Schedule[]; shared: Schedule[] }>('schedule', { action: 'list', payload });
+  const result = await cloud.call<{ own: BackendSchedule[]; shared: BackendSchedule[] }>('schedule', { action: 'list', payload });
   // 云函数返回 { own, shared }，拍平成数组供前端使用
-  return [...(result.own || []), ...(result.shared || [])];
+  return [...(result.own || []), ...(result.shared || [])].map(toFrontendSchedule);
 }
 
 export async function createSchedule(data: {
@@ -33,14 +56,16 @@ export async function createSchedule(data: {
       evening_count: data.periodConfig.eveningCount,
     };
   }
-  return cloud.call<Schedule>('schedule', {
+  const schedule = await cloud.call<BackendSchedule>('schedule', {
     action: 'create',
     payload,
   });
+  return toFrontendSchedule(schedule);
 }
 
 export async function getSchedule(scheduleId: string): Promise<Schedule> {
-  return cloud.call<Schedule>('schedule', { action: 'get', payload: { scheduleId } });
+  const schedule = await cloud.call<BackendSchedule>('schedule', { action: 'get', payload: { scheduleId } });
+  return toFrontendSchedule(schedule);
 }
 
 export async function updateSchedule(scheduleId: string, data: Partial<Schedule>): Promise<void> {

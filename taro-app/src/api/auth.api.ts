@@ -1,8 +1,19 @@
 import { cloud } from './cloud';
 import type { UserInfo } from '../types/index';
 
-export async function login(): Promise<UserInfo> {
-  return cloud.call<UserInfo>('auth', { action: 'login', payload: {} });
+export interface LoginPayload {
+  nickname?: string;
+  avatarUrl?: string;
+}
+
+export async function login(payload: LoginPayload = {}): Promise<UserInfo> {
+  return cloud.call<UserInfo>('auth', {
+    action: 'login',
+    payload: {
+      nickname: payload.nickname,
+      avatar_url: payload.avatarUrl,
+    },
+  });
 }
 
 export async function getProfile(): Promise<UserInfo> {
@@ -12,6 +23,7 @@ export async function getProfile(): Promise<UserInfo> {
 /** 设置页专用：课表数、家人数、通知是否有开启项（单次请求） */
 export interface SettingsSummary {
   scheduleCount: number;
+  studentCount: number;
   familyMemberCount: number;
   notifyAnyEnabled: boolean;
 }

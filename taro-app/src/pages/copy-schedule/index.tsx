@@ -1,7 +1,7 @@
 import { View, Text, Input, Button } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import { useState, useEffect } from 'react';
-import { verifyInviteCode, copyByInviteCode, InviteCodePreview } from '../../api/share.api';
+import { verifyInviteCode, copyByInviteCode } from '../../api/share.api';
 import { ROUTES } from '../../constants/routes';
 import { useScheduleStore } from '../../store/schedule.store';
 
@@ -28,14 +28,10 @@ export default function CopySchedulePage() {
     Taro.showLoading({ title: '正在校验', mask: true });
 
     try {
-      const preview = await verifyInviteCode(code.trim());
+      await verifyInviteCode(code.trim());
       Taro.hideLoading();
 
-      const schoolInfo = [preview.studentSchool, preview.studentGrade].filter(Boolean).join('，');
-      const label = schoolInfo
-        ? `【${schoolInfo}，${preview.scheduleName}】`
-        : `【${preview.studentName}，${preview.scheduleName}】`;
-      const confirmContent = `查找到 ${label} 课表，确认复制？\n\n复制课表以下内容：\n- 所在学期所有课程信息\n- 课程名称、时间、周次安排\n（老师姓名和联系方式不会被复制）`;
+      const confirmContent = '口令校验通过，确认复制课表？\n\n复制课表以下内容：\n- 所在学期所有课程信息\n- 课程名称、时间、周次安排\n（老师姓名和联系方式不会被复制）';
 
       Taro.showModal({
         title: '口令匹配成功',
@@ -45,7 +41,7 @@ export default function CopySchedulePage() {
         cancelText: '关闭',
         success: async (res) => {
           if (res.confirm) {
-            await doCopyCode(preview);
+            await doCopyCode();
           } else {
             setLoading(false);
           }
@@ -75,7 +71,7 @@ export default function CopySchedulePage() {
     }
   };
 
-  const doCopyCode = async (preview: InviteCodePreview) => {
+  const doCopyCode = async () => {
     Taro.showLoading({ title: '复制中', mask: true });
     try {
       const newSchedule = await copyByInviteCode(code.trim());

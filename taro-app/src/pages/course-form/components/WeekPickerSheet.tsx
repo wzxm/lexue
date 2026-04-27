@@ -14,7 +14,7 @@ interface WeekPickerSheetProps {
 }
 
 function detectQuickMode(weeks: number[], totalWeeks: number): QuickMode {
-  if (weeks.length === 0) return null
+  if (weeks.length === 0) return 'all'
   const allWeeks = Array.from({ length: totalWeeks }, (_, i) => i + 1)
   const oddWeeks = allWeeks.filter(w => w % 2 === 1)
   const evenWeeks = allWeeks.filter(w => w % 2 === 0)
@@ -33,18 +33,19 @@ export default function WeekPickerSheet({
   onConfirm,
   onAfterLeave,
 }: WeekPickerSheetProps) {
-  const [draft, setDraft] = useState<number[]>([])
-
-  useEffect(() => {
-    if (show) setDraft([...selectedWeeks])
-  }, [show])
-
-  const quickMode = useMemo(() => detectQuickMode(draft, totalWeeks), [draft, totalWeeks])
-
   const allWeeks = useMemo(
     () => Array.from({ length: totalWeeks }, (_, i) => i + 1),
     [totalWeeks],
   )
+  const [draft, setDraft] = useState<number[]>([])
+
+  useEffect(() => {
+    if (show) {
+      setDraft(selectedWeeks.length > 0 ? [...selectedWeeks] : [...allWeeks])
+    }
+  }, [show, selectedWeeks, allWeeks])
+
+  const quickMode = useMemo(() => detectQuickMode(draft, totalWeeks), [draft, totalWeeks])
 
   const toggleWeek = (week: number) => {
     setDraft(prev =>
@@ -53,10 +54,6 @@ export default function WeekPickerSheet({
   }
 
   const applyQuick = (mode: QuickMode) => {
-    if (mode === quickMode) {
-      setDraft([])
-      return
-    }
     if (mode === 'all') {
       setDraft([...allWeeks])
     } else if (mode === 'odd') {

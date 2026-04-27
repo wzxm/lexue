@@ -126,11 +126,11 @@ cloudfunctions/reminder/index.js
 
 ---
 
-## 共享成员加入流程
+## 共享能力
 
 ```
-Owner 端:
-share.api.generateCode({ schedule_id, student_id, permission })
+口令加入课表:
+share.api.generateCode({ scheduleId })
     ↓
 生成6位口令 → share_codes 集合
     ↓
@@ -145,7 +145,18 @@ schedules.shared_with[] 添加成员
     ↓
 返回 { schedule_id }
     ↓
-成员可查看/编辑该课表
+成员可查看该课表
+
+家人共享:
+发送端直接分享带 inviterOpenId 的微信卡片
+    ↓
+接收端打开邀请页 → share.verifyInvite({ inviterOpenId })
+    ↓
+share.acceptInvite({ inviterOpenId })
+    ↓
+写入 families 集合
+    ↓
+同步 owner 名下全部 schedules.shared_with = edit
 ```
 
 ---
@@ -159,6 +170,6 @@ schedules.shared_with[] 添加成员
 | `course.api.ts` | `course` | `courses` |
 | `student.api.ts` | `student` | `students` |
 | `family.api.ts` | `family` | `families`, `schedules` |
-| `share.api.ts` | `share` | `share_codes`, `schedules` |
+| `share.api.ts` | `share` | `share_codes`, `families`, `schedules` |
 | `notify.api.ts` | `notify` | `reminders`（设置部分） |
 | - | `reminder`（定时） | `reminders`, `courses` |

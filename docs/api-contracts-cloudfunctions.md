@@ -337,27 +337,12 @@ payload: { schedule_id: string }
 
 ---
 
-### `updatePermission`
-修改成员权限（仅 owner）。
-
-**请求：**
-```js
-payload: { schedule_id: string; member_openid: string; permission: 'edit' | 'view' }
-```
-
-**响应：**
-```js
-{ code: 0, data: null }
-```
-
----
-
 ### `removeMember`
-移除成员（仅 owner）。
+移除账户级家庭成员（仅 owner）。
 
 **请求：**
 ```js
-payload: { schedule_id: string; member_openid: string }
+payload: { targetOpenid: string }
 ```
 
 **响应：**
@@ -368,11 +353,11 @@ payload: { schedule_id: string; member_openid: string }
 ---
 
 ### `leave`
-成员主动退出共享课表。
+成员主动退出某个家庭共享关系。
 
 **请求：**
 ```js
-payload: { schedule_id: string }
+payload: { ownerOpenid: string }
 ```
 
 **响应：**
@@ -389,12 +374,12 @@ payload: { schedule_id: string }
 
 **请求：**
 ```js
-payload: { schedule_id: string; student_id: string; permission: 'edit' | 'view' }
+payload: { scheduleId: string }
 ```
 
 **响应：**
 ```js
-{ code: 0, data: { code: string; expires_at: string } }
+{ code: 0, data: { code: string; expire_at: string } }
 ```
 
 ---
@@ -409,7 +394,7 @@ payload: { code: string }
 
 **响应：**
 ```js
-{ code: 0, data: { schedule_name: string; student_name: string; permission: string } }
+{ code: 0, data: { schedule_name: string; student_name: string; member_count: number } }
 ```
 
 ---
@@ -424,52 +409,37 @@ payload: { code: string }
 
 **响应：**
 ```js
-{ code: 0, data: { schedule_id: string } }
-```
-
----
-
-### `generateInvite`
-生成邀请链接（替代口令，适用于微信分享卡片）。
-
-**请求：**
-```js
-payload: { schedule_id: string; student_id: string; permission: 'edit' | 'view' }
-```
-
-**响应：**
-```js
-{ code: 0, data: { invite_token: string; expires_at: string } }
+{ code: 0, data: { schedule_id: string; permission: 'view' } }
 ```
 
 ---
 
 ### `verifyInvite`
-验证邀请 token。
+验证账户级家人邀请。
 
 **请求：**
 ```js
-payload: { invite_token: string }
+payload: { inviterOpenId: string }
 ```
 
 **响应：**
 ```js
-{ code: 0, data: { schedule_name: string; student_name: string; permission: string } }
+{ code: 0, data: { inviter_openid: string; inviter_nickname: string; student_count: number; schedule_count: number; students: Array<{ student_id: string; student_name: string; schedule_count: number }> } }
 ```
 
 ---
 
 ### `acceptInvite`
-接受邀请，加入共享课表。
+接受邀请，加入账户级家人共享。
 
 **请求：**
 ```js
-payload: { invite_token: string }
+payload: { inviterOpenId: string }
 ```
 
 **响应：**
 ```js
-{ code: 0, data: { schedule_id: string } }
+{ code: 0, data: { inviter_openid: string; schedule_ids: string[]; joined_count: number; permission: 'edit' } }
 ```
 
 ---
