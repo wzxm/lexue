@@ -419,3 +419,86 @@
   color: var(--color-primary);
   padding: 20px 60px;
 }
+
+/* ===== 课节时间编辑弹窗 ===== */
+.period-sheet {
+  padding: 40px 32px calc(32px + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+
+.period-sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  margin-bottom: 32px;
+}
+
+.period-sheet-title {
+  font-size: 34px;
+  font-weight: 600;
+  color: var(--color-text-main);
+}
+
+.period-sheet-close {
+  position: absolute;
+  right: 0;
+  font-size: 56px;
+  color: var(--color-text-gray);
+  line-height: 1;
+  padding: 10px;
+  margin-right: -10px;
+  font-weight: 300;
+}
+
+.period-sheet-card {
+  background: var(--color-card);
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+}
+
+.period-sheet-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 32px;
+  border-bottom: 0.431px solid var(--color-border-light);
+}
+
+.period-sheet-card :last-child .period-sheet-row {
+  border-bottom: none;
+}
+
+.period-sheet-label {
+  font-size: 30px;
+  color: var(--color-text-main);
+}
+
+.period-sheet-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.period-sheet-value {
+  font-size: 30px;
+  color: var(--color-text-sub);
+}
+
+.period-sheet-confirm {
+  margin-top: 32px;
+  width: 100%;
+  height: 88px;
+  border-radius: 44px;
+  background: var(--color-primary);
+  color: #FFFFFF;
+  font-size: 32px;
+  font-weight: 600;
+  border: none;
+  line-height: 88px;
+}
+
+.period-sheet-confirm::after {
+  border: none;
+}

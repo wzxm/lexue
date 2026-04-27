@@ -13,7 +13,7 @@ import {
   updateSchedule
 } from '../../api/schedule.api'
 import { deleteCourse } from '../../api/course.api'
-import { getWeekDates, getCurrentWeekOffset } from '../../utils/date'
+import { getWeekDates, getCurrentWeekOffset, formatDate } from '../../utils/date'
 import { ROUTES } from '../../constants/routes'
 import { resolveCourseId } from '../../utils/courseId'
 import { groupSchedulesByStudent } from '../../utils/groupSchedulesByStudent'
@@ -68,13 +68,35 @@ export default function SchedulePage () {
   }, [showCourseModal])
 
   const periods = currentSchedule?.periods || DEFAULT_PERIODS
-  const today = new Date().toISOString().slice(0, 10)
+  const today = formatDate(new Date(), 'YYYY-MM-DD')
   const hideWeekend = userInfo?.settings?.hide_weekend ?? false
 
   const groupedSchedules = useMemo(
     () => groupSchedulesByStudent(schedules, students),
     [schedules, students]
   )
+
+  const pickFallbackStudent = useCallback((list: typeof students) => {
+    if (list.length === 0) return null
+    return (
+      list.find(s => s.source === 'init' && !s.isShared) ||
+      list.find(s => s.name === '默认学生' && !s.isShared) ||
+      list.find(s => !s.isShared) ||
+      list[0]
+    )
+  }, [])
+
+  const resolveScheduleStudent = useCallback(
+    (schedule: typeof schedules[number], list: typeof students) => {
+      const sid = schedule?.studentId || schedule?.student_id
+      if (sid) {
+        return list.find(s => s.id === sid) || null
+      }
+      return pickFallbackStudent(list)
+    },
+    [pickFallbackStudent]
+  )
+
   const headerStudent = useMemo(() => {
     const sid = currentSchedule?.studentId || currentSchedule?.student_id
     if (sid) {
@@ -117,10 +139,9 @@ export default function SchedulePage () {
     try {
       Taro.showLoading({ title: '切换中', mask: true })
       const full = await getSchedule(schedule.id)
-      const sid = full.studentId || full.student_id
-      if (sid) {
-        const st = students.find(s => s.id === sid)
-        if (st) setCurrentStudent(st)
+      const st = resolveScheduleStudent(full, students)
+      if (st) {
+        setCurrentStudent(st)
       }
       const openId = userInfo?.openId
       if (openId && schedule.owner_openid === openId) {
@@ -159,8 +180,8 @@ export default function SchedulePage () {
     const startDate = schedule?.start_date || schedule?.startDate
     // 有开学日时以开学周为锚点，保证日历日期和周序号对齐
     const dates = getWeekDates(offset, startDate)
-    const num = Math.abs(offset) + 1
-    const todayStr = new Date().toISOString().slice(0, 10)
+    const num = offset + 1
+    const todayStr = formatDate(new Date(), 'YYYY-MM-DD')
     const todayIdx = dates.indexOf(todayStr)
 
     setGrid(buildGrid(schedule, offset))
@@ -214,21 +235,27 @@ export default function SchedulePage () {
         const studentList = await listStudents()
         setStudents(studentList)
         const cur = useStudentStore.getState().currentStudent
-        if (!cur) {
+        const activeStudent =
+          cur && studentList.some(s => s.id === cur.id)
+            ? cur
+            : pickFallbackStudent(studentList)
+        if (activeStudent && (!cur || cur.id !== activeStudent.id)) {
+          setCurrentStudent(activeStudent)
+        }
+        if (!activeStudent) {
           setSchedules([])
           setCurrentSchedule(null)
           syncView()
           return
         }
-        const schedules = await listSchedules(cur.id)
+        const schedules = await listSchedules(activeStudent.id)
         setSchedules(schedules)
         const defaultSchedule = schedules.find(s => s.isDefault) || schedules[0]
         if (defaultSchedule) {
           const full = await getSchedule(defaultSchedule.id)
-          const sid = full.studentId || full.student_id
-          if (sid) {
-            const st = studentList.find(s => s.id === sid)
-            if (st) setCurrentStudent(st)
+          const st = resolveScheduleStudent(full, studentList)
+          if (st) {
+            setCurrentStudent(st)
           }
           setCurrentSchedule(full)
           setWeekOffset(calcInitialOffset(full))

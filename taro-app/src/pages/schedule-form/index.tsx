@@ -6,7 +6,7 @@ import { useStudentStore } from "../../store/student.store";
 import { useScheduleStore } from "../../store/schedule.store";
 import { ROUTES } from "../../constants/routes";
 import EmptySchedule from "../schedule/components/EmptySchedule";
-import { getSemesterOptions, getCurrentSemester } from "../../utils/date";
+import { getSemesterOptions, getCurrentSemester, formatDate } from "../../utils/date";
 import type { Schedule, Period, PeriodIndex } from "../../types/index";
 import "./index.scss";
 
@@ -71,6 +71,11 @@ export default function ScheduleFormPage() {
   const [afternoonCount, setAfternoonCount] = useState(4);
   const [eveningCount, setEveningCount] = useState(0);
   const [showStudentSheet, setShowStudentSheet] = useState(false);
+  const [showPeriodSheet, setShowPeriodSheet] = useState(false);
+  const [editingPeriod, setEditingPeriod] = useState<{ index: number; label: string } | null>(null);
+  const [editingStartTime, setEditingStartTime] = useState("");
+  const [editingEndTime, setEditingEndTime] = useState("");
+  const [periodTimeOverrides, setPeriodTimeOverrides] = useState<Record<number, { startTime: string; endTime: string }>>({});
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<1 | 2>(1);
   const [currentScheduleId, setCurrentScheduleId] = useState<string | null>(null);
@@ -112,6 +117,16 @@ export default function ScheduleFormPage() {
     setMorningCount(clamp(Number(config?.morning_count ?? frontendConfig?.morningCount) || 4, 1, 6));
     setAfternoonCount(clamp(Number(config?.afternoon_count ?? frontendConfig?.afternoonCount) || 4, 1, 6));
     setEveningCount(clamp(Number(config?.evening_count ?? frontendConfig?.eveningCount) || 0, 0, 4));
+
+    if (Array.isArray(target.periods)) {
+      const overrides = target.periods.reduce<Record<number, { startTime: string; endTime: string }>>((acc, p) => {
+        if (p?.index && p.startTime && p.endTime) {
+          acc[p.index] = { startTime: p.startTime, endTime: p.endTime };
+        }
+        return acc;
+      }, {});
+      setPeriodTimeOverrides(overrides);
+    }
   }, [isEditMode, editScheduleId, schedules, students]);
 
   const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
@@ -125,9 +140,19 @@ export default function ScheduleFormPage() {
     }));
   }, []);
 
-  const morningPeriods = buildPeriodList(MORNING_SLOTS, morningCount, 1);
-  const afternoonPeriods = buildPeriodList(AFTERNOON_SLOTS, afternoonCount, morningCount + 1);
-  const eveningPeriods = buildPeriodList(EVENING_SLOTS, eveningCount, morningCount + afternoonCount + 1);
+  const applyPeriodOverrides = useCallback(
+    (periods: { index: number; startTime: string; endTime: string; label: string }[]) => {
+      return periods.map((p) => ({
+        ...p,
+        ...(periodTimeOverrides[p.index] || {}),
+      }));
+    },
+    [periodTimeOverrides]
+  );
+
+  const morningPeriods = applyPeriodOverrides(buildPeriodList(MORNING_SLOTS, morningCount, 1));
+  const afternoonPeriods = applyPeriodOverrides(buildPeriodList(AFTERNOON_SLOTS, afternoonCount, morningCount + 1));
+  const eveningPeriods = applyPeriodOverrides(buildPeriodList(EVENING_SLOTS, eveningCount, morningCount + afternoonCount + 1));
 
   const buildPeriods = (): Period[] => {
     return [...morningPeriods, ...afternoonPeriods, ...eveningPeriods].map((p) => ({
@@ -143,6 +168,38 @@ export default function ScheduleFormPage() {
     afternoon_count: afternoonCount,
     evening_count: eveningCount,
   });
+
+  const openPeriodEditor = (period: { index: number; label: string; startTime: string; endTime: string }) => {
+    setEditingPeriod({ index: period.index, label: period.label });
+    setEditingStartTime(period.startTime);
+    setEditingEndTime(period.endTime);
+    setShowPeriodSheet(true);
+  };
+
+  const closePeriodEditor = () => {
+    setShowPeriodSheet(false);
+    setEditingPeriod(null);
+  };
+
+  const confirmPeriodEditor = () => {
+    if (!editingPeriod) return;
+    if (!editingStartTime || !editingEndTime) {
+      Taro.showToast({ title: "请选择完整时间", icon: "none" });
+      return;
+    }
+    if (editingStartTime >= editingEndTime) {
+      Taro.showToast({ title: "下课时间需晚于上课时间", icon: "none" });
+      return;
+    }
+    setPeriodTimeOverrides((prev) => ({
+      ...prev,
+      [editingPeriod.index]: {
+        startTime: editingStartTime,
+        endTime: editingEndTime,
+      },
+    }));
+    closePeriodEditor();
+  };
 
   const onSave = async () => {
     if (!startDate) {
@@ -334,7 +391,7 @@ export default function ScheduleFormPage() {
         </View>
       </View>
       {periods.map((p) => (
-        <View key={p.index} className="period-row">
+        <View key={p.index} className="period-row" onClick={() => openPeriodEditor(p)}>
           <Text className="period-label">{p.label}</Text>
           <Text className="period-time">
             {p.startTime}-{p.endTime}
@@ -368,7 +425,7 @@ export default function ScheduleFormPage() {
           <View className="section">
             <Picker
               mode="date"
-              value={startDate || new Date().toISOString().slice(0, 10)}
+              value={startDate || formatDate(new Date(), "YYYY-MM-DD")}
               onChange={(e) => setStartDate(e.detail.value as string)}
             >
               <View className="list-item">
@@ -476,6 +533,47 @@ export default function ScheduleFormPage() {
               学生管理
             </Text>
           </View>
+        </View>
+      </PageContainer>
+
+      {/* 课节时间编辑弹窗 */}
+      <PageContainer
+        show={showPeriodSheet}
+        position="bottom"
+        round
+        zIndex={1001}
+        onClickOverlay={closePeriodEditor}
+        onAfterLeave={closePeriodEditor}
+        customStyle="background-color: #F7F7F7;"
+      >
+        <View className="period-sheet">
+          <View className="period-sheet-header">
+            <Text className="period-sheet-title">{editingPeriod?.label || "编辑课节时间"}</Text>
+            <Text className="period-sheet-close" onClick={closePeriodEditor}>×</Text>
+          </View>
+          <View className="period-sheet-card">
+            <Picker mode="time" value={editingStartTime || "08:00"} onChange={(e) => setEditingStartTime(e.detail.value as string)}>
+              <View className="period-sheet-row">
+                <Text className="period-sheet-label">上课时间</Text>
+                <View className="period-sheet-right">
+                  <Text className="period-sheet-value">{editingStartTime || "08:00"}</Text>
+                  <Text className="list-arrow">›</Text>
+                </View>
+              </View>
+            </Picker>
+            <Picker mode="time" value={editingEndTime || "08:40"} onChange={(e) => setEditingEndTime(e.detail.value as string)}>
+              <View className="period-sheet-row">
+                <Text className="period-sheet-label">下课时间</Text>
+                <View className="period-sheet-right">
+                  <Text className="period-sheet-value">{editingEndTime || "08:40"}</Text>
+                  <Text className="list-arrow">›</Text>
+                </View>
+              </View>
+            </Picker>
+          </View>
+          <Button className="period-sheet-confirm" onClick={confirmPeriodEditor}>
+            确认
+          </Button>
         </View>
       </PageContainer>
 

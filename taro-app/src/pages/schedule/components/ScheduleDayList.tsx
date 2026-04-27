@@ -1,6 +1,7 @@
 import { View, Text, ScrollView } from '@tarojs/components'
 import { useScheduleStore } from '../../../store/schedule.store'
 import type { Course, ScheduleGrid as ScheduleGridType, Period } from '../../../types/index'
+import { formatDate } from '../../../utils/date'
 import './ScheduleDayList.scss'
 
 interface Props {
@@ -44,7 +45,7 @@ export default function ScheduleDayList({
     const day = d.getDay()
     const diff = day === 0 ? -6 : 1 - day
     d.setDate(d.getDate() + diff)
-    return d.toISOString().slice(0, 10)
+    return formatDate(d, 'YYYY-MM-DD')
   })()
 
   // 当前显示周的周一

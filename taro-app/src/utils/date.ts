@@ -5,6 +5,21 @@ export interface SemesterOption {
   value: string; // 格式: "2025-2026-1"
 }
 
+function parseYmdLocal(value: string): Date | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!m) return null;
+  const y = Number(m[1]);
+  const mon = Number(m[2]) - 1;
+  const d = Number(m[3]);
+  if (!Number.isFinite(y) || !Number.isFinite(mon) || !Number.isFinite(d)) return null;
+  // 用本地时间中午构造，规避 UTC 解析和夏令时边界带来的日期偏移
+  return new Date(y, mon, d, 12, 0, 0, 0);
+}
+
+function toDayNumber(date: Date): number {
+  return Math.floor(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / 86400000);
+}
+
 /** 根据学年起始年和学期序号生成选项 */
 function makeSemesterOption(startYear: number, term: 1 | 2): SemesterOption {
   const endYear = startYear + 1;
@@ -63,12 +78,13 @@ export function getCurrentSemester(): SemesterOption {
  * 获取当前周相对于学期开始的偏移量（从0开始）
  */
 export function getCurrentWeekOffset(semesterStartDate?: string): number {
-  const start = semesterStartDate ? new Date(semesterStartDate) : getThisMonthFirstMonday();
+  const parsedStart = semesterStartDate ? parseYmdLocal(semesterStartDate) : null;
+  const start = parsedStart || getThisMonthFirstMonday();
   const now = new Date();
   const startMonday = getMondayOfWeek(start);
   const nowMonday = getMondayOfWeek(now);
-  const diffMs = nowMonday.getTime() - startMonday.getTime();
-  return Math.floor(diffMs / (7 * 24 * 60 * 60 * 1000));
+  const diffDays = toDayNumber(nowMonday) - toDayNumber(startMonday);
+  return Math.floor(diffDays / 7);
 }
 
 /** 获取本月第一个周一，作为默认学期开始 */
@@ -98,7 +114,8 @@ function getMondayOfWeek(date: Date): Date {
  * @returns 7个日期字符串 YYYY-MM-DD，index 0 = 周一
  */
 export function getWeekDates(offset: number, semesterStartDate?: string): string[] {
-  const anchor = semesterStartDate ? new Date(semesterStartDate) : new Date();
+  const parsedStart = semesterStartDate ? parseYmdLocal(semesterStartDate) : null;
+  const anchor = parsedStart || new Date();
   const monday = getMondayOfWeek(anchor);
   monday.setDate(monday.getDate() + offset * 7);
   const dates: string[] = [];

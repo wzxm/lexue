@@ -27,9 +27,14 @@ export const useStudentStore = create<StudentState>((set, get) => {
       saveStudents(students)
       const { currentStudent } = get()
       let newCurrent = currentStudent
+      if (newCurrent) {
+        newCurrent = students.find(s => s.id === newCurrent?.id) || null
+      }
       if (!newCurrent && students.length > 0) {
         newCurrent = students[0]
-        saveCurrentStudentId(students[0].id)
+      }
+      if (newCurrent) {
+        saveCurrentStudentId(newCurrent.id)
       }
       set({ students, currentStudent: newCurrent })
     },

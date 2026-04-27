@@ -1,6 +1,7 @@
 import { View, Text } from '@tarojs/components'
 import { useMemo } from 'react'
 import type { Course, Period } from '../../types/index'
+import { formatDate } from '../../utils/date'
 import './index.scss'
 
 interface ScheduleGridProps {
@@ -28,7 +29,7 @@ function buildGridData(courses: Course[], periodCount: number): (Course | null)[
 }
 
 function getTodayStr(): string {
-  return new Date().toISOString().slice(0, 10)
+  return formatDate(new Date(), 'YYYY-MM-DD')
 }
 
 const WEEK_LABELS = ['一', '二', '三', '四', '五', '六', '日']
