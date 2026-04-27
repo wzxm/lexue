@@ -11,7 +11,6 @@ export default function CopySchedulePage() {
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
-  const setCurrentSchedule = useScheduleStore(s => s.setCurrentSchedule);
   const addSchedule = useScheduleStore(s => s.addSchedule);
 
   useEffect(() => {
@@ -77,7 +76,6 @@ export default function CopySchedulePage() {
       const newSchedule = await copyByInviteCode(code.trim());
 
       addSchedule(newSchedule);
-      setCurrentSchedule(newSchedule);
 
       Taro.hideLoading();
 
@@ -85,7 +83,7 @@ export default function CopySchedulePage() {
         title: '复制成功',
         content: '复制成功，您可按自身需求调整课表：\n- 修改或添加课程\n- 课表所属学生纠正\n- 调整课节和开启通知',
         confirmColor: '#3b82f6',
-        confirmText: '查看课表',
+        confirmText: '返回课表页',
         showCancel: false,
         success: (res) => {
           if (res.confirm) {

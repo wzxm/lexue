@@ -284,6 +284,7 @@ async function copyByInviteCode(openid, payload) {
       room: course.room || '',
       contact: '',
       color: course.color || '',
+      weeks: Array.isArray(course.weeks) ? [...course.weeks] : [],
     });
   }
 
