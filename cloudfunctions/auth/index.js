@@ -37,6 +37,11 @@ function toUserPayload(user) {
   };
 }
 
+function generateDefaultNickname() {
+  const suffix = Math.floor(Math.random() * 900000) + 100000;
+  return `家长${suffix}`;
+}
+
 /**
  * 微信登录
  * 从 WXContext 获取 OPENID/UNIONID，查找或创建用户记录
@@ -57,12 +62,13 @@ async function login(openid, unionid, payload = {}) {
   }
 
   if (!user) {
+    const defaultNickname = generateDefaultNickname();
     // 首次登录，创建新用户
     const { _id } = await db.create('users', {
       openid,
       unionid: unionid || '',
       status: USER_STATUS.ACTIVE,
-      nickname: nickname || '',
+      nickname: nickname || defaultNickname,
       avatar_url: avatarUrl || '',
       settings: {
         notify_enabled: true,
