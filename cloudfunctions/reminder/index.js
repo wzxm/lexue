@@ -1,9 +1,19 @@
 /**
- * reminder 云函数 - 提醒发送（定时触发）
- * 每分钟触发一次，扫描到期的提醒并发送微信订阅消息
+ * reminder 云函数 - 提醒管理
+ *
+ * 功能1：生成提醒记录（每日 00:05 触发）
+ *   event.action = 'generate'
+ *   每日扫描今天有课的用户，生成提醒记录
+ *
+ * 功能2：发送提醒消息（每分钟触发）
+ *   event.action = 'send' 或不传 action
+ *   每分钟扫描到期的提醒并发送微信订阅消息
  *
  * 触发器配置（在云开发控制台设置）：
- * Cron 表达式：* * * * *（每分钟）
+ * 1. 生成提醒：Cron 表达式 5 0 * * *（每天 00:05）
+ *    触发参数：{ "action": "generate" }
+ * 2. 发送提醒：Cron 表达式 * * * * *（每分钟）
+ *    触发参数：{ "action": "send" } 或 {}
  */
 
 const cloud = require('wx-server-sdk');
@@ -11,12 +21,24 @@ cloud.init({ env: 'cloud1-1g0kf2p8b07af20f' });
 
 const db = require('../../shared/db');
 const logger = require('../../shared/logger');
+const { generateReminders } = require('./generate');
 
 const FN = 'reminder';
 
 // 订阅消息模板ID（需要在微信公众平台申请）
-// 上课提醒模板，字段根据实际申请的模板填写
-const TEMPLATE_ID = 'YOUR_SUBSCRIBE_TEMPLATE_ID'; // 替换成真实的模板ID
+// 申请步骤：
+// 1. 登录微信公众平台 mp.weixin.qq.com
+// 2. 功能 → 订阅消息 → 公共模板库
+// 3. 搜索"上课提醒"或类似模板，选择合适的模板
+// 4. 添加后，在"我的模板"中查看模板ID
+// 5. 将模板ID填入下方常量
+//
+// 推荐模板字段：
+// - 课程名称（thing）
+// - 上课时间（time）
+// - 上课地点（thing）
+// - 温馨提示（thing）
+const TEMPLATE_ID = process.env.SUBSCRIBE_TEMPLATE_ID || 'YOUR_SUBSCRIBE_TEMPLATE_ID'; // 替换成真实的模板ID
 
 // 最大重试次数
 const MAX_RETRY = 3;
@@ -42,9 +64,31 @@ async function sendSubscribeMessage(touser, data) {
 }
 
 /**
- * 主入口：扫描并发送到期提醒
+ * 主入口：根据 action 路由到不同功能
  */
 exports.main = async (event, context) => {
+  const action = event.action || 'send';
+
+  try {
+    if (action === 'generate') {
+      // 生成今天的提醒记录
+      return await generateReminders();
+    } else if (action === 'send') {
+      // 发送到期的提醒消息
+      return await sendReminders();
+    } else {
+      return { error: `未知的 action: ${action}` };
+    }
+  } catch (e) {
+    logger.error(FN, action, e);
+    return { error: e.message };
+  }
+};
+
+/**
+ * 发送到期的提醒消息
+ */
+async function sendReminders() {
   const now = new Date();
   logger.info(FN, 'scan:start', { time: now.toISOString() });
 
@@ -137,4 +181,4 @@ exports.main = async (event, context) => {
     logger.error(FN, 'scan:error', e);
     return { processed: 0, error: e.message };
   }
-};
+}

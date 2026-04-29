@@ -9,6 +9,10 @@
 | status | string | 否 | 账号状态：`active`（默认）/ `disabled` / `deleted` |
 | nickname | string | 否 | 用户昵称 |
 | avatar_url | string | 否 | 用户头像URL |
+| subscribe_tokens | array | 否 | 订阅消息授权记录，元素结构见下 |
+| subscribe_tokens[].template_id | string | 是 | 订阅消息模板ID |
+| subscribe_tokens[].result | string | 是 | 授权结果（`accept` / `reject` / `ban`） |
+| subscribe_tokens[].updated_at | date | 是 | 授权时间 |
 | created_at | date | 是 | 注册时间 |
 | updated_at | date | 是 | 最后更新时间 |
 
@@ -65,7 +69,7 @@
 | student_id | string | 是 | 关联的学生ID |
 | owner_openid | string | 是 | 创建者的 openid |
 | name | string | 是 | 课程名称 |
-| day_of_week | number | 是 | 星期几（0=周日，1=周一，...，6=周六） |
+| day_of_week | number | 是 | 星期几（1=周一，2=周二，...，7=周日） |
 | slot | number | 是 | 第几节课（1-12） |
 | teacher | string | 否 | 教师姓名 |
 | room | string | 否 | 教室/地点 |

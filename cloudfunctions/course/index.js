@@ -15,8 +15,8 @@ const logger = require('../../shared/logger');
 
 const FN = 'course';
 
-// 每周7天，0=周日，1=周一，...，6=周六
-const VALID_DAYS = [0, 1, 2, 3, 4, 5, 6];
+// 每周7天，1=周一，2=周二，...，7=周日（与前端 WeekDay 类型保持一致）
+const VALID_DAYS = [1, 2, 3, 4, 5, 6, 7];
 // 每天最多12节课
 const VALID_SLOTS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 const GRADE_LEVELS = ['elementary', 'middle', 'high', 'college'];
@@ -44,6 +44,46 @@ async function list(openid, payload) {
 }
 
 /**
+ * 检查课程冲突
+ * @param {string} scheduleId 课表ID
+ * @param {number} dayOfWeek 星期几（1-7）
+ * @param {number} slot 节次（1-12）
+ * @param {number[]} weeks 周次数组（空数组表示全部周）
+ * @param {string} excludeCourseId 排除的课程ID（更新时用）
+ * @returns {Promise<object|null>} 冲突的课程，无冲突返回 null
+ */
+async function checkConflict(scheduleId, dayOfWeek, slot, weeks, excludeCourseId = null) {
+  // 查询同一课表、同一时间段的所有课程
+  const existingCourses = await db.getList('courses', {
+    schedule_id: scheduleId,
+    day_of_week: dayOfWeek,
+    slot: slot,
+  });
+
+  for (const existing of existingCourses) {
+    // 排除自己（更新时）
+    if (excludeCourseId && existing._id === excludeCourseId) continue;
+
+    // 检查周次是否有交集
+    const existingWeeks = existing.weeks || [];
+    const newWeeks = weeks || [];
+
+    // 如果任一课程的 weeks 为空，表示全部周，必然冲突
+    if (existingWeeks.length === 0 || newWeeks.length === 0) {
+      return existing;
+    }
+
+    // 检查两个数组是否有交集
+    const hasIntersection = existingWeeks.some(w => newWeeks.includes(w));
+    if (hasIntersection) {
+      return existing;
+    }
+  }
+
+  return null;
+}
+
+/**
  * 添加单个课程
  */
 async function create(openid, payload) {
@@ -58,6 +98,20 @@ async function create(openid, payload) {
   const normalizedWeeks = Array.isArray(payload.weeks) && payload.weeks.length > 0
     ? payload.weeks
     : buildAllWeeks(schedule.total_weeks);
+
+  // 检查课程冲突
+  const conflict = await checkConflict(
+    payload.schedule_id,
+    payload.day_of_week,
+    payload.slot,
+    normalizedWeeks
+  );
+  if (conflict) {
+    const weekInfo = conflict.weeks && conflict.weeks.length > 0
+      ? `第 ${conflict.weeks.join('、')} 周`
+      : '全部周';
+    return fail(ERRORS.PARAM_ERROR, `课程冲突：${conflict.name}（${weekInfo}）已占用此时间段`);
+  }
 
   logger.info(FN, 'create', { openid, scheduleId: payload.schedule_id, name: payload.name });
 
@@ -102,6 +156,28 @@ async function update(openid, payload) {
   const updateData = {};
   for (const key of allowed) {
     if (payload[key] !== undefined) updateData[key] = payload[key];
+  }
+
+  // 如果修改了时间或周次，需要检查冲突
+  const needCheckConflict = payload.day_of_week !== undefined || payload.slot !== undefined || payload.weeks !== undefined;
+  if (needCheckConflict) {
+    const newDayOfWeek = payload.day_of_week !== undefined ? payload.day_of_week : course.day_of_week;
+    const newSlot = payload.slot !== undefined ? payload.slot : course.slot;
+    const newWeeks = payload.weeks !== undefined ? payload.weeks : course.weeks;
+
+    const conflict = await checkConflict(
+      course.schedule_id,
+      newDayOfWeek,
+      newSlot,
+      newWeeks,
+      payload.courseId // 排除自己
+    );
+    if (conflict) {
+      const weekInfo = conflict.weeks && conflict.weeks.length > 0
+        ? `第 ${conflict.weeks.join('、')} 周`
+        : '全部周';
+      return fail(ERRORS.PARAM_ERROR, `课程冲突：${conflict.name}（${weekInfo}）已占用此时间段`);
+    }
   }
 
   await db.update('courses', payload.courseId, updateData);
@@ -158,10 +234,45 @@ async function batchCreate(openid, payload) {
 
   // 批量创建，云开发没有批量 add，用循环（50条以内影响不大）
   const results = [];
-  for (const c of payload.courses) {
+  const createdCourses = []; // 记录已创建的课程，用于检测批量内部冲突
+
+  for (let i = 0; i < payload.courses.length; i++) {
+    const c = payload.courses[i];
     const normalizedWeeks = Array.isArray(c.weeks) && c.weeks.length > 0
       ? c.weeks
       : buildAllWeeks(schedule.total_weeks);
+
+    // 检查与数据库中已有课程的冲突
+    const dbConflict = await checkConflict(
+      payload.schedule_id,
+      c.day_of_week,
+      c.slot,
+      normalizedWeeks
+    );
+    if (dbConflict) {
+      const weekInfo = dbConflict.weeks && dbConflict.weeks.length > 0
+        ? `第 ${dbConflict.weeks.join('、')} 周`
+        : '全部周';
+      return fail(ERRORS.PARAM_ERROR, `第 ${i + 1} 个课程冲突：${dbConflict.name}（${weekInfo}）已占用此时间段`);
+    }
+
+    // 检查与本批次已创建课程的冲突
+    for (let j = 0; j < createdCourses.length; j++) {
+      const prev = createdCourses[j];
+      if (prev.day_of_week !== c.day_of_week || prev.slot !== c.slot) continue;
+
+      const prevWeeks = prev.weeks || [];
+      const currWeeks = normalizedWeeks || [];
+      if (prevWeeks.length === 0 || currWeeks.length === 0) {
+        return fail(ERRORS.PARAM_ERROR, `第 ${i + 1} 个课程与第 ${j + 1} 个课程冲突（同一时间段）`);
+      }
+      const hasIntersection = prevWeeks.some(w => currWeeks.includes(w));
+      if (hasIntersection) {
+        const weekInfo = prevWeeks.filter(w => currWeeks.includes(w)).join('、');
+        return fail(ERRORS.PARAM_ERROR, `第 ${i + 1} 个课程与第 ${j + 1} 个课程冲突（第 ${weekInfo} 周）`);
+      }
+    }
+
     const { _id } = await db.create('courses', {
       schedule_id: payload.schedule_id,
       student_id: schedule.student_id,
@@ -177,6 +288,7 @@ async function batchCreate(openid, payload) {
       contact: c.contact !== undefined && c.contact !== null ? String(c.contact) : '',
     });
     results.push(_id);
+    createdCourses.push({ day_of_week: c.day_of_week, slot: c.slot, weeks: normalizedWeeks });
   }
 
   return success({ created: results.length, ids: results });

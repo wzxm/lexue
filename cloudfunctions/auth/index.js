@@ -267,6 +267,40 @@ async function updateDisplaySettings(openid, payload) {
 }
 
 // ——— 入口 ———
+/**
+ * 保存用户订阅授权记录
+ * 前端调用 wx.requestSubscribeMessage 后，将授权结果保存到数据库
+ */
+async function saveSubscribeAuth(openid, payload) {
+  validator.requireFields(payload, ['templateId', 'result']);
+
+  logger.info(FN, 'saveSubscribeAuth', { openid, templateId: payload.templateId, result: payload.result });
+
+  const user = await db.findOne('users', { openid });
+  if (!user) {
+    return fail(ERRORS.NOT_FOUND, '用户不存在');
+  }
+
+  // 更新或添加订阅授权记录
+  const subscribeTokens = user.subscribe_tokens || [];
+  const existingIndex = subscribeTokens.findIndex(t => t.template_id === payload.templateId);
+
+  const newToken = {
+    template_id: payload.templateId,
+    result: payload.result, // 'accept' | 'reject' | 'ban'
+    updated_at: new Date(),
+  };
+
+  if (existingIndex >= 0) {
+    subscribeTokens[existingIndex] = newToken;
+  } else {
+    subscribeTokens.push(newToken);
+  }
+
+  await db.update('users', user._id, { subscribe_tokens: subscribeTokens });
+  return success(null);
+}
+
 exports.main = async (event, context) => {
   const wxContext = cloud.getWXContext();
 
@@ -290,6 +324,8 @@ exports.main = async (event, context) => {
         return await updateProfile(openid, payload);
       case 'updateDisplaySettings':
         return await updateDisplaySettings(openid, payload);
+      case 'saveSubscribeAuth':
+        return await saveSubscribeAuth(openid, payload);
       default:
         return fail(ERRORS.PARAM_ERROR, `未知的 action: ${action}`);
     }

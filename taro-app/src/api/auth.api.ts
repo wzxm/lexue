@@ -48,3 +48,15 @@ export async function updateDisplaySettings(data: { hideWeekend: boolean }): Pro
     payload: { hide_weekend: data.hideWeekend },
   });
 }
+
+/**
+ * 保存订阅消息授权记录
+ * @param templateId 订阅消息模板ID
+ * @param result 授权结果（'accept' | 'reject' | 'ban'）
+ */
+export async function saveSubscribeAuth(templateId: string, result: 'accept' | 'reject' | 'ban'): Promise<void> {
+  return cloud.call<void>('auth', {
+    action: 'saveSubscribeAuth',
+    payload: { templateId, result },
+  });
+}

@@ -1,10 +1,9 @@
 /**
- * reminder/generate.js - 提醒记录生成（定时触发）
+ * reminder/generate.js - 提醒记录生成
  * 每日 00:05 运行，为当天有课的用户预生成提醒记录
  * 根据课表数据 + 用户设置计算 trigger_time
  *
- * 触发器配置（在云开发控制台设置）：
- * Cron 表达式：5 0 * * *（每天 00:05）
+ * 由 reminder/index.js 调用，不是独立的云函数
  */
 
 const cloud = require('wx-server-sdk');
@@ -16,11 +15,13 @@ const logger = require('../../shared/logger');
 const FN = 'reminder/generate';
 
 /**
- * 获取今天是周几（0=周日，1=周一...6=周六）
+ * 获取今天是周几（1=周一，2=周二，...，7=周日）
+ * 注意：Date.getDay() 返回 0-6（0=周日），需要转换为 1-7
  * @returns {number}
  */
 function getTodayDayOfWeek() {
-  return new Date().getDay();
+  const jsDay = new Date().getDay(); // 0=周日，1=周一...6=周六
+  return jsDay === 0 ? 7 : jsDay; // 转换为 1-7（1=周一...7=周日）
 }
 
 /**
@@ -58,9 +59,9 @@ function formatCourseTime(slot) {
 }
 
 /**
- * 主入口：生成今天的提醒记录
+ * 生成今天的提醒记录（导出函数）
  */
-exports.main = async (event, context) => {
+async function generateReminders() {
   const today = new Date();
   const todayDayOfWeek = getTodayDayOfWeek();
 
@@ -175,4 +176,6 @@ exports.main = async (event, context) => {
     logger.error(FN, 'generate:error', e);
     return { generated: 0, error: e.message };
   }
-};
+}
+
+module.exports = { generateReminders };

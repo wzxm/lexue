@@ -1,0 +1,9 @@
+{
+  "name": "migrate-day-of-week",
+  "version": "1.0.0",
+  "description": "数据迁移：day_of_week 从 0-6 转换为 1-7",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}
