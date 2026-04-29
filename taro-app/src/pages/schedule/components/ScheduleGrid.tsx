@@ -1,4 +1,4 @@
-import { View, Text, ScrollView } from '@tarojs/components'
+import { View, Text } from '@tarojs/components'
 import { useState, useMemo, useEffect } from 'react'
 import type { Course, ScheduleGrid as ScheduleGridType, Period } from '../../../types/index'
 import { tabState } from '../../../utils/tabState'
@@ -112,7 +112,7 @@ export default function ScheduleGrid({
           ))}
         </View>
 
-        <ScrollView scrollY className='grid-body'>
+        <View className='grid-body'>
           {periods.map((period, pIdx) => (
             <View key={period.index} className='grid-row'>
               <View className='period-cell'>
@@ -144,7 +144,7 @@ export default function ScheduleGrid({
               })}
             </View>
           ))}
-        </ScrollView>
+        </View>
       </View>
 
       {/* 周数选择浮层（用 fixed View 替代 PageContainer，避免同页多实例报错） */}

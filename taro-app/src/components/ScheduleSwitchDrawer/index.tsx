@@ -15,6 +15,15 @@ export interface ScheduleSwitchDrawerProps {
   onManageStudent: () => void
 }
 
+function formatSemesterDisplay(value?: string): string {
+  if (!value) return ''
+  const match = /^(\d{4})-(\d{4})-([12])$/.exec(value)
+  if (!match) return value
+  const [, startYear, endYear, term] = match
+  const termText = term === '1' ? '上学期' : '下学期'
+  return `${startYear}～${endYear} ${termText}`
+}
+
 export default function ScheduleSwitchDrawer ({
   visible,
   onClose,
@@ -81,7 +90,7 @@ export default function ScheduleSwitchDrawer ({
                               isActive ? 'ssd-schedule-name--active' : ''
                             }`}
                           >
-                            {schedule.semester || schedule.name}
+                            {formatSemesterDisplay(schedule.semester) || schedule.name}
                           </Text>
                           {isActive && (
                             <Text className='ssd-check-icon'>✓</Text>

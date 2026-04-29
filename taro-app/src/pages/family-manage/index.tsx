@@ -9,6 +9,13 @@ import './index.scss'
 
 const AVATAR_COLORS = ['#A0A4F0', '#E8C86A', '#7EC8A0', '#E88A8A', '#8AB4E8', '#D4A0E8']
 
+function getAvatarText(name?: string) {
+  const normalized = (name || '').trim()
+  if (!normalized) return '微'
+  // Use code-point aware split so emoji won't be cut into broken chars.
+  return Array.from(normalized)[0] || '微'
+}
+
 export default function FamilyManagePage() {
   const userInfo = useAuthStore((state) => state.userInfo)
   const currentOpenId = userInfo?.openId || ''
@@ -120,7 +127,9 @@ export default function FamilyManagePage() {
                   <View
                     className='member-avatar-placeholder'
                     style={{ background: getAvatarColor(index) }}
-                  />
+                  >
+                    <Text className='member-avatar-text'>{getAvatarText(member.nickname)}</Text>
+                  </View>
                 )}
                 <View className='member-detail'>
                   <Text className='member-nickname'>{member.nickname || '微信用户'}</Text>

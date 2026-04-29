@@ -499,83 +499,87 @@ export default function ScheduleFormPage() {
       )}
 
       {/* 归属学生选择弹窗 */}
-      <PageContainer
-        show={showStudentSheet}
-        position="bottom"
-        round
-        zIndex={1000}
-        onClickOverlay={() => setShowStudentSheet(false)}
-        onAfterLeave={() => setShowStudentSheet(false)}
-        customStyle={`background-color: #F7F7F7;`}
-      >
-        <View className="student-sheet">
-          <View className="student-sheet-header">
-            <Text className="student-sheet-title">选择归属学生</Text>
-            <Text className="student-sheet-close" onClick={() => setShowStudentSheet(false)}>×</Text>
-          </View>
-          <View className="student-sheet-list">
-            {students.map((s, idx) => (
-              <View
-                key={s.id}
-                className={`student-sheet-item ${idx === studentIndex ? "student-sheet-item--active" : ""}`}
-                onClick={() => { setStudentIndex(idx); setShowStudentSheet(false); }}
+      {showStudentSheet && (
+        <PageContainer
+          show={showStudentSheet}
+          position="bottom"
+          round
+          zIndex={1000}
+          onClickOverlay={() => setShowStudentSheet(false)}
+          onAfterLeave={() => setShowStudentSheet(false)}
+          customStyle={`background-color: #F7F7F7;`}
+        >
+          <View className="student-sheet">
+            <View className="student-sheet-header">
+              <Text className="student-sheet-title">选择归属学生</Text>
+              <Text className="student-sheet-close" onClick={() => setShowStudentSheet(false)}>×</Text>
+            </View>
+            <View className="student-sheet-list">
+              {students.map((s, idx) => (
+                <View
+                  key={s.id}
+                  className={`student-sheet-item ${idx === studentIndex ? "student-sheet-item--active" : ""}`}
+                  onClick={() => { setStudentIndex(idx); setShowStudentSheet(false); }}
+                >
+                  <Text className="student-sheet-name">{s.name}</Text>
+                  {idx === studentIndex && <Text className="student-sheet-check">✓</Text>}
+                </View>
+              ))}
+            </View>
+            <View className="student-sheet-footer">
+              <Text
+                className="student-sheet-manage"
+                onClick={() => { setShowStudentSheet(false); Taro.navigateTo({ url: ROUTES.STUDENT_MANAGE }); }}
               >
-                <Text className="student-sheet-name">{s.name}</Text>
-                {idx === studentIndex && <Text className="student-sheet-check">✓</Text>}
-              </View>
-            ))}
+                学生管理
+              </Text>
+            </View>
           </View>
-          <View className="student-sheet-footer">
-            <Text
-              className="student-sheet-manage"
-              onClick={() => { setShowStudentSheet(false); Taro.navigateTo({ url: ROUTES.STUDENT_MANAGE }); }}
-            >
-              学生管理
-            </Text>
-          </View>
-        </View>
-      </PageContainer>
+        </PageContainer>
+      )}
 
       {/* 课节时间编辑弹窗 */}
-      <PageContainer
-        show={showPeriodSheet}
-        position="bottom"
-        round
-        zIndex={1001}
-        onClickOverlay={closePeriodEditor}
-        onAfterLeave={closePeriodEditor}
-        customStyle="background-color: #F7F7F7;"
-      >
-        <View className="period-sheet">
-          <View className="period-sheet-header">
-            <Text className="period-sheet-title">{editingPeriod?.label || "编辑课节时间"}</Text>
-            <Text className="period-sheet-close" onClick={closePeriodEditor}>×</Text>
-          </View>
-          <View className="period-sheet-card">
-            <Picker mode="time" value={editingStartTime || "08:00"} onChange={(e) => setEditingStartTime(e.detail.value as string)}>
-              <View className="period-sheet-row">
-                <Text className="period-sheet-label">上课时间</Text>
-                <View className="period-sheet-right">
-                  <Text className="period-sheet-value">{editingStartTime || "08:00"}</Text>
-                  <Text className="list-arrow">›</Text>
+      {showPeriodSheet && (
+        <PageContainer
+          show={showPeriodSheet}
+          position="bottom"
+          round
+          zIndex={1001}
+          onClickOverlay={closePeriodEditor}
+          onAfterLeave={closePeriodEditor}
+          customStyle="background-color: #F7F7F7;"
+        >
+          <View className="period-sheet">
+            <View className="period-sheet-header">
+              <Text className="period-sheet-title">{editingPeriod?.label || "编辑课节时间"}</Text>
+              <Text className="period-sheet-close" onClick={closePeriodEditor}>×</Text>
+            </View>
+            <View className="period-sheet-card">
+              <Picker mode="time" value={editingStartTime || "08:00"} onChange={(e) => setEditingStartTime(e.detail.value as string)}>
+                <View className="period-sheet-row">
+                  <Text className="period-sheet-label">上课时间</Text>
+                  <View className="period-sheet-right">
+                    <Text className="period-sheet-value">{editingStartTime || "08:00"}</Text>
+                    <Text className="list-arrow">›</Text>
+                  </View>
                 </View>
-              </View>
-            </Picker>
-            <Picker mode="time" value={editingEndTime || "08:40"} onChange={(e) => setEditingEndTime(e.detail.value as string)}>
-              <View className="period-sheet-row">
-                <Text className="period-sheet-label">下课时间</Text>
-                <View className="period-sheet-right">
-                  <Text className="period-sheet-value">{editingEndTime || "08:40"}</Text>
-                  <Text className="list-arrow">›</Text>
+              </Picker>
+              <Picker mode="time" value={editingEndTime || "08:40"} onChange={(e) => setEditingEndTime(e.detail.value as string)}>
+                <View className="period-sheet-row">
+                  <Text className="period-sheet-label">下课时间</Text>
+                  <View className="period-sheet-right">
+                    <Text className="period-sheet-value">{editingEndTime || "08:40"}</Text>
+                    <Text className="list-arrow">›</Text>
+                  </View>
                 </View>
-              </View>
-            </Picker>
+              </Picker>
+            </View>
+            <Button className="period-sheet-confirm" onClick={confirmPeriodEditor}>
+              确认
+            </Button>
           </View>
-          <Button className="period-sheet-confirm" onClick={confirmPeriodEditor}>
-            确认
-          </Button>
-        </View>
-      </PageContainer>
+        </PageContainer>
+      )}
 
       {step === 2 && (
         <EmptySchedule

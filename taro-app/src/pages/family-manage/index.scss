@@ -106,6 +106,16 @@
   height: 80px;
   border-radius: 50%;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.member-avatar-text {
+  color: #ffffff;
+  font-size: 34px;
+  font-weight: 600;
+  line-height: 1;
 }
 
 .member-detail {

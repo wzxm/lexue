@@ -92,6 +92,10 @@ export default function ToolsPage () {
   }, [currentSchedule, students, currentStudent])
 
   const headerStudentName = headerStudent?.name || '未命名学生'
+  const headerStudentAvatar = headerStudent?.avatar || ''
+  const headerStudentInitial = headerStudentName === '默认学生'
+    ? '默'
+    : (headerStudentName?.charAt(0) || '学')
   const headerSchoolLine = [headerStudent?.school, headerStudent?.grade]
     .filter(Boolean)
     .join('\uFF0C')
@@ -178,11 +182,15 @@ export default function ToolsPage () {
             </View>
           ) : (
             <View className='user-info' onClick={openDrawer}>
-              <Image
-                className='avatar-img'
-                src={userInfo?.avatarUrl || defaultAvatar}
-                mode='aspectFill'
-              />
+              {headerStudentAvatar ? (
+                <Image
+                  className='avatar-img'
+                  src={headerStudentAvatar}
+                  mode='aspectFill'
+                />
+              ) : (
+                <View className='avatar avatar--student'>{headerStudentInitial}</View>
+              )}
               <View className='user-text'>
                 <View className='name-row'>
                   <Text className='name'>

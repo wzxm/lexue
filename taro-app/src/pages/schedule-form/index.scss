@@ -309,13 +309,13 @@
   width: 100%;
   height: 96px;
   border-radius: 48px;
-  background: var(--color-primary);
+  background: var(--color-dark-btn);
   color: #FFFFFF;
   font-size: 34px;
   font-weight: 600;
   border: none;
   line-height: 96px;
-  box-shadow: var(--shadow-brand);
+  box-shadow: none;
 }
 
 .save-btn--loading {

@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { View, Text, PageContainer, Image, Input, Button } from '@tarojs/components'
-import Taro, { useDidHide, useDidShow, useUnload } from '@tarojs/taro'
+import Taro, { useDidHide, useDidShow, useShareAppMessage, useUnload } from '@tarojs/taro'
 import { tabState } from '../../utils/tabState'
 import { ROUTES } from '../../constants/routes'
 import { useAuthStore } from '../../store/auth.store'
 import { getSettingsSummary, type SettingsSummary, updateProfile } from '../../api/auth.api'
 import defaultAvatar from '../../assets/default-avatar.png'
+import ContactModal from './components/ContactModal'
 import './index.scss'
 
 type MenuKey = 'notify' | 'family' | 'scheduleTab' | 'studentManage' | 'student' | 'shareSchedule' | 'feedback' | 'recommend'
@@ -23,7 +24,7 @@ const menuRows: MenuRow[] = [
   { key: 'studentManage', label: '学生管理', icon: '\ue706' },
   // { key: 'student', label: '展示管理', icon: '\ue706' },
   { key: 'shareSchedule', label: '分享课表', icon: '\ue729' },
-  { key: 'feedback', label: '意见反馈', icon: '\ue759' },
+  { key: 'feedback', label: '联系我们', icon: '\ue759' },
   // { key: 'recommend', label: '推荐小程序', icon: '\ue729' },
 ]
 
@@ -53,6 +54,12 @@ export default function SettingsPage() {
   const [updatingAvatar, setUpdatingAvatar] = useState(false)
   const [draftNickname, setDraftNickname] = useState('')
   const [settingsSummary, setSettingsSummary] = useState<SettingsSummary | null>(null)
+  const [contactVisible, setContactVisible] = useState(false)
+
+  useShareAppMessage(() => ({
+    title: '乐学课表：课程管理、家庭共享、上课提醒',
+    path: ROUTES.SCHEDULE,
+  }))
 
   const loadSettingsSummary = async () => {
     if (!isLoggedIn) {
@@ -178,10 +185,10 @@ export default function SettingsPage() {
         Taro.navigateTo({ url: ROUTES.DISPLAY_SETTINGS })
         break
       case 'shareSchedule':
-        Taro.navigateTo({ url: ROUTES.SHARE_SCHEDULE })
+        Taro.showToast({ title: '点击按钮分享给好友', icon: 'none' })
         break
       case 'feedback':
-        Taro.showToast({ title: '敬请期待', icon: 'none' })
+        setContactVisible(true)
         break
       case 'recommend':
         Taro.showToast({ title: '敬请期待', icon: 'none' })
@@ -193,6 +200,19 @@ export default function SettingsPage() {
 
   const avatarUrl = userInfo?.avatarUrl || defaultAvatar
   const openIdTip = userInfo?.openId ? `id:${userInfo.openId.slice(0, 6)}*** ▾` : '点击管理账号 ▾'
+  const contactText = '📮email：up91@foxmail.com\n✉️微信号：atgoing'
+
+  const closeContactModal = () => setContactVisible(false)
+
+  const handleCopyContact = async () => {
+    try {
+      await Taro.setClipboardData({ data: contactText })
+      Taro.showToast({ title: '联系方式已复制', icon: 'success' })
+      closeContactModal()
+    } catch {
+      Taro.showToast({ title: '复制失败，请稍后再试', icon: 'none' })
+    }
+  }
 
   return (
     <View className={`settings-page ${!isLoggedIn ? 'settings-page--guest' : ''}`}>
@@ -266,18 +286,36 @@ export default function SettingsPage() {
         <View className='menu-list-group'>
           {menuRows.slice(4).map((row) => {
             const suffix = menuSuffix(row, settingsSummary)
+            const isShareRow = row.key === 'shareSchedule'
             return (
-            <View key={row.key} className='menu-item' onClick={() => onMenu(row)}>
-              <View className='menu-item-left'>
-                <View className='menu-icon-wrap'>
-                  <Text className='iconfont menu-icon'>{row.icon}</Text>
+            <View key={row.key} className='menu-item-wrap'>
+              {isShareRow ? (
+                <Button className='menu-item menu-item--share-btn' openType='share'>
+                  <View className='menu-item-left'>
+                    <View className='menu-icon-wrap'>
+                      <Text className='iconfont menu-icon'>{row.icon}</Text>
+                    </View>
+                    <Text className='menu-label'>{row.label}</Text>
+                  </View>
+                  <View className='menu-item-right'>
+                    {suffix ? <Text className='menu-suffix'>{suffix}</Text> : null}
+                    <Text className='menu-arrow'>›</Text>
+                  </View>
+                </Button>
+              ) : (
+                <View className='menu-item' onClick={() => onMenu(row)}>
+                  <View className='menu-item-left'>
+                    <View className='menu-icon-wrap'>
+                      <Text className='iconfont menu-icon'>{row.icon}</Text>
+                    </View>
+                    <Text className='menu-label'>{row.label}</Text>
+                  </View>
+                  <View className='menu-item-right'>
+                    {suffix ? <Text className='menu-suffix'>{suffix}</Text> : null}
+                    <Text className='menu-arrow'>›</Text>
+                  </View>
                 </View>
-                <Text className='menu-label'>{row.label}</Text>
-              </View>
-              <View className='menu-item-right'>
-                {suffix ? <Text className='menu-suffix'>{suffix}</Text> : null}
-                <Text className='menu-arrow'>›</Text>
-              </View>
+              )}
             </View>
             )
           })}
@@ -343,6 +381,8 @@ export default function SettingsPage() {
           </View>
         )}
       </PageContainer>
+
+      <ContactModal visible={contactVisible} onClose={closeContactModal} onCopy={handleCopyContact} />
     </View>
   )
 }

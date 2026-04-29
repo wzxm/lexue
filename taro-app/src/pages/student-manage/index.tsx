@@ -1,4 +1,4 @@
-import { View, Text } from '@tarojs/components'
+import { View, Text, Image } from '@tarojs/components'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { useMemo } from 'react'
 import { listStudents, deleteStudent } from '../../api/student.api'
@@ -26,6 +26,11 @@ function getSharedParentKey(student: Student) {
 
 function getSharedParentName(student: Student) {
   return student.sharedFromNickname || '家长'
+}
+
+function getStudentInitial(student: Student) {
+  if (student.name === '默认学生') return '默'
+  return student.name?.charAt(0) || '学'
 }
 
 export default function StudentManagePage() {
@@ -108,7 +113,11 @@ export default function StudentManagePage() {
     >
       <View className='card-left'>
         <View className='avatar'>
-          {student.name === '默认学生' ? '默' : student.name.charAt(0)}
+          {student.avatar ? (
+            <Image className='avatar-img' src={student.avatar} mode='aspectFill' />
+          ) : (
+            getStudentInitial(student)
+          )}
         </View>
         <View className='info'>
           <View className='name-row'>

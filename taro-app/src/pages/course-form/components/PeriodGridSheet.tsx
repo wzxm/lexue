@@ -46,7 +46,6 @@ export default function PeriodGridSheet({
   }, [show])
 
   const toggleCell = (day: WeekDay, slot: PeriodIndex) => {
-    if (isOccupied(occupied, day, slot)) return
     if (singleSelect) {
       setDraft(prev => {
         const alreadySelected = prev.some(s => s.day_of_week === day && s.slot === slot)
@@ -112,7 +111,7 @@ export default function PeriodGridSheet({
                   return (
                     <View
                       key={dIdx}
-                      className={`pg-sheet__cell ${sel ? 'pg-sheet__cell--selected' : ''} ${occ ? 'pg-sheet__cell--occupied' : ''}`}
+                      className={`pg-sheet__cell ${sel ? 'pg-sheet__cell--selected' : ''} ${occ && !sel ? 'pg-sheet__cell--occupied' : ''}`}
                       onClick={() => toggleCell(day, slot)}
                     >
                       {sel && <Text className='pg-sheet__check'>✓</Text>}

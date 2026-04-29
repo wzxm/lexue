@@ -101,7 +101,7 @@
 .empty-content {
   position: relative;
   z-index: 1;
-  padding: 120px 32px 32px;
+  padding: 80px 32px 32px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -205,7 +205,7 @@
   display: flex;
   flex-direction: column;
   flex: 1;
-  padding-top: 40px;
+  // padding-top: 40px;
   padding-bottom: calc(56px + env(safe-area-inset-bottom));
   box-sizing: border-box;
   animation: viewFadeIn 0.2s ease-out both;
@@ -277,7 +277,7 @@
 .grid-row {
   display: flex;
   border-bottom: 1px solid #f0f0f0;
-  min-height: 110px;
+  min-height: 132px;
 }
 .period-cell {
   width: 80px;
@@ -328,7 +328,7 @@
 }
 .empty-cell {
   flex: 1;
-  min-height: 100px;
+  min-height: 122px;
 }
 
 /* ===== 空课表 - 添加课程方式 ===== */

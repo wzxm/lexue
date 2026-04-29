@@ -15,6 +15,16 @@ const logger = require('../../shared/logger');
 
 const FN = 'student';
 
+async function cleanupAvatarFile(fileId) {
+  if (!fileId || typeof fileId !== 'string') return;
+  if (!/^cloud:\/\//.test(fileId)) return;
+  try {
+    await cloud.deleteFile({ fileList: [fileId] });
+  } catch (err) {
+    logger.warn(FN, 'cleanupAvatarFile:failed', { fileId, err: err && err.message ? err.message : err });
+  }
+}
+
 function attachSharedOwnerInfo(student, ownerUserMap) {
   const ownerOpenid = student.owner_openid || '';
   const owner = ownerUserMap[ownerOpenid] || {};
@@ -176,7 +186,14 @@ async function update(openid, payload) {
   if (payload.school_name) validator.maxLength(payload.school_name, 50, '学校名称');
   if (payload.grade) validator.maxLength(payload.grade, 20, '年级');
 
+  const hasAvatarUpdate = Object.prototype.hasOwnProperty.call(updateData, 'avatar_url');
+  const oldAvatar = student.avatar_url || '';
+  const nextAvatar = hasAvatarUpdate ? (updateData.avatar_url || '') : oldAvatar;
+
   await db.update('students', payload.studentId, updateData);
+  if (hasAvatarUpdate && oldAvatar && oldAvatar !== nextAvatar) {
+    await cleanupAvatarFile(oldAvatar);
+  }
   return success(null);
 }
 
@@ -209,6 +226,7 @@ async function remove(openid, payload) {
 
   // 最后删学生本体
   await db.remove('students', payload.studentId);
+  await cleanupAvatarFile(student.avatar_url);
 
   return success(null);
 }

@@ -292,8 +292,23 @@
   border-bottom: 1px solid #f5f5f5;
 }
 
+.menu-item-wrap:last-child .menu-item {
+  border-bottom: none;
+}
+
 .menu-item:last-child {
   border-bottom: none;
+}
+
+.menu-item--share-btn {
+  width: 100%;
+  margin: 0;
+  border-radius: 0;
+  background: #fff;
+}
+
+.menu-item--share-btn::after {
+  border: none;
 }
 
 .menu-item-left {

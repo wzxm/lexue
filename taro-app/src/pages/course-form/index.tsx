@@ -45,6 +45,12 @@ function resolveGradeLevelFromStudentGrade(grade?: string): GradeLevel {
   return 'middle'
 }
 
+function intersectsWeeks(a: number[], b: number[]) {
+  if (a.length === 0 || b.length === 0) return true
+  const setB = new Set(b)
+  return a.some(w => setB.has(w))
+}
+
 export default function CourseFormPage() {
   const router = useRouter()
   const mode = (router.params.mode || 'add') as 'add' | 'edit'
@@ -241,6 +247,44 @@ export default function CourseFormPage() {
     if (unset) {
       Taro.showToast({ title: '请为每个课节选择节数', icon: 'none' })
       return
+    }
+
+    const normalizedSections = sections.map(s => ({
+      ...s,
+      weeks: s.weeks.length > 0 ? s.weeks : buildAllWeeks(totalWeeks),
+    }))
+
+    // 1) 当前编辑列表内部冲突校验：同一天同一节且周次有交集才冲突（单双周互补可共存）
+    for (let i = 0; i < normalizedSections.length; i++) {
+      const left = normalizedSections[i]
+      for (let j = i + 1; j < normalizedSections.length; j++) {
+        const right = normalizedSections[j]
+        if (
+          left.day_of_week === right.day_of_week &&
+          left.slot === right.slot &&
+          intersectsWeeks(left.weeks, right.weeks)
+        ) {
+          Taro.showToast({ title: `课节${i + 1}与课节${j + 1}时间冲突`, icon: 'none' })
+          return
+        }
+      }
+    }
+
+    // 2) 与现有课程冲突校验：同一天同一节且周次有交集才冲突（单双周互补可共存）
+    const existingCourses = (currentSchedule?.courses || []).filter(c =>
+      mode === 'edit' ? resolveCourseId(c) !== String(routeCourseId) : true
+    )
+    for (let i = 0; i < normalizedSections.length; i++) {
+      const section = normalizedSections[i]
+      const clash = existingCourses.find(c => {
+        if (c.day_of_week !== section.day_of_week || c.slot !== section.slot) return false
+        const existingWeeks = c.weeks && c.weeks.length > 0 ? c.weeks : buildAllWeeks(totalWeeks)
+        return intersectsWeeks(section.weeks, existingWeeks)
+      })
+      if (clash) {
+        Taro.showToast({ title: `课节${i + 1}与现有课程时间冲突`, icon: 'none' })
+        return
+      }
     }
 
     setLoading(true)
