@@ -64,49 +64,11 @@ page {
   padding: 40px;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
 }
-.profile-auth-area {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  margin-bottom: 28px;
-}
-.avatar-authorize-btn {
-  width: 92px;
-  height: 92px;
-  min-width: 92px;
-  border-radius: 50%;
-  background: transparent;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-}
-.avatar-authorize-btn::after {
-  border: none;
-}
-.avatar-authorize-img {
-  width: 92px;
-  height: 92px;
-  border-radius: 50%;
-  border: 2px solid #e5e7eb;
-  background: #f3f4f6;
-}
-.nickname-input {
-  flex: 1;
-  height: 88px;
-  border-radius: 16px;
-  padding: 0 24px;
-  box-sizing: border-box;
-  background: #f8fafc;
-  font-size: 30px;
-  color: #111827;
-}
 .agree-row {
   display: flex;
   flex-direction: row;
   align-items: flex-start;
-  margin-bottom: 32px;
+  margin-bottom: 28px;
 }
 .agree-row .agree-check {
   margin-right: 12px;

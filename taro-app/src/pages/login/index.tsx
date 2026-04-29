@@ -1,21 +1,18 @@
-import { View, Text, Button, Image, Input } from '@tarojs/components'
+import { View, Text, Button } from '@tarojs/components'
 import { useRef, useState } from 'react'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { login } from '../../api/auth.api'
 import { useAuthStore } from '../../store/auth.store'
 import { ROUTES } from '../../constants/routes'
-import defaultAvatar from '../../assets/default-avatar.png'
 import './index.scss'
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [agreed, setAgreed] = useState(false)
-  const [nickname, setNickname] = useState('')
-  const [avatarUrl, setAvatarUrl] = useState('')
   const redirectingRef = useRef(false)
   const setUserInfo = useAuthStore(s => s.setUserInfo)
   const isLoggedIn = useAuthStore(s => s.isLoggedIn)
-  const loginDisabled = loading || !agreed || !nickname.trim() || !avatarUrl
+  const loginDisabled = loading || !agreed
   const showDisabledStyle = loginDisabled
 
   const afterLogin = () => {
@@ -48,18 +45,7 @@ export default function LoginPage() {
     
     setLoading(true)
     try {
-      if (!nickname.trim()) {
-        Taro.showToast({ title: '请先填写微信昵称', icon: 'none' })
-        return
-      }
-      if (!avatarUrl) {
-        Taro.showToast({ title: '请先授权微信头像', icon: 'none' })
-        return
-      }
-      const userInfo = await login({
-        nickname: nickname.trim(),
-        avatarUrl,
-      })
+      const userInfo = await login()
       setUserInfo(userInfo)
       afterLogin()
     } catch (err: any) {
@@ -67,12 +53,6 @@ export default function LoginPage() {
     } finally {
       setLoading(false)
     }
-  }
-
-  const onChooseAvatar = (e: any) => {
-    const nextAvatarUrl = e?.detail?.avatarUrl || ''
-    if (!nextAvatarUrl) return
-    setAvatarUrl(nextAvatarUrl)
   }
 
   return (
@@ -90,27 +70,6 @@ export default function LoginPage() {
       </View>
 
       <View className='login-area'>
-        <View className='profile-auth-area'>
-          <Button
-            className='avatar-authorize-btn'
-            openType='chooseAvatar'
-            onChooseAvatar={onChooseAvatar}
-          >
-            <Image
-              className='avatar-authorize-img'
-              src={avatarUrl || defaultAvatar}
-              mode='aspectFill'
-            />
-          </Button>
-          <Input
-            className='nickname-input'
-            type='nickname'
-            maxlength={20}
-            placeholder='请输入微信昵称'
-            value={nickname}
-            onInput={(e) => setNickname(e.detail.value)}
-          />
-        </View>
         <View className='agree-row' onClick={() => setAgreed(!agreed)}>
           <View className={`agree-check ${agreed ? 'agree-check--on' : ''}`}>
             {agreed ? <Text className='agree-mark'>✓</Text> : null}
