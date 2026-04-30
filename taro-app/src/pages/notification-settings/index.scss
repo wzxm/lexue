@@ -6,6 +6,20 @@
   box-sizing: border-box;
 }
 
+.auth-warning {
+  background: #FFF3E0;
+  border: 2px solid #FF9800;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.auth-warning-text {
+  font-size: 26px;
+  color: #E65100;
+  line-height: 1.5;
+}
+
 .notify-header {
   margin-bottom: 40px;
   display: flex;

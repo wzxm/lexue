@@ -14,3 +14,13 @@ export async function updateSettings(settings: Partial<NotifySettings>): Promise
 export async function recordSubscribe(templateId: string, result: 'accept' | 'reject' | 'ban'): Promise<void> {
   return cloud.call<void>('notify', { action: 'recordSubscribe', payload: { templateId, result } });
 }
+
+export interface SubscribeStatus {
+  hasValidAuth: boolean;
+  lastResult: string | null;
+  lastUpdateTime: string | null;
+}
+
+export async function checkSubscribeStatus(templateId: string): Promise<SubscribeStatus> {
+  return cloud.call<SubscribeStatus>('notify', { action: 'checkSubscribeStatus', payload: { templateId } });
+}

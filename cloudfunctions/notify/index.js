@@ -110,6 +110,31 @@ async function recordSubscribe(openid, payload) {
   return success(null);
 }
 
+/**
+ * 检查订阅授权状态
+ * 返回用户是否有有效的订阅授权
+ */
+async function checkSubscribeStatus(openid, payload) {
+  validator.requireFields(payload, ['templateId']);
+
+  logger.info(FN, 'checkSubscribeStatus', { openid, templateId: payload.templateId });
+
+  const user = await db.findOne('users', { openid });
+  if (!user) return fail(ERRORS.NOT_FOUND, '用户不存在');
+
+  const subscribeTokens = user.subscribe_tokens || [];
+  const token = subscribeTokens.find(t => t.template_id === payload.templateId);
+
+  // 检查是否有有效授权（result 为 'accept' 且未被使用）
+  const hasValidAuth = token && token.result === 'accept';
+
+  return success({
+    hasValidAuth,
+    lastResult: token ? token.result : null,
+    lastUpdateTime: token ? token.update_time : null,
+  });
+}
+
 // ——— 入口 ———
 exports.main = async (event, context) => {
   const wxContext = cloud.getWXContext();
@@ -122,6 +147,7 @@ exports.main = async (event, context) => {
       case 'getSettings':      return await getSettings(openid);
       case 'updateSettings':   return await updateSettings(openid, payload);
       case 'recordSubscribe':  return await recordSubscribe(openid, payload);
+      case 'checkSubscribeStatus': return await checkSubscribeStatus(openid, payload);
       default:                 return fail(ERRORS.PARAM_ERROR, `未知的 action: ${action}`);
     }
   } catch (e) {

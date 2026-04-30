@@ -50,12 +50,19 @@ function getSlotTime(slot) {
 
 /**
  * 格式化上课时间字符串（用于订阅消息展示）
+ * 微信订阅消息的 time 类型字段需要完整的日期时间格式
+ * @param {Date} date 日期
  * @param {number} slot 节次
- * @returns {string}
+ * @returns {string} YYYY-MM-DD HH:MM 格式
  */
-function formatCourseTime(slot) {
+function formatCourseTime(date, slot) {
   const { hour, minute } = getSlotTime(slot);
-  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hourStr = String(hour).padStart(2, '0');
+  const minuteStr = String(minute).padStart(2, '0');
+  return `${year}-${month}-${day} ${hourStr}:${minuteStr}`;
 }
 
 /**
@@ -88,6 +95,28 @@ async function generateReminders() {
     const scheduleMap = {};
     schedules.forEach(s => { scheduleMap[s._id] = s; });
 
+    // 按课表分组课程，找出每个课表的上午最后一节和下午最后一节
+    const scheduleCoursesMap = {};
+    courses.forEach(c => {
+      if (!scheduleCoursesMap[c.schedule_id]) {
+        scheduleCoursesMap[c.schedule_id] = [];
+      }
+      scheduleCoursesMap[c.schedule_id].push(c);
+    });
+
+    // 为每个课表找出上午最后一节（slot <= 5）和下午最后一节（slot >= 6）
+    const dismissCourses = {};
+    Object.keys(scheduleCoursesMap).forEach(scheduleId => {
+      const coursesInSchedule = scheduleCoursesMap[scheduleId];
+      const morningCourses = coursesInSchedule.filter(c => c.slot <= 5);
+      const afternoonCourses = coursesInSchedule.filter(c => c.slot >= 6);
+
+      dismissCourses[scheduleId] = {
+        noon: morningCourses.length > 0 ? morningCourses.reduce((max, c) => c.slot > max.slot ? c : max) : null,
+        afternoon: afternoonCourses.length > 0 ? afternoonCourses.reduce((max, c) => c.slot > max.slot ? c : max) : null,
+      };
+    });
+
     // 收集所有需要通知的 openid 列表
     const openidSet = new Set();
     schedules.forEach(s => {
@@ -102,9 +131,12 @@ async function generateReminders() {
 
     let generatedCount = 0;
 
-    for (const course of courses) {
-      const schedule = scheduleMap[course.schedule_id];
+    // 遍历每个课表的放学课程
+    for (const scheduleId of Object.keys(dismissCourses)) {
+      const schedule = scheduleMap[scheduleId];
       if (!schedule) continue;
+
+      const { noon, afternoon } = dismissCourses[scheduleId];
 
       // 获取该课表所有需要通知的成员（owner + shared_with）
       const membersToNotify = [
@@ -120,52 +152,52 @@ async function generateReminders() {
         const settings = user.settings || {};
         if (settings.notify_enabled === false) continue;
 
-        // 如果设置了指定节次通知，检查当前节次是否在列表中
-        if (Array.isArray(settings.notify_time_slots) && settings.notify_time_slots.length > 0) {
-          if (!settings.notify_time_slots.includes(course.slot)) continue;
+        // 获取学生级别的提醒设置
+        const studentSettings = settings.student_settings || {};
+        const studentId = schedule.student_id;
+        const studentSetting = studentSettings[studentId] || {};
+
+        // 检查该学生是否关联了正确的课表
+        if (studentSetting.schedule_id && studentSetting.schedule_id !== scheduleId) {
+          continue; // 该学生的提醒关联了其他课表，跳过
         }
 
-        const advanceMinutes = settings.notify_advance_minutes || 30;
+        // 获取提前时间（优先使用学生级别设置，否则使用全局设置）
+        const advanceMinutes = studentSetting.advance_minutes || settings.notify_advance_minutes || 30;
 
-        // 计算触发时间
-        const { hour, minute } = getSlotTime(course.slot);
-        const triggerTime = new Date(today);
-        triggerTime.setHours(hour, minute - advanceMinutes, 0, 0);
+        // 处理中午放学提醒
+        if (noon && studentSetting.noon_enabled !== false) {
+          const triggerTime = calculateTriggerTime(today, noon.slot, advanceMinutes);
+          if (triggerTime > today) {
+            const created = await createReminderIfNotExists(
+              member.openid,
+              scheduleId,
+              noon,
+              advanceMinutes,
+              triggerTime,
+              today,
+              '中午放学'
+            );
+            if (created) generatedCount++;
+          }
+        }
 
-        // 如果触发时间已经过了，不生成（比如凌晨跑任务但提前30分钟在0点前）
-        if (triggerTime <= today) continue;
-
-        // 检查今天是否已经生成过这条提醒（避免重复生成）
-        const todayStart = new Date(today);
-        todayStart.setHours(0, 0, 0, 0);
-        const todayEnd = new Date(today);
-        todayEnd.setHours(23, 59, 59, 999);
-
-        const existing = await db.findOne('reminders', {
-          openid: member.openid,
-          course_id: course._id,
-          trigger_time: _.and(_.gte(todayStart), _.lte(todayEnd)),
-        });
-
-        if (existing) continue; // 已经生成过了，跳过
-
-        // 生成提醒记录
-        await db.create('reminders', {
-          openid: member.openid,
-          schedule_id: course.schedule_id,
-          course_id: course._id,
-          course_name: course.name,
-          course_time: formatCourseTime(course.slot),
-          room: course.room || '',
-          slot: course.slot,
-          advance_minutes: advanceMinutes,
-          trigger_time: triggerTime,
-          status: 'pending',
-          retry_count: 0,
-          date: today.toISOString().split('T')[0], // YYYY-MM-DD
-        });
-
-        generatedCount++;
+        // 处理下午放学提醒
+        if (afternoon && studentSetting.afternoon_enabled !== false) {
+          const triggerTime = calculateTriggerTime(today, afternoon.slot, advanceMinutes);
+          if (triggerTime > today) {
+            const created = await createReminderIfNotExists(
+              member.openid,
+              scheduleId,
+              afternoon,
+              advanceMinutes,
+              triggerTime,
+              today,
+              '下午放学'
+            );
+            if (created) generatedCount++;
+          }
+        }
       }
     }
 
@@ -176,6 +208,53 @@ async function generateReminders() {
     logger.error(FN, 'generate:error', e);
     return { generated: 0, error: e.message };
   }
+}
+
+/**
+ * 计算触发时间
+ */
+function calculateTriggerTime(today, slot, advanceMinutes) {
+  const { hour, minute } = getSlotTime(slot);
+  const triggerTime = new Date(today);
+  triggerTime.setHours(hour, minute - advanceMinutes, 0, 0);
+  return triggerTime;
+}
+
+/**
+ * 创建提醒记录（如果不存在）
+ */
+async function createReminderIfNotExists(openid, scheduleId, course, advanceMinutes, triggerTime, today, dismissType) {
+  const todayStart = new Date(today);
+  todayStart.setHours(0, 0, 0, 0);
+  const todayEnd = new Date(today);
+  todayEnd.setHours(23, 59, 59, 999);
+
+  const _ = db.getCommand();
+  const existing = await db.findOne('reminders', {
+    openid,
+    course_id: course._id,
+    trigger_time: _.and(_.gte(todayStart), _.lte(todayEnd)),
+  });
+
+  if (existing) return false; // 已经生成过了
+
+  await db.create('reminders', {
+    openid,
+    schedule_id: scheduleId,
+    course_id: course._id,
+    course_name: course.name,
+    course_time: formatCourseTime(today, course.slot),
+    room: course.room || '',
+    slot: course.slot,
+    advance_minutes: advanceMinutes,
+    trigger_time: triggerTime,
+    status: 'pending',
+    retry_count: 0,
+    date: today.toISOString().split('T')[0], // YYYY-MM-DD
+    dismiss_type: dismissType, // 中午放学 / 下午放学
+  });
+
+  return true;
 }
 
 module.exports = { generateReminders };

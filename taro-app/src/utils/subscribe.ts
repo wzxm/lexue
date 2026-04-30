@@ -3,10 +3,10 @@ import { saveSubscribeAuth } from '../api/auth.api'
 
 /**
  * 订阅消息模板ID
- * 需要在微信公众平台申请，并替换此常量
- * 申请步骤见 cloudfunctions/reminder/index.js 注释
+ * 已在微信公众平台申请：上课提醒模板
+ * 模板ID: I1lkvTBguxU146JHrpdlNn9vZA60GBuMPlpW2dSsnK8
  */
-export const SUBSCRIBE_TEMPLATE_ID = 'YOUR_SUBSCRIBE_TEMPLATE_ID'
+export const SUBSCRIBE_TEMPLATE_ID = 'I1lkvTBguxU146JHrpdlNn9vZA60GBuMPlpW2dSsnK8'
 
 /**
  * 请求订阅消息授权

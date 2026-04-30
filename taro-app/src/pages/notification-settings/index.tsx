@@ -4,6 +4,7 @@ import Taro from '@tarojs/taro'
 import * as notifyApi from '../../api/notify.api'
 import * as studentApi from '../../api/student.api'
 import * as scheduleApi from '../../api/schedule.api'
+import { requestSubscribeMessage, SUBSCRIBE_TEMPLATE_ID } from '../../utils/subscribe'
 import type { Student, StudentNotifySetting, Schedule } from '../../types/index'
 import './index.scss'
 
@@ -15,21 +16,21 @@ export default function NotificationSettingsPage() {
   const [studentSettings, setStudentSettings] = useState<Record<string, StudentNotifySetting>>({})
   const [loading, setLoading] = useState(false)
   const [pageLoading, setPageLoading] = useState(true)
-
-  // Sheet states
-  const [activeStudentId, setActiveStudentId] = useState<string | null>(null)
+  const [subscribeStatus, setSubscribeStatus] = useState<{ hasValidAuth: boolean } | null>(null)
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [studentsList, schedulesList, settings] = await Promise.all([
+        const [studentsList, schedulesList, settings, status] = await Promise.all([
           studentApi.listStudents(),
           scheduleApi.listSchedules(),
-          notifyApi.getSettings()
+          notifyApi.getSettings(),
+          notifyApi.checkSubscribeStatus(SUBSCRIBE_TEMPLATE_ID)
         ])
         setStudents(studentsList)
         setSchedules(schedulesList)
-        
+        setSubscribeStatus(status)
+
         const s = settings as any
         if (s.student_settings) {
           const fetchedSettings = { ...s.student_settings }
@@ -65,6 +66,9 @@ export default function NotificationSettingsPage() {
     fetchData()
   }, [])
 
+  // Sheet states
+  const [activeStudentId, setActiveStudentId] = useState<string | null>(null)
+
   const updateStudentSetting = (studentId: string, key: keyof StudentNotifySetting, value: any) => {
     setStudentSettings(prev => {
       const current = prev[studentId] || { noon_enabled: true, afternoon_enabled: true, advance_minutes: 10 }
@@ -81,6 +85,25 @@ export default function NotificationSettingsPage() {
   const onSave = async () => {
     setLoading(true)
     try {
+      // 检查是否有任何学生开启了提醒
+      const hasAnyEnabled = Object.values(studentSettings).some(
+        setting => setting.noon_enabled || setting.afternoon_enabled
+      )
+
+      // 如果有开启提醒，先请求订阅授权
+      if (hasAnyEnabled) {
+        const authorized = await requestSubscribeMessage()
+        if (!authorized) {
+          Taro.showModal({
+            title: '提示',
+            content: '需要授权订阅消息才能接收提醒通知，请在弹窗中点击"允许"',
+            showCancel: false
+          })
+          setLoading(false)
+          return
+        }
+      }
+
       await notifyApi.updateSettings({
         student_settings: studentSettings
       })
@@ -108,11 +131,19 @@ export default function NotificationSettingsPage() {
 
   return (
     <View className='notify-page'>
+      {/* 授权状态提示 */}
+      {subscribeStatus && !subscribeStatus.hasValidAuth && (
+        <View className='auth-warning'>
+          <Text className='auth-warning-text'>⚠️ 订阅授权已失效，需要重新授权才能继续接收提醒</Text>
+        </View>
+      )}
+
       <View className='notify-header'>
         <Text className='header-title'>开启后，系统将通过小程序通知进行提醒。</Text>
         <Text className='header-desc'>• 若有多位学生课表，则需要进行独立设置。</Text>
         <Text className='header-desc'>• 目前仅支持放学提醒，后续将逐步完善更多提醒。</Text>
         <Text className='header-desc'>• 通知依赖微信下发，高峰期微信可能会有一定滞后。</Text>
+        <Text className='header-desc'>• ⚠️ 微信订阅消息为一次性授权，发送一次后需重新授权。</Text>
       </View>
 
       {students.length === 0 ? (

@@ -25,20 +25,16 @@ const { generateReminders } = require('./generate');
 
 const FN = 'reminder';
 
-// 订阅消息模板ID（需要在微信公众平台申请）
-// 申请步骤：
-// 1. 登录微信公众平台 mp.weixin.qq.com
-// 2. 功能 → 订阅消息 → 公共模板库
-// 3. 搜索"上课提醒"或类似模板，选择合适的模板
-// 4. 添加后，在"我的模板"中查看模板ID
-// 5. 将模板ID填入下方常量
+// 订阅消息模板ID
+// 已在微信公众平台申请：上课提醒模板
+// 模板ID: I1lkvTBguxU146JHrpdlNn9vZA60GBuMPlpW2dSsnK8
 //
-// 推荐模板字段：
+// 模板字段（需要根据实际申请的模板调整）：
 // - 课程名称（thing）
 // - 上课时间（time）
 // - 上课地点（thing）
 // - 温馨提示（thing）
-const TEMPLATE_ID = process.env.SUBSCRIBE_TEMPLATE_ID || 'YOUR_SUBSCRIBE_TEMPLATE_ID'; // 替换成真实的模板ID
+const TEMPLATE_ID = 'I1lkvTBguxU146JHrpdlNn9vZA60GBuMPlpW2dSsnK8';
 
 // 最大重试次数
 const MAX_RETRY = 3;
@@ -64,10 +60,24 @@ async function sendSubscribeMessage(touser, data) {
 }
 
 /**
- * 主入口：根据 action 路由到不同功能
+ * 主入口：根据 action 或 TriggerName 路由到不同功能
  */
 exports.main = async (event, context) => {
-  const action = event.action || 'send';
+  let action;
+
+  // 如果是定时触发器调用，通过 TriggerName 判断
+  if (event.TriggerName) {
+    if (event.TriggerName === 'reminder_generate') {
+      action = 'generate';
+    } else if (event.TriggerName === 'reminder_send') {
+      action = 'send';
+    } else {
+      action = 'send'; // 默认发送
+    }
+  } else {
+    // 手动调用，通过 action 参数判断
+    action = event.action || 'send';
+  }
 
   try {
     if (action === 'generate') {
@@ -134,12 +144,12 @@ async function sendReminders() {
         }
 
         // 构造消息内容
-        // 注意：实际字段名要和申请的模板保持一致，这里是示例
+        // 字段名必须与微信公众平台模板一致
+        // 模板字段：thing3(日程描述) / time2(日程时间) / thing6(备注)
         const messageData = {
-          thing1: { value: reminder.course_name },          // 课程名称
-          time2: { value: reminder.course_time },           // 上课时间
-          thing3: { value: reminder.room || '待确定' },      // 上课地点
-          thing4: { value: `提前${reminder.advance_minutes}分钟` }, // 提醒时间
+          thing3: { value: reminder.course_name },                    // 日程描述：课程名称
+          time2: { value: reminder.course_time },                     // 日程时间：上课时间
+          thing6: { value: `${reminder.dismiss_type}提前${reminder.advance_minutes}分钟` }, // 备注：提醒信息
         };
 
         const sent = await sendSubscribeMessage(reminder.openid, messageData);
@@ -149,6 +159,20 @@ async function sendReminders() {
             status: 'sent',
             sent_at: new Date(),
           });
+
+          // 一次性订阅消息发送后，授权失效，需要清除用户的订阅授权记录
+          // 这样前端可以检测到授权已失效，提示用户重新授权
+          const userToUpdate = await db.findOne('users', { openid: reminder.openid });
+          if (userToUpdate && userToUpdate.subscribe_tokens) {
+            const updatedTokens = userToUpdate.subscribe_tokens.map(t => {
+              if (t.template_id === TEMPLATE_ID && t.result === 'accept') {
+                return { ...t, result: 'used', used_at: new Date() };
+              }
+              return t;
+            });
+            await db.update('users', userToUpdate._id, { subscribe_tokens: updatedTokens });
+          }
+
           successCount++;
         } else {
           // 发送失败，重试次数+1
