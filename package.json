@@ -13,6 +13,7 @@
     "deploy:notify": "node scripts/deploy-cloud-functions.js notify",
     "deploy:reminder": "node scripts/deploy-cloud-functions.js reminder",
     "deploy:share": "node scripts/deploy-cloud-functions.js share",
+    "deploy:ai": "node scripts/deploy-cloud-functions.js ai",
     "deploy:migrate-day-of-week": "node scripts/deploy-cloud-functions.js migrate-day-of-week"
   },
   "keywords": [],

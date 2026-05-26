@@ -2,8 +2,8 @@
 
 import { useEffect } from 'react'
 import Taro from '@tarojs/taro'
-import * as notifyApi from './api/notify.api'
-import { SUBSCRIBE_TEMPLATE_ID, requestSubscribeMessage } from './utils/subscribe'
+import * as notifyApi from '../api/notify.api'
+import { SUBSCRIBE_TEMPLATE_ID, requestSubscribeMessage } from '../utils/subscribe'
 
 export function useSubscribeAuthCheck() {
   useEffect(() => {

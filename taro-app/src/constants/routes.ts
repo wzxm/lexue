@@ -14,6 +14,7 @@ export const ROUTES = {
   SHARE_CODE: '/pages/share-code/index',
   SHARE_SCHEDULE: '/pages/share-schedule/index',
   COPY_SCHEDULE: '/pages/copy-schedule/index',
+  SCHEDULE_AI: '/pages/schedule-ai/index',
   TOOLS: '/pages/tools/index',
   SCHEDULE_MANAGE: '/pages/schedule-manage/index',
   INVITE_ACCEPT: '/pages/invite-accept/index',

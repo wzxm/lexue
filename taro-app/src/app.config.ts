@@ -14,6 +14,7 @@ export default defineAppConfig({
     'pages/share-code/index',
     'pages/share-schedule/index',
     'pages/copy-schedule/index',
+    'pages/schedule-ai/index',
     'pages/tools/index',
     'pages/schedule-manage/index',
     'pages/invite-accept/index',

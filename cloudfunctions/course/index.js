@@ -27,6 +27,44 @@ function buildAllWeeks(totalWeeks) {
   return Array.from({ length: safeCount }, (_, i) => i + 1);
 }
 
+
+function normalizeWeeks(weeks, totalWeeks) {
+  return Array.isArray(weeks) && weeks.length > 0 ? weeks : buildAllWeeks(totalWeeks);
+}
+
+function hasWeekIntersection(left, right) {
+  if (left.length === 0 || right.length === 0) return true;
+  return left.some(w => right.includes(w));
+}
+
+function toCourseDoc(schedule, scheduleId, course, weeks) {
+  return {
+    schedule_id: scheduleId,
+    student_id: schedule.student_id,
+    owner_openid: schedule.owner_openid,
+    name: course.name,
+    teacher: course.teacher || '',
+    room: course.room || '',
+    day_of_week: course.day_of_week,
+    slot: course.slot,
+    color: course.color,
+    weeks,
+    remark: course.remark || '',
+    contact: course.contact !== undefined && course.contact !== null ? String(course.contact) : '',
+  };
+}
+
+function validateCourseInput(course, index) {
+  if (!course.name || !course.color || course.day_of_week === undefined || course.slot === undefined) {
+    return fail(ERRORS.PARAM_ERROR, `第 ${index + 1} 个课程缺少必填字段`);
+  }
+  validator.enumValue(course.day_of_week, VALID_DAYS, `第${index + 1}个课程的 day_of_week`);
+  validator.enumValue(course.slot, VALID_SLOTS, `第${index + 1}个课程的 slot`);
+  validator.maxLength(course.name, 30, `第${index + 1}个课程名称`);
+  validator.maxLength(course.color, 20, `第${index + 1}个课程 color`);
+  return null;
+}
+
 /**
  * 获取课表下所有课程
  */
@@ -294,6 +332,58 @@ async function batchCreate(openid, payload) {
   return success({ created: results.length, ids: results });
 }
 
+
+/**
+ * AI 识别批量导入课程：同一星期同一节次且周数重叠时，新课程整条覆盖旧课程。
+ */
+async function batchImportWithOverwrite(openid, payload) {
+  validator.requireFields(payload, ['schedule_id', 'courses']);
+
+  if (!Array.isArray(payload.courses) || payload.courses.length === 0) {
+    return fail(ERRORS.PARAM_ERROR, '课程列表不能为空');
+  }
+  if (payload.courses.length > 100) {
+    return fail(ERRORS.PARAM_ERROR, '单次批量添加不能超过100个课程');
+  }
+
+  const schedule = await requireEdit(openid, payload.schedule_id);
+
+  for (let i = 0; i < payload.courses.length; i++) {
+    const invalid = validateCourseInput(payload.courses[i], i);
+    if (invalid) return invalid;
+  }
+
+  logger.info(FN, 'batchImportWithOverwrite', { openid, scheduleId: payload.schedule_id, count: payload.courses.length });
+
+  const results = [];
+  const overwrittenIds = new Set();
+
+  for (let i = 0; i < payload.courses.length; i++) {
+    const course = payload.courses[i];
+    const normalizedWeeks = normalizeWeeks(course.weeks, schedule.total_weeks);
+
+    const existingCourses = await db.getList('courses', {
+      schedule_id: payload.schedule_id,
+      day_of_week: course.day_of_week,
+      slot: course.slot,
+    });
+
+    for (const existing of existingCourses) {
+      const existingWeeks = normalizeWeeks(existing.weeks, schedule.total_weeks);
+      if (!hasWeekIntersection(existingWeeks, normalizedWeeks)) continue;
+
+      await db.removeWhere('reminders', { course_id: existing._id });
+      await db.remove('courses', existing._id);
+      overwrittenIds.add(existing._id);
+    }
+
+    const { _id } = await db.create('courses', toCourseDoc(schedule, payload.schedule_id, course, normalizedWeeks));
+    results.push(_id);
+  }
+
+  return success({ created: results.length, overwritten: overwrittenIds.size, ids: results });
+}
+
 /**
  * 当前用户的自定义课程名称预设列表
  */
@@ -378,6 +468,7 @@ exports.main = async (event, context) => {
       case 'update':      return await update(openid, payload);
       case 'delete':      return await remove(openid, payload);
       case 'batchCreate': return await batchCreate(openid, payload);
+      case 'batchImportWithOverwrite': return await batchImportWithOverwrite(openid, payload);
       case 'listPresets': return await listPresets(openid);
       case 'addPreset':   return await addPreset(openid, payload);
       case 'deletePreset': return await deletePreset(openid, payload);

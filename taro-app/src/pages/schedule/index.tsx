@@ -394,6 +394,34 @@ export default function SchedulePage () {
     setShowAddCourseSheet(true)
   }
 
+  const onAiRecognize = async () => {
+    if (!isLoggedIn) {
+      Taro.navigateTo({ url: ROUTES.LOGIN })
+      return
+    }
+    if (!currentSchedule?.id) {
+      Taro.showToast({ title: '请先创建课表', icon: 'none' })
+      return
+    }
+    const hasCourses = (currentSchedule.courses?.length || 0) > 0
+    if (!hasCourses) {
+      Taro.navigateTo({
+        url: `${ROUTES.SCHEDULE_AI}?scheduleId=${encodeURIComponent(currentSchedule.id)}`
+      })
+      return
+    }
+    const { confirm } = await Taro.showModal({
+      title: '提示',
+      content: '当前课表已有课程数据，若出现同一节课程有冲突，新课程将会覆盖原课程。',
+      cancelText: '取消',
+      confirmText: '确认继续',
+    })
+    if (!confirm) return
+    Taro.navigateTo({
+      url: `${ROUTES.SCHEDULE_AI}?scheduleId=${encodeURIComponent(currentSchedule.id)}`
+    })
+  }
+
   /** 空状态页面 */
   if (!isLoggedIn || !currentSchedule) {
     return (
@@ -482,7 +510,7 @@ export default function SchedulePage () {
       />
 
       {!hasCourses ? (
-        <EmptySchedule scheduleId={currentSchedule?.id} />
+        <EmptySchedule scheduleId={currentSchedule?.id} onAiRecognize={onAiRecognize} />
       ) : currentSchedule?.view_mode === 'day' ? (
         <ScheduleDayList
           key='day'
@@ -566,6 +594,7 @@ export default function SchedulePage () {
           <EmptySchedule
             scheduleId={currentSchedule?.id}
             useRedirect={false}
+            onAiRecognize={onAiRecognize}
             onSelectMethod={() => { setShowAddCourseSheet(false); tabState.setVisible(true) }}
             hideTitle
           />

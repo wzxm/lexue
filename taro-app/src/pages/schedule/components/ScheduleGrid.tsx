@@ -15,6 +15,12 @@ interface Props {
   onTapCourse: (course: Course) => void;
   onTapEmpty: (weekday: number, period: number) => void;
   hideWeekend?: boolean;
+  /** 是否允许点击课程/空格子，预览场景可关闭 */
+  interactive?: boolean;
+  /** 是否允许切换周数，默认 true */
+  allowWeekPicker?: boolean;
+  /** 是否高亮今天所在列，默认 true */
+  highlightToday?: boolean;
 }
 
 const WEEKDAY_LABELS = ['一', '二', '三', '四', '五', '六', '日']
@@ -31,6 +37,9 @@ export default function ScheduleGrid({
   onTapCourse,
   onTapEmpty,
   hideWeekend = false,
+  interactive = true,
+  allowWeekPicker = true,
+  highlightToday = true,
 }: Props) {
   const visibleDayIndices = hideWeekend ? [0, 1, 2, 3, 4] : [0, 1, 2, 3, 4, 5, 6]
   const [showWeekPicker, setShowWeekPicker] = useState(false)
@@ -91,6 +100,7 @@ export default function ScheduleGrid({
   }
 
   const handleOpenWeekPicker = () => {
+    if (!allowWeekPicker) return
     setTempSelectedWeek(weekNum)
     setShowWeekPicker(true)
     tabState.setVisible(false)
@@ -99,13 +109,13 @@ export default function ScheduleGrid({
   return (
     <View className='schedule-view'>
       <View className='grid-wrap'>
-        <View className='week-corner' onClick={handleOpenWeekPicker}>
+        <View className='week-corner' onClick={allowWeekPicker ? handleOpenWeekPicker : undefined}>
           <Text className='week-corner-text'>第{weekNum}周</Text>
         </View>
 
         <View className='grid-header-row'>
           {visibleDayIndices.map((idx) => (
-            <View key={idx} className={`grid-header-cell ${weekDates[idx] === today ? 'grid-header-cell--today' : ''}`}>
+            <View key={idx} className={`grid-header-cell ${highlightToday && weekDates[idx] === today ? 'grid-header-cell--today' : ''}`}>
               <Text className='grid-header-day'>{WEEKDAY_LABELS[idx]}</Text>
               <Text className='grid-header-date'>{weekDates[idx]?.slice(5).replace('-', '/') || ''}</Text>
             </View>
@@ -122,7 +132,7 @@ export default function ScheduleGrid({
               </View>
               {visibleDayIndices.map((dIdx) => {
                 const course = grid[pIdx]?.[dIdx] || null
-                const cellIsToday = weekDates[dIdx] === today
+                const cellIsToday = highlightToday && weekDates[dIdx] === today
                 return (
                   <View key={dIdx} className={`course-cell-wrap ${cellIsToday ? 'course-cell-wrap--today' : ''}`}>
                     {course ? (
@@ -132,12 +142,12 @@ export default function ScheduleGrid({
                           background: course.color ? `${course.color}22` : '#C8F0D8',
                           color: 'var(--color-primary)',
                         }}
-                        onClick={() => onTapCourse(course)}
+                        onClick={interactive ? () => onTapCourse(course) : undefined}
                       >
                         <Text className='course-block-name'>{course.name}</Text>
                       </View>
                     ) : (
-                      <View className='empty-cell' onClick={() => onTapEmpty(dIdx + 1, pIdx + 1)} />
+                      <View className='empty-cell' onClick={interactive ? () => onTapEmpty(dIdx + 1, pIdx + 1) : undefined} />
                     )}
                   </View>
                 )

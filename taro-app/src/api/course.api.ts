@@ -7,6 +7,10 @@ export interface BatchCreateResult {
   ids: string[];
 }
 
+export interface BatchImportWithOverwriteResult extends BatchCreateResult {
+  overwritten: number;
+}
+
 export async function listCourses(scheduleId: string): Promise<Course[]> {
   return cloud.call<Course[]>('course', { action: 'list', payload: { scheduleId } });
 }
@@ -25,6 +29,10 @@ export async function deleteCourse(courseId: string): Promise<void> {
 
 export async function batchCreateCourses(scheduleId: string, courses: Omit<Course, 'id'>[]): Promise<BatchCreateResult> {
   return cloud.call<BatchCreateResult>('course', { action: 'batchCreate', payload: { schedule_id: scheduleId, courses } });
+}
+
+export async function batchImportCoursesWithOverwrite(scheduleId: string, courses: Omit<Course, 'id'>[]): Promise<BatchImportWithOverwriteResult> {
+  return cloud.call<BatchImportWithOverwriteResult>('course', { action: 'batchImportWithOverwrite', payload: { schedule_id: scheduleId, courses } });
 }
 
 export interface CourseNamePreset {
