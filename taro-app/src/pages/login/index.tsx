@@ -1,7 +1,8 @@
 import { View, Text, Button } from '@tarojs/components'
 import { useRef, useState } from 'react'
 import Taro, { useDidShow } from '@tarojs/taro'
-import { login } from '../../api/auth.api'
+import { login, loginWithPhone } from '../../api/auth.api'
+import { LOGIN_MODE } from '../../constants/auth'
 import { useAuthStore } from '../../store/auth.store'
 import { ROUTES } from '../../constants/routes'
 import './index.scss'
@@ -14,6 +15,7 @@ export default function LoginPage() {
   const isLoggedIn = useAuthStore(s => s.isLoggedIn)
   const loginDisabled = loading || !agreed
   const showDisabledStyle = loginDisabled
+  const isPhoneMode = LOGIN_MODE === 'phone'
 
   const afterLogin = () => {
     if (redirectingRef.current) return
@@ -30,24 +32,51 @@ export default function LoginPage() {
     }
   }
 
+  const handleLoginSuccess = (userInfo: Awaited<ReturnType<typeof login>>) => {
+    setUserInfo(userInfo)
+    afterLogin()
+  }
+
   useDidShow(() => {
     if (isLoggedIn) {
       afterLogin()
     }
   })
 
-  const onLogin = async () => {
+  const ensureAgreed = () => {
+    if (agreed) return true
+    Taro.showToast({ title: '请先阅读并同意协议', icon: 'none' })
+    return false
+  }
+
+  const onWechatLogin = async () => {
     if (loading) return
-    if (!agreed) {
-      Taro.showToast({ title: '请先阅读并同意协议', icon: 'none' })
-      return
-    }
-    
+    if (!ensureAgreed()) return
+
     setLoading(true)
     try {
       const userInfo = await login()
-      setUserInfo(userInfo)
-      afterLogin()
+      handleLoginSuccess(userInfo)
+    } catch (err: any) {
+      Taro.showToast({ title: err.message || '登录失败，请重试', icon: 'none' })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const onPhoneLogin = async (e: any) => {
+    if (loading) return
+    if (!ensureAgreed()) return
+
+    const detail = e?.detail || {}
+    if (detail.errMsg !== 'getPhoneNumber:ok' || !detail.code) {
+      return
+    }
+
+    setLoading(true)
+    try {
+      const userInfo = await loginWithPhone({ phoneCode: detail.code })
+      handleLoginSuccess(userInfo)
     } catch (err: any) {
       Taro.showToast({ title: err.message || '登录失败，请重试', icon: 'none' })
     } finally {
@@ -78,14 +107,27 @@ export default function LoginPage() {
             我已充分阅读并同意<Text className='agree-text-link'>《课表平台服务协议》</Text>和<Text className='agree-text-link'>《课表隐私政策》</Text>
           </Text>
         </View>
-        <Button
-          className={`btn-login ${showDisabledStyle ? 'btn-login--disabled' : ''}`}
-          onClick={onLogin}
-          loading={loading}
-          disabled={loginDisabled}
-        >
-          {!loading ? <Text className='btn-text'>微信一键登录</Text> : null}
-        </Button>
+
+        {isPhoneMode ? (
+          <Button
+            className={`btn-login ${showDisabledStyle ? 'btn-login--disabled' : ''}`}
+            openType='getPhoneNumber'
+            onGetPhoneNumber={onPhoneLogin}
+            loading={loading}
+            disabled={loginDisabled}
+          >
+            {!loading ? <Text className='btn-text'>手机号快捷登录</Text> : null}
+          </Button>
+        ) : (
+          <Button
+            className={`btn-login ${showDisabledStyle ? 'btn-login--disabled' : ''}`}
+            onClick={onWechatLogin}
+            loading={loading}
+            disabled={loginDisabled}
+          >
+            {!loading ? <Text className='btn-text'>微信一键登录</Text> : null}
+          </Button>
+        )}
       </View>
     </View>
   )

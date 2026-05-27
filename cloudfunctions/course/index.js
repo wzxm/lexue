@@ -355,31 +355,32 @@ async function batchImportWithOverwrite(openid, payload) {
 
   logger.info(FN, 'batchImportWithOverwrite', { openid, scheduleId: payload.schedule_id, count: payload.courses.length });
 
-  const results = [];
+  const imports = payload.courses.map(course => ({
+    source: course,
+    weeks: normalizeWeeks(course.weeks, schedule.total_weeks),
+  }));
+
+  const existingCourses = await db.getList('courses', { schedule_id: payload.schedule_id });
   const overwrittenIds = new Set();
 
-  for (let i = 0; i < payload.courses.length; i++) {
-    const course = payload.courses[i];
-    const normalizedWeeks = normalizeWeeks(course.weeks, schedule.total_weeks);
-
-    const existingCourses = await db.getList('courses', {
-      schedule_id: payload.schedule_id,
-      day_of_week: course.day_of_week,
-      slot: course.slot,
-    });
-
-    for (const existing of existingCourses) {
-      const existingWeeks = normalizeWeeks(existing.weeks, schedule.total_weeks);
-      if (!hasWeekIntersection(existingWeeks, normalizedWeeks)) continue;
-
-      await db.removeWhere('reminders', { course_id: existing._id });
-      await db.remove('courses', existing._id);
-      overwrittenIds.add(existing._id);
-    }
-
-    const { _id } = await db.create('courses', toCourseDoc(schedule, payload.schedule_id, course, normalizedWeeks));
-    results.push(_id);
+  for (const existing of existingCourses) {
+    const existingWeeks = normalizeWeeks(existing.weeks, schedule.total_weeks);
+    const shouldOverwrite = imports.some(({ source, weeks }) => (
+      existing.day_of_week === source.day_of_week &&
+      existing.slot === source.slot &&
+      hasWeekIntersection(existingWeeks, weeks)
+    ));
+    if (shouldOverwrite) overwrittenIds.add(existing._id);
   }
+
+  const idsToOverwrite = Array.from(overwrittenIds);
+  await Promise.all(idsToOverwrite.map(courseId => db.removeWhere('reminders', { course_id: courseId })));
+  await Promise.all(idsToOverwrite.map(courseId => db.remove('courses', courseId)));
+
+  const created = await Promise.all(imports.map(({ source, weeks }) => (
+    db.create('courses', toCourseDoc(schedule, payload.schedule_id, source, weeks))
+  )));
+  const results = created.map(item => item._id);
 
   return success({ created: results.length, overwritten: overwrittenIds.size, ids: results });
 }

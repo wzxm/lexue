@@ -6,6 +6,7 @@
 |--------|------|------|------|
 | _id | string | 是 | 云数据库自动生成的文档ID |
 | openid | string | 是 | 微信用户唯一标识 |
+| phone | string | 否 | 手机号码（11 位大陆手机号；`loginWithPhone` 授权后写入；`login` 模式不强制，未绑定时无此字段） |
 | status | string | 否 | 账号状态：`active`（默认）/ `disabled` / `deleted` |
 | nickname | string | 否 | 用户昵称 |
 | avatar_url | string | 否 | 用户头像URL |

@@ -16,6 +16,22 @@ export async function login(payload: LoginPayload = {}): Promise<UserInfo> {
   });
 }
 
+export interface LoginWithPhonePayload extends LoginPayload {
+  phoneCode: string;
+}
+
+/** 微信授权手机号快捷登录（需配合 getPhoneNumber 返回的 code） */
+export async function loginWithPhone(payload: LoginWithPhonePayload): Promise<UserInfo> {
+  return cloud.call<UserInfo>('auth', {
+    action: 'loginWithPhone',
+    payload: {
+      phoneCode: payload.phoneCode,
+      nickname: payload.nickname,
+      avatar_url: payload.avatarUrl,
+    },
+  });
+}
+
 export async function getProfile(): Promise<UserInfo> {
   return cloud.call<UserInfo>('auth', { action: 'getProfile', payload: {} });
 }

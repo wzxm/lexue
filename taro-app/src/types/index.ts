@@ -101,6 +101,8 @@ export interface FamilyMember {
 
 export interface UserInfo {
   openId: string;
+  /** 手机号码，微信授权绑定后才有值 */
+  phone?: string;
   nickname: string;
   avatarUrl: string;
   settings?: BackendSettings;

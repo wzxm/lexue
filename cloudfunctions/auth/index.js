@@ -28,6 +28,7 @@ function isUserBlocked(user) {
 function toUserPayload(user) {
   return {
     openId: user.openid,
+    phone: user.phone || '',
     nickname: user.nickname || '',
     avatarUrl: user.avatar_url || '',
     settings: user.settings || {
@@ -42,16 +43,7 @@ function generateDefaultNickname() {
   return `家长${suffix}`;
 }
 
-/**
- * 微信登录
- * 从 WXContext 获取 OPENID/UNIONID，查找或创建用户记录
- */
-async function login(openid, unionid, payload = {}) {
-  logger.info(FN, 'login', { openid });
-
-  // 查找已有用户
-  let user = await db.findOne('users', { openid });
-
+function parseOptionalProfile(payload = {}) {
   const nickname = payload.nickname !== undefined ? String(payload.nickname).trim() : undefined;
   const avatarUrl = payload.avatar_url !== undefined ? String(payload.avatar_url).trim() : undefined;
   if (nickname !== undefined) {
@@ -60,43 +52,10 @@ async function login(openid, unionid, payload = {}) {
   if (avatarUrl !== undefined) {
     validator.maxLength(avatarUrl, 500, 'avatar_url');
   }
+  return { nickname, avatarUrl };
+}
 
-  if (!user) {
-    const defaultNickname = generateDefaultNickname();
-    // 首次登录，创建新用户
-    const { _id } = await db.create('users', {
-      openid,
-      unionid: unionid || '',
-      status: USER_STATUS.ACTIVE,
-      nickname: nickname || defaultNickname,
-      avatar_url: avatarUrl || '',
-      settings: {
-        notify_enabled: true,
-        notify_advance_minutes: 30,
-      },
-      subscribe_tokens: [],
-    });
-    user = await db.getOne('users', _id);
-    logger.info(FN, 'login:created', { openid, _id });
-  }
-
-  if (isUserBlocked(user)) {
-    return fail(ERRORS.FORBIDDEN, '账号状态异常，无法登录');
-  }
-
-  if (user && (nickname !== undefined || avatarUrl !== undefined)) {
-    const nextNickname = nickname !== undefined ? nickname : user.nickname || '';
-    const nextAvatarUrl = avatarUrl !== undefined ? avatarUrl : user.avatar_url || '';
-    if (nextNickname !== (user.nickname || '') || nextAvatarUrl !== (user.avatar_url || '')) {
-      await db.update('users', user._id, {
-        nickname: nextNickname,
-        avatar_url: nextAvatarUrl,
-      });
-      user = await db.getOne('users', user._id);
-    }
-  }
-
-  // 新老用户统一：没有学生记录就补一条默认学生
+async function ensureDefaultStudent(openid) {
   const students = await db.getList('students', { owner_openid: openid });
   if (!students || students.length === 0) {
     await db.create('students', {
@@ -109,10 +68,151 @@ async function login(openid, unionid, payload = {}) {
       remark: '',
       source: 'init',
     });
-    logger.info(FN, 'login:default_student_created', { openid });
+    logger.info(FN, 'default_student_created', { openid });
+  }
+}
+
+async function finishLogin(openid, user) {
+  if (isUserBlocked(user)) {
+    return fail(ERRORS.FORBIDDEN, '账号状态异常，无法登录');
+  }
+  await ensureDefaultStudent(openid);
+  return success(toUserPayload(user));
+}
+
+async function applyOptionalProfileUpdate(user, payload = {}) {
+  const { nickname, avatarUrl } = parseOptionalProfile(payload);
+  if (nickname === undefined && avatarUrl === undefined) {
+    return user;
   }
 
-  return success(toUserPayload(user));
+  const nextNickname = nickname !== undefined ? nickname : user.nickname || '';
+  const nextAvatarUrl = avatarUrl !== undefined ? avatarUrl : user.avatar_url || '';
+  if (nextNickname === (user.nickname || '') && nextAvatarUrl === (user.avatar_url || '')) {
+    return user;
+  }
+
+  await db.update('users', user._id, {
+    nickname: nextNickname,
+    avatar_url: nextAvatarUrl,
+  });
+  return db.getOne('users', user._id);
+}
+
+async function decryptPhoneNumber(phoneCode) {
+  validator.requireFields({ phoneCode }, ['phoneCode']);
+  const code = String(phoneCode).trim();
+  validator.maxLength(code, 128, 'phoneCode');
+
+  let result;
+  try {
+    result = await cloud.openapi.phonenumber.getPhoneNumber({ code });
+  } catch (e) {
+    logger.error(FN, 'decryptPhoneNumber', e);
+    throw fail(ERRORS.PARAM_ERROR, '手机号授权无效或已过期');
+  }
+
+  const errCode = result.errCode !== undefined ? result.errCode : result.errcode;
+  if (errCode !== 0) {
+    throw fail(
+      ERRORS.PARAM_ERROR,
+      result.errMsg || result.errmsg || '获取手机号失败',
+    );
+  }
+
+  const phoneInfo = result.phoneInfo || result.phone_info || {};
+  const purePhone = phoneInfo.purePhoneNumber || phoneInfo.pure_phone_number || '';
+  validator.phoneNumber(purePhone);
+  return purePhone;
+}
+
+async function resolvePhoneLoginUser(openid, unionid, phone, payload = {}) {
+  const userByOpenid = await db.findOne('users', { openid });
+  const userByPhone = await db.findOne('users', { phone });
+
+  if (userByPhone && userByPhone.openid !== openid) {
+    throw fail(ERRORS.FORBIDDEN, '该手机号已绑定其他微信账号');
+  }
+  if (userByOpenid && userByOpenid.phone && userByOpenid.phone !== phone) {
+    throw fail(ERRORS.FORBIDDEN, '当前微信账号已绑定其他手机号');
+  }
+
+  const { nickname, avatarUrl } = parseOptionalProfile(payload);
+  let user = userByOpenid || userByPhone;
+
+  if (!user) {
+    const { _id } = await db.create('users', {
+      openid,
+      unionid: unionid || '',
+      phone,
+      status: USER_STATUS.ACTIVE,
+      nickname: nickname || generateDefaultNickname(),
+      avatar_url: avatarUrl || '',
+      settings: {
+        notify_enabled: true,
+        notify_advance_minutes: 30,
+      },
+      subscribe_tokens: [],
+    });
+    user = await db.getOne('users', _id);
+    logger.info(FN, 'loginWithPhone:created', { openid, phone, _id });
+    return user;
+  }
+
+  const updateData = {};
+  if (!user.phone) updateData.phone = phone;
+  if (unionid && user.unionid !== unionid) updateData.unionid = unionid;
+
+  if (Object.keys(updateData).length > 0) {
+    await db.update('users', user._id, updateData);
+    user = await db.getOne('users', user._id);
+  }
+
+  return applyOptionalProfileUpdate(user, payload);
+}
+
+/**
+ * 微信登录（openid 模式，不强制绑定手机号）
+ * 从 WXContext 获取 OPENID/UNIONID，查找或创建用户记录
+ */
+async function login(openid, unionid, payload = {}) {
+  logger.info(FN, 'login', { openid });
+
+  let user = await db.findOne('users', { openid });
+
+  if (!user) {
+    const { nickname, avatarUrl } = parseOptionalProfile(payload);
+    const { _id } = await db.create('users', {
+      openid,
+      unionid: unionid || '',
+      status: USER_STATUS.ACTIVE,
+      nickname: nickname || generateDefaultNickname(),
+      avatar_url: avatarUrl || '',
+      settings: {
+        notify_enabled: true,
+        notify_advance_minutes: 30,
+      },
+      subscribe_tokens: [],
+    });
+    user = await db.getOne('users', _id);
+    logger.info(FN, 'login:created', { openid, _id });
+  } else {
+    user = await applyOptionalProfileUpdate(user, payload);
+  }
+
+  return finishLogin(openid, user);
+}
+
+/**
+ * 微信授权手机号登录
+ * 解密手机号后绑定/校验 users.phone，账号仍以当前 openid 为准
+ */
+async function loginWithPhone(openid, unionid, payload = {}) {
+  logger.info(FN, 'loginWithPhone', { openid });
+
+  const phone = await decryptPhoneNumber(payload.phoneCode);
+  const user = await resolvePhoneLoginUser(openid, unionid, phone, payload);
+  return finishLogin(openid, user);
 }
 
 /**
@@ -307,9 +407,12 @@ exports.main = async (event, context) => {
   try {
     const { action, payload = {} } = event;
 
-    // login 不需要提前验证，让它自己处理
+    // 登录类 action 不需要提前验证 openid，由 WXContext 提供身份
     if (action === 'login') {
       return await login(wxContext.OPENID, wxContext.UNIONID, payload);
+    }
+    if (action === 'loginWithPhone') {
+      return await loginWithPhone(wxContext.OPENID, wxContext.UNIONID, payload);
     }
 
     // 其他 action 必须先拿到 openid

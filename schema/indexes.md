@@ -7,6 +7,9 @@
 ```js
 // openid 唯一索引，用于登录鉴权
 db.collection("users").createIndex({ openid: 1 }, { unique: true })
+
+// 手机号唯一索引，用于微信授权手机号快捷登录（sparse：未绑定手机号的用户不参与唯一约束）
+db.collection("users").createIndex({ phone: 1 }, { unique: true, sparse: true })
 ```
 
 ## students

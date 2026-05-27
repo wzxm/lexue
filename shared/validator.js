@@ -67,4 +67,13 @@ function range(value, min, max, fieldName = '字段') {
   }
 }
 
-module.exports = { requireFields, maxLength, enumValue, range };
+/** 大陆 11 位手机号格式校验（1 开头） */
+const PHONE_PATTERN = /^1[3-9]\d{9}$/;
+
+function phoneNumber(value, fieldName = 'phone') {
+  if (typeof value !== 'string' || !PHONE_PATTERN.test(value)) {
+    throw fail(ERRORS.PARAM_ERROR, `${fieldName}格式不正确`);
+  }
+}
+
+module.exports = { requireFields, maxLength, enumValue, range, phoneNumber, PHONE_PATTERN };
