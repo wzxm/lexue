@@ -154,7 +154,7 @@ schema/
 | 路径 | 用途 |
 |------|------|
 | `taro-app/src/api/cloud.ts` | 所有云函数调用的统一入口，`cloud.call<T>(funcName, {action, payload})` |
-| `taro-app/src/app.ts` | 应用入口，初始化 `Taro.cloud.init({env: 'cloud1-1g0kf2p8b07af20f'})` |
+| `taro-app/src/app.ts` | 应用入口，初始化 `Taro.cloud.init({env: 'test-d7gxuxk5a8418c629'})` |
 | `taro-app/src/app.config.ts` | 路由注册、TabBar 配置 |
 | `taro-app/src/store/auth.store.ts` | 全局用户状态，启动时 `hydrate()` 从 storage 恢复登录态 |
 | `taro-app/src/store/schedule.store.ts` | 核心业务状态，`buildGrid()` 将 courses 转为二维网格 |

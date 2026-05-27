@@ -5,7 +5,7 @@
  */
 
 const cloud = require('wx-server-sdk');
-cloud.init({ env: 'cloud1-1g0kf2p8b07af20f' });
+cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
 const db = require('../../shared/db');
 const { ERRORS, success, fail } = require('../../shared/errors');
@@ -53,6 +53,32 @@ function parseOptionalProfile(payload = {}) {
     validator.maxLength(avatarUrl, 500, 'avatar_url');
   }
   return { nickname, avatarUrl };
+}
+
+function getOpenApiErrorInfo(err) {
+  if (!err || typeof err !== 'object') {
+    return { message: String(err || '') };
+  }
+
+  return {
+    errCode: err.errCode !== undefined ? err.errCode : err.errcode,
+    errMsg: err.errMsg || err.errmsg,
+    code: err.code,
+    message: err.message,
+    stack: err.stack,
+  };
+}
+
+function buildPhoneAuthErrorMessage(info = {}) {
+  const rawMessage = info.errMsg || info.message || '';
+  const errCode = info.errCode !== undefined ? info.errCode : info.code;
+  const suffix = errCode !== undefined ? `（${errCode}）` : '';
+
+  if (!rawMessage) {
+    return `手机号授权失败${suffix}，请重新点击登录`;
+  }
+
+  return `手机号授权失败${suffix}: ${rawMessage}`;
 }
 
 async function ensureDefaultStudent(openid) {
@@ -108,15 +134,23 @@ async function decryptPhoneNumber(phoneCode) {
   try {
     result = await cloud.openapi.phonenumber.getPhoneNumber({ code });
   } catch (e) {
-    logger.error(FN, 'decryptPhoneNumber', e);
-    throw fail(ERRORS.PARAM_ERROR, '手机号授权无效或已过期');
+    const errorInfo = getOpenApiErrorInfo(e);
+    logger.error(FN, 'decryptPhoneNumber', errorInfo);
+    throw fail(ERRORS.PARAM_ERROR, buildPhoneAuthErrorMessage(errorInfo));
   }
 
   const errCode = result.errCode !== undefined ? result.errCode : result.errcode;
   if (errCode !== 0) {
+    logger.warn(FN, 'decryptPhoneNumber:openapi_failed', {
+      errCode,
+      errMsg: result.errMsg || result.errmsg,
+    });
     throw fail(
       ERRORS.PARAM_ERROR,
-      result.errMsg || result.errmsg || '获取手机号失败',
+      buildPhoneAuthErrorMessage({
+        errCode,
+        errMsg: result.errMsg || result.errmsg,
+      }),
     );
   }
 

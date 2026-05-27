@@ -12,7 +12,7 @@
 - **主要语言**：TypeScript（前端）+ JavaScript（云函数）
 - **平台**：微信小程序
 - **架构**：Taro 4.x 前端 + 微信云开发 Serverless 后端
-- **云环境 ID**：`cloud1-1g0kf2p8b07af20f`
+- **云环境 ID**：`test-d7gxuxk5a8418c629`
 
 ### 模块速览
 

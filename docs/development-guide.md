@@ -32,7 +32,7 @@ pnpm dev:weapp        # 启动开发模式（--watch，监听文件变化）
 1. 打开微信开发者工具
 2. 导入项目 → 选择 `taro-app/dist/` 目录
 3. 填入 AppID（`wxXXXX...`）
-4. 确保云开发环境 ID 为 `cloud1-1g0kf2p8b07af20f`
+4. 确保云开发环境 ID 为 `test-d7gxuxk5a8418c629`
 
 ### 3. 云函数本地调试
 

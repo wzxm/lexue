@@ -44,7 +44,7 @@ Pages / Components（视图层）
 ## 应用入口
 
 ### app.ts
-- 初始化微信云开发环境（`Taro.cloud.init({ env: 'cloud1-1g0kf2p8b07af20f' })`）
+- 初始化微信云开发环境（`Taro.cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })`）
 - 挂载 React App 组件
 - 调用 `useAuthStore.hydrate()` 恢复登录态
 

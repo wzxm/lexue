@@ -1,7 +1,10 @@
 import Taro from '@tarojs/taro'
 import type { ApiResponse } from '../types/index';
 
-const CLOUD_ENV = 'cloud1-1g0kf2p8b07af20f';
+declare const CLOUD_ENV: string | undefined;
+
+const DEFAULT_CLOUD_ENV = 'test-d7gxuxk5a8418c629';
+const cloudEnv = typeof CLOUD_ENV !== 'undefined' && CLOUD_ENV ? CLOUD_ENV : DEFAULT_CLOUD_ENV;
 let initPromise: Promise<void> | null = null;
 
 export async function ensureCloudInitialized(): Promise<void> {
@@ -10,9 +13,10 @@ export async function ensureCloudInitialized(): Promise<void> {
   }
 
   if (!initPromise) {
+    console.log('cloudEnv', cloudEnv)
     try {
       Taro.cloud.init({
-        env: CLOUD_ENV,
+        env: cloudEnv,
         traceUser: true,
       });
       initPromise = Promise.resolve();

@@ -16,7 +16,9 @@ export default defineConfig(async (merge) => {
     sourceRoot: 'src',
     outputRoot: 'dist',
     plugins: ['@tarojs/plugin-framework-react'],
-    defineConstants: {},
+    defineConstants: {
+      CLOUD_ENV: JSON.stringify(process.env.TARO_APP_CLOUD_ENV || process.env.CLOUDBASE_ENV_ID || ''),
+    },
     copy: {
       patterns: [],
       options: {},

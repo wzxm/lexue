@@ -110,7 +110,7 @@ TabBar 三个 tab：课表（schedule）/ 工具（tools）/ 设置（settings�
 
 ## 云开发环境
 
-云环境 ID：`cloud1-1g0kf2p8b07af20f`（前端 `app.ts` 和所有云函数均硬编码此值）
+云环境 ID：`test-d7gxuxk5a8418c629`（前端 `app.ts` 和所有云函数均硬编码此值）
 
 ## 数据库关键约定
 

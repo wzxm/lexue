@@ -4,7 +4,7 @@
  */
 
 const cloud = require('wx-server-sdk');
-cloud.init({ env: 'cloud1-1g0kf2p8b07af20f' });
+cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
 const db = require('../../shared/db');
 const { ERRORS, success, fail } = require('../../shared/errors');

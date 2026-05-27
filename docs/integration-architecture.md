@@ -61,7 +61,7 @@ const result = await cloud.call<Schedule[]>('schedule', {
 | SDK | `wx-server-sdk`（云函数端） |
 | 公共封装 | `shared/db.js`（getOne/findOne/create/update/delete） |
 | 数据库权限 | 仅云函数可读写（安全模式） |
-| 环境 ID | `cloud1-1g0kf2p8b07af20f` |
+| 环境 ID | `test-d7gxuxk5a8418c629` |
 
 ---
 

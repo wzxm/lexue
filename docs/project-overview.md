@@ -40,7 +40,7 @@ lexue/
 
 ## 云环境信息
 
-- **云环境 ID**：`cloud1-1g0kf2p8b07af20f`
+- **云环境 ID**：`test-d7gxuxk5a8418c629`
 - 前端 `app.ts` 和所有云函数均硬编码此云环境 ID
 
 ## 核心功能模块
