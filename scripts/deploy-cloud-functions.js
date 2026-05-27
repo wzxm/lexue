@@ -12,12 +12,23 @@ const path = require('path')
 const fs = require('fs')
 const os = require('os')
 
-// ─── 配置 ───────────────────────────────────────────────────────────────────
+// ─── 加载 .env ───────────────────────────────────────────────────────────────
 const ROOT = path.resolve(__dirname, '..')
+const envFile = path.join(ROOT, '.env')
+if (fs.existsSync(envFile)) {
+  for (const line of fs.readFileSync(envFile, 'utf8').split('\n')) {
+    const m = line.match(/^\s*([^#=\s][^=]*?)\s*=\s*(.*?)\s*$/)
+    if (m && !process.env[m[1]]) process.env[m[1]] = m[2]
+  }
+}
 const CF_ROOT = path.join(ROOT, 'cloudfunctions')
-const ENV_ID = 'cloud1-1g0kf2p8b07af20f'
-const APPID = 'wx8db7f3de48496906'
-const PRIVATE_KEY_PATH = path.join(ROOT, 'private.wx8db7f3de48496906.key')
+const ENV_ID = process.env.CLOUDBASE_ENV_ID || process.env.ENV_ID
+const APPID = process.env.WX_APPID || process.env.APPID
+const PRIVATE_KEY_PATH = process.env.WX_PRIVATE_KEY_PATH
+  ? path.resolve(process.env.WX_PRIVATE_KEY_PATH)
+  : APPID
+    ? path.join(ROOT, `private.${APPID}.key`)
+    : ''
 const ONE_OFF_FUNCTIONS = new Set(['init-db'])
 
 /** 需要部署的云函数列表（自动发现有 package.json 的目录） */
@@ -167,9 +178,19 @@ async function main() {
     process.exit(1)
   }
 
-  if (!fs.existsSync(PRIVATE_KEY_PATH)) {
-    console.error(`❌ 找不到私钥文件: ${PRIVATE_KEY_PATH}`)
-    console.error('   请从微信公众平台下载上传密钥并放到项目根目录')
+  if (!ENV_ID) {
+    console.error('❌ 缺少云环境 ID，请设置 CLOUDBASE_ENV_ID 或 ENV_ID')
+    process.exit(1)
+  }
+
+  if (!APPID) {
+    console.error('❌ 缺少小程序 AppID，请设置 WX_APPID 或 APPID')
+    process.exit(1)
+  }
+
+  if (!PRIVATE_KEY_PATH || !fs.existsSync(PRIVATE_KEY_PATH)) {
+    console.error(`❌ 找不到私钥文件: ${PRIVATE_KEY_PATH || '(未配置)'}`)
+    console.error('   请从微信公众平台下载上传密钥并放到项目根目录，或设置 WX_PRIVATE_KEY_PATH')
     process.exit(1)
   }
 

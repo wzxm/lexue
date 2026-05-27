@@ -1,9 +1,22 @@
 const path = require('path')
 const fs = require('fs')
 
-const APP_ID = 'wx8db7f3de48496906'
+function readProjectAppId() {
+  const configPath = path.resolve(__dirname, 'project.config.json')
+  if (!fs.existsSync(configPath)) {
+    return ''
+  }
+
+  return JSON.parse(fs.readFileSync(configPath, 'utf8')).appid || ''
+}
+
+const APP_ID = process.env.WX_APPID || process.env.APPID || readProjectAppId()
 
 function resolvePrivateKeyPath() {
+  if (!APP_ID) {
+    throw new Error('Missing AppID. Set WX_APPID, APPID, or project.config.json appid.')
+  }
+
   // Prefer explicit env var in CI/local shells.
   if (process.env.WX_PRIVATE_KEY_PATH) {
     return path.resolve(process.env.WX_PRIVATE_KEY_PATH)
