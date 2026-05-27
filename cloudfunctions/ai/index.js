@@ -1,10 +1,13 @@
 /**
  * ai 云函数 - 课程表图片识别
- * 通过 Xiaomi MiMo 图片理解接口把课表照片识别为结构化课程数据
+ * 通过腾讯云 OCR + CloudBase AI 大模型把课表照片识别为结构化课程数据
  */
 
 const cloud = require('wx-server-sdk');
-cloud.init({ env: 'cloud1-1g0kf2p8b07af20f' });
+const tcb = require('@cloudbase/node-sdk');
+
+cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
+const tcbApp = tcb.init({ env: tcb.SYMBOL_CURRENT_ENV || cloud.DYNAMIC_CURRENT_ENV });
 
 const { ERRORS, success, fail } = require('../../shared/errors');
 const { getOpenId, requireEdit } = require('../../shared/auth');
@@ -14,20 +17,20 @@ const https = require('https');
 const crypto = require('crypto');
 
 const FN = 'ai';
-const MIMO_MODEL = 'mimo-v2.5';
+const CLOUDBASE_AI_PROVIDER = process.env.CLOUDBASE_AI_PROVIDER || 'hunyuan-exp';
+const CLOUDBASE_AI_MODEL = process.env.CLOUDBASE_AI_MODEL || 'hunyuan-lite';
 const MAX_COURSES = 12;
-const DEFAULT_MIMO_TIMEOUT_MS = 30000;
 const DEFAULT_OCR_TIMEOUT_MS = 12000;
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 const OCR_MIN_TEXT_BLOCKS = 6;
 const OCR_MIN_TEXT_CHARS = 20;
 
-function getMimoTimeoutMs() {
-  const timeout = Number(process.env.MIMO_TIMEOUT_MS);
+function getCloudBaseAiTimeoutMs() {
+  const timeout = Number(process.env.CLOUDBASE_AI_TIMEOUT_MS);
   if (Number.isFinite(timeout) && timeout >= 5000 && timeout <= 55000) {
     return timeout;
   }
-  return DEFAULT_MIMO_TIMEOUT_MS;
+  return 30000;
 }
 
 function getOcrTimeoutMs() {
@@ -47,17 +50,6 @@ function getTencentOcrConfig() {
     action: (process.env.TENCENT_OCR_ACTION || 'GeneralBasicOCR').trim(),
     version: (process.env.TENCENT_OCR_VERSION || '2018-11-19').trim(),
   };
-}
-
-function getMimoBaseUrl(apiKey) {
-  const customBaseUrl = (process.env.MIMO_API_BASE_URL || '').trim();
-  if (customBaseUrl) {
-    return customBaseUrl.replace(/\/+$/, '');
-  }
-  if (String(apiKey || '').startsWith('tp-')) {
-    return 'https://token-plan-cn.xiaomimimo.com/v1';
-  }
-  return 'https://api.xiaomimimo.com/v1';
 }
 
 function extractJson(text) {
@@ -386,143 +378,65 @@ async function callTencentOcr(imageBase64) {
   };
 }
 
-async function callMimoWithPrompt(prompt, totalWeeks, periodCount, imageSource, mimeType = 'image/jpeg') {
-  const apiKey = process.env.MIMO_API_KEY;
-  if (!apiKey) {
-    return fail(ERRORS.INTERNAL_ERROR, '未配置 MIMO_API_KEY');
-  }
-  const baseUrl = getMimoBaseUrl(apiKey);
-  const apiUrl = `${baseUrl}/chat/completions`;
-  const timeoutMs = getMimoTimeoutMs();
+async function callCloudBaseAiWithPrompt(prompt, totalWeeks, periodCount) {
+  const timeoutMs = getCloudBaseAiTimeoutMs();
 
-  const body = {
-    model: MIMO_MODEL,
-    messages: [
-      {
-        role: 'user',
-        content: [
-          { type: 'text', text: prompt },
-          imageSource
-            ? (imageSource.startsWith('http')
-              ? {
-                type: 'image_url',
-                image_url: {
-                  url: imageSource,
-                },
-              }
-              : {
-                  type: 'image_url',
-                  image_url: {
-                    url: `data:${mimeType};base64,${imageSource}`,
-                  },
-                })
-            : null,
-        ].filter(Boolean),
-      },
-    ],
-    temperature: 0.1,
-  };
+  try {
+    const model = tcbApp.ai().createModel(CLOUDBASE_AI_PROVIDER);
+    const result = await model.generateText({
+      model: CLOUDBASE_AI_MODEL,
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.1,
+    }, { timeout: timeoutMs });
 
-  const requestBody = JSON.stringify(body);
-  const data = await new Promise((resolve, reject) => {
-    let settled = false;
-    let req;
-
-    const finish = (handler, value) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timer);
-      handler(value);
-    };
-
-    const timer = setTimeout(() => {
-      if (req) req.destroy(new Error(`AI 服务调用超时: ${timeoutMs}ms`));
-      finish(reject, new Error(`AI 服务调用超时: ${timeoutMs}ms`));
-    }, timeoutMs);
-
-    req = https.request(apiUrl, {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        'content-length': Buffer.byteLength(requestBody),
-        'authorization': `Bearer ${apiKey}`,
-        'api-key': apiKey,
-      },
-    }, (res) => {
-      let chunks = '';
-      res.setEncoding('utf8');
-      res.on('data', (chunk) => { chunks += chunk; });
-      res.on('end', () => {
-        if (res.statusCode < 200 || res.statusCode >= 300) {
-          logger.error(FN, 'mimo:badResponse', {
-            status: res.statusCode,
-            baseUrl,
-            text: String(chunks).slice(0, 200),
-          });
-          finish(reject, new Error(`AI 服务调用失败: HTTP ${res.statusCode}`));
-          return;
-        }
-        try {
-          finish(resolve, JSON.parse(chunks));
-        } catch (err) {
-          finish(reject, err);
-        }
-      });
-    });
-
-    req.on('error', (err) => finish(reject, err));
-    req.setTimeout(timeoutMs, () => {
-      req.destroy(new Error(`AI 服务调用超时: ${timeoutMs}ms`));
-    });
-    req.write(requestBody);
-    req.end();
-  }).catch((err) => {
-    if (err && String(err.message || '').startsWith('AI 服务调用失败')) {
-      return { __mimoFailed: true };
+    if (result && result.error) {
+      throw result.error;
     }
-    if (err && String(err.message || '').startsWith('AI 服务调用超时')) {
-      return { __mimoTimeout: true };
-    }
-    throw err;
-  });
 
-  if (data && data.__mimoFailed) {
+    const rawText = result?.text || result?.choices?.[0]?.message?.content || '';
+    const parsed = extractJson(rawText);
+    if (!parsed) {
+      logger.error(FN, 'cloudbaseAi:parseFailed', { rawText: String(rawText).slice(0, 200) });
+      return fail(ERRORS.INTERNAL_ERROR, 'AI识别结果格式异常');
+    }
+
+    const { courses, warnings } = normalizeCourses(
+      parsed.courses,
+      totalWeeks || 20,
+      periodCount || 12,
+    );
+
+    return success({
+      courses,
+      warnings: [...warnings, ...(Array.isArray(parsed.warnings) ? parsed.warnings.map(String) : [])],
+      rawText,
+      aiProvider: 'cloudbase',
+      aiModel: CLOUDBASE_AI_MODEL,
+    });
+  } catch (err) {
+    const message = err && err.message ? err.message : String(err);
+    logger.error(FN, 'cloudbaseAi:failed', {
+      provider: CLOUDBASE_AI_PROVIDER,
+      model: CLOUDBASE_AI_MODEL,
+      timeoutMs,
+      message,
+    });
+    if (message.includes('timeout') || message.includes('超时')) {
+      return fail(ERRORS.INTERNAL_ERROR, 'AI 服务响应超时，请稍后重试或换一张更清晰的图片');
+    }
     return fail(ERRORS.INTERNAL_ERROR, 'AI 服务调用失败');
   }
-  if (data && data.__mimoTimeout) {
-    logger.error(FN, 'mimo:timeout', { timeoutMs, baseUrl });
-    return fail(ERRORS.INTERNAL_ERROR, 'AI 服务响应超时，请稍后重试或换一张更清晰的图片');
-  }
-
-  const rawText = data?.choices?.[0]?.message?.content || '';
-  const parsed = extractJson(rawText);
-  if (!parsed) {
-    logger.error(FN, 'mimo:parseFailed', { rawText: String(rawText).slice(0, 200) });
-    return fail(ERRORS.INTERNAL_ERROR, 'AI识别结果格式异常');
-  }
-
-  const { courses, warnings } = normalizeCourses(
-    parsed.courses,
-    totalWeeks || 20,
-    periodCount || 12,
-  );
-
-  return success({
-    courses,
-    warnings: [...warnings, ...(Array.isArray(parsed.warnings) ? parsed.warnings.map(String) : [])],
-    rawText,
-  });
 }
 
 
-async function callMimo(imageSource, schedule, mimeType = 'image/jpeg') {
+async function callCloudBaseAi(schedule) {
   const { periods, totalWeeks } = getSchedulePromptContext(schedule);
-  return await callMimoWithPrompt(buildPrompt(schedule), totalWeeks, periods.length || 12, imageSource, mimeType);
+  return await callCloudBaseAiWithPrompt(buildPrompt(schedule), totalWeeks, periods.length || 12);
 }
 
-async function callMimoWithOcr(ocrBlocks, schedule) {
+async function callCloudBaseAiWithOcr(ocrBlocks, schedule) {
   const { periods, totalWeeks } = getSchedulePromptContext(schedule);
-  const result = await callMimoWithPrompt(buildOcrPrompt(schedule, ocrBlocks), totalWeeks, periods.length || 12, '', 'text/plain');
+  const result = await callCloudBaseAiWithPrompt(buildOcrPrompt(schedule, ocrBlocks), totalWeeks, periods.length || 12);
   if (result && result.code === 0 && result.data) {
     result.data.ocrText = getOcrText(ocrBlocks);
   }
@@ -557,13 +471,13 @@ async function recognizeScheduleImage(openid, payload) {
     });
   } catch (err) {
     logger.error(FN, 'recognizeScheduleImage:ocr:failed', { message: err.message });
-    ocrResult = { enabled: true, blocks: [], warnings: ['腾讯云 OCR 失败，已自动改用图片 AI 识别'] };
+    return fail(ERRORS.INTERNAL_ERROR, '图片文字识别失败，请稍后重试或换一张更清晰的图片');
   }
 
   if (ocrResult && isOcrUsable(ocrResult.blocks)) {
-    logger.info(FN, 'recognizeScheduleImage:mimoOcr:start', { blocks: ocrResult.blocks.length });
-    const result = await callMimoWithOcr(ocrResult.blocks, schedule);
-    logger.info(FN, 'recognizeScheduleImage:mimoOcr:done', {
+    logger.info(FN, 'recognizeScheduleImage:cloudbaseAiOcr:start', { blocks: ocrResult.blocks.length });
+    const result = await callCloudBaseAiWithOcr(ocrResult.blocks, schedule);
+    logger.info(FN, 'recognizeScheduleImage:cloudbaseAiOcr:done', {
       courses: result?.data?.courses?.length || 0,
     });
     if (result && result.code === 0 && result.data) {
@@ -571,12 +485,13 @@ async function recognizeScheduleImage(openid, payload) {
       result.data.ocrProvider = 'tencent';
       return result;
     }
-    logger.error(FN, 'recognizeScheduleImage:mimoOcr:failed', { code: result && result.code });
+    logger.error(FN, 'recognizeScheduleImage:cloudbaseAiOcr:failed', { code: result && result.code });
+    return result || fail(ERRORS.INTERNAL_ERROR, 'AI 解析 OCR 文本失败，请稍后重试');
   }
 
-  logger.info(FN, 'recognizeScheduleImage:mimo:start', { baseUrl: getMimoBaseUrl(process.env.MIMO_API_KEY || '') });
-  const result = await callMimo(imageBase64, schedule, payload.mimeType || 'image/jpeg');
-  logger.info(FN, 'recognizeScheduleImage:mimo:done', {
+  logger.info(FN, 'recognizeScheduleImage:cloudbaseAi:start', { provider: CLOUDBASE_AI_PROVIDER, model: CLOUDBASE_AI_MODEL });
+  const result = await callCloudBaseAi(schedule);
+  logger.info(FN, 'recognizeScheduleImage:cloudbaseAi:done', {
     courses: result?.data?.courses?.length || 0,
   });
   if (result && result.code === 0 && result.data && ocrResult && ocrResult.warnings && ocrResult.warnings.length) {
