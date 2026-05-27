@@ -7,3 +7,12 @@ dist/
 # 小程序上传密钥
 private*.key
 qrcode.jpg
+
+# AI 工具索引
+.codegraph/
+
+# Cursor 规则
+.cursor/
+
+# 环境变量
+.env
