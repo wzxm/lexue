@@ -1,5 +1,5 @@
 import { View, Text, Button, Image } from '@tarojs/components'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Taro, { useRouter } from '@tarojs/taro'
 import { recognizeScheduleImage } from '../../api/ai.api'
 import { batchImportCoursesWithOverwrite } from '../../api/course.api'
@@ -28,7 +28,6 @@ function getDatePathParts(date = new Date()) {
 export default function ScheduleAiPage() {
   const router = useRouter()
   const scheduleId = router.params.scheduleId || ''
-  const isLoggedIn = useAuthStore(s => s.isLoggedIn)
   const currentSchedule = useScheduleStore(s => s.currentSchedule)
   const setCurrentSchedule = useScheduleStore(s => s.setCurrentSchedule)
 
@@ -92,15 +91,21 @@ export default function ScheduleAiPage() {
     [previewSchedule, previewWeekOffset]
   )
 
+  const unmountedRef = useRef(false)
+  useEffect(() => {
+    return () => { unmountedRef.current = true }
+  }, [])
+
   const jumpToSchedule = () => {
     Taro.switchTab({ url: ROUTES.SCHEDULE }).catch(() => {
       Taro.navigateBack({ delta: 1 })
     })
   }
 
+  // 页面 mount 时一次性做权限 & 数据检查，不随响应式状态重复触发路由
   useEffect(() => {
     Taro.setNavigationBarTitle({ title: 'AI识别课表' })
-    if (!isLoggedIn) {
+    if (!useAuthStore.getState().isLoggedIn) {
       Taro.navigateTo({ url: ROUTES.LOGIN })
       return
     }
@@ -109,15 +114,20 @@ export default function ScheduleAiPage() {
       Taro.navigateBack()
       return
     }
-    if (currentSchedule?.id !== scheduleId) {
+    const { currentSchedule: cur } = useScheduleStore.getState()
+    if (cur?.id !== scheduleId) {
       void getSchedule(scheduleId)
-        .then((full) => setCurrentSchedule(full))
+        .then((full) => {
+          if (!unmountedRef.current) setCurrentSchedule(full)
+        })
         .catch((err: any) => {
+          if (unmountedRef.current) return
           Taro.showToast({ title: err?.message || '课表加载失败', icon: 'none' })
           Taro.navigateBack()
         })
     }
-  }, [isLoggedIn, scheduleId, currentSchedule?.id, setCurrentSchedule])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const chooseMediaSource = async () => {
     try {
