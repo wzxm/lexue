@@ -54,6 +54,35 @@ npm run deploy:auth         # 部署单个云函数（auth/schedule/course/stude
 npm run deploy:init-db      # 部署一次性初始化函数（首次环境初始化时再执行）
 ```
 
+
+### AI 课表识别 OCR 加速
+
+`ai` 云函数会优先调用腾讯云 OCR 把课表图片转成文本块，再把 OCR 文本交给 MiMo 生成待导入课程；当 OCR 未配置、失败或识别文本太少时，会自动回退到原来的图片 AI 识别。
+
+开通腾讯云 OCR：
+
+1. 登录 [腾讯云 OCR 控制台](https://console.cloud.tencent.com/ocr)。
+2. 按产品页引导开通文字识别服务；如果要试用 2026-05 新增的通用文字识别 Agent，可在对应产品能力页开通/确认额度。
+3. 到 [访问密钥](https://console.cloud.tencent.com/cam/capi) 创建或复用 `SecretId` / `SecretKey`，建议使用只授权 OCR 调用权限的子账号密钥。
+4. 确认账号余额、免费额度或计费方式正常，否则云函数会自动回退到图片 AI 识别。
+
+需要在云开发控制台给 `ai` 云函数配置环境变量：
+
+| 变量 | 必填 | 说明 |
+|------|------|------|
+| `TENCENT_SECRET_ID` | 是 | 腾讯云访问密钥 SecretId，需有 OCR 调用权限 |
+| `TENCENT_SECRET_KEY` | 是 | 腾讯云访问密钥 SecretKey |
+| `TENCENT_OCR_REGION` | 否 | OCR 地域，默认 `ap-guangzhou` |
+| `TENCENT_OCR_ACTION` | 否 | OCR 接口，默认 `GeneralBasicOCR`；识别质量不足可改为 `GeneralAccurateOCR`，要试用通用文字识别 Agent 可改为 `RecognizeAgent` |
+| `TENCENT_OCR_TIMEOUT_MS` | 否 | OCR 超时时间，默认 `12000` |
+| `TENCENT_OCR_LANGUAGE` | 否 | OCR 语言，默认 `zh` |
+
+开通腾讯云 OCR 并配置环境变量后，重新部署 `ai` 云函数：
+
+```bash
+npm run deploy:ai
+```
+
 ### 发布上传
 
 ```bash
