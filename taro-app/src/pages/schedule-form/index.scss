@@ -1,9 +1,8 @@
 .sf-page {
-  height: 100vh;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
+  min-height: 100vh;
   background: var(--color-bg);
+  padding-bottom: calc(144rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
 }
 
 /* ===== 步骤指示器 ===== */
@@ -11,7 +10,10 @@
   display: flex;
   align-items: center;
   padding: 36rpx 24rpx;
-  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--color-bg);
 }
 
 .step {
@@ -112,10 +114,8 @@
   opacity: 0.5;
 }
 
-/* ===== 滚动内容 ===== */
+/* ===== 滚动内容（页面原生滚动，避免 ScrollView 重绘丢位置）===== */
 .sf-scroll-body {
-  flex: 1 1 0;
-  min-height: 0;
   padding: 0 32rpx;
   box-sizing: border-box;
 }
@@ -322,9 +322,12 @@
 }
 
 .footer {
-  flex-shrink: 0;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
   padding: 24rpx 32rpx calc(24rpx + env(safe-area-inset-bottom));
-  background: transparent;
+  background: linear-gradient(to top, var(--color-bg) 70%, rgba(247, 247, 247, 0));
   z-index: 100;
 }
 
@@ -506,4 +509,38 @@
 
 .period-sheet-confirm::after {
   border: none;
+}
+
+/* ===== 自定义底部弹窗（替代 PageContainer，不影响 ScrollView 滚动位置）===== */
+.sheet-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.sheet-overlay--period {
+  z-index: 1001;
+}
+
+.sheet-overlay--visible {
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.sheet-panel {
+  background: #F7F7F7;
+  border-radius: 24rpx 24rpx 0 0;
+  width: 100%;
+  box-sizing: border-box;
 }

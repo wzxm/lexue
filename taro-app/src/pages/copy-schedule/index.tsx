@@ -101,41 +101,45 @@ export default function CopySchedulePage() {
 
   return (
     <View className="copy-schedule-page">
-      <View className="copy-schedule-header">
-        <Text className="title">复制好友课表</Text>
-        <Text className="subtitle">
-          输入好友分享的口令，即可一键复制课表内容
-        </Text>
-      </View>
-
-      <View className="copy-schedule-card">
-        {/* <Text className="input-label">分享口令</Text> */}
-        <View className={`code-input-wrap ${isFocused ? 'focused' : ''}`}>
-          <Input
-            className="code-input"
-            placeholder="粘贴或输入口令"
-            placeholderStyle="color: #8e8e93; font-weight: normal;"
-            value={code}
-            onInput={(e) => setCode(e.detail.value)}
-            onFocus={() => setIsFocused(true)}
-            onBlur={() => setIsFocused(false)}
-          />
+      <View className="copy-schedule-content">
+        <View className="copy-schedule-hero">
+          <View className="hero-icon">
+            <View className="hero-icon-inner" />
+          </View>
+          <Text className="hero-title">复制好友课表</Text>
+          <Text className="hero-desc">
+            输入好友分享的口令，即可一键复制课表内容
+          </Text>
         </View>
 
-        <Button
-          className={`copy-btn ${!code.trim() || loading ? 'btn-disabled' : ''}`}
-          onClick={handleCopy}
-          disabled={loading || !code.trim()}
-        >
-          {loading ? '校验中...' : '一键复制'}
-        </Button>
-      </View>
+        <View className="input-card">
+          <View className={`code-input-wrap ${isFocused ? 'focused' : ''}`}>
+            <Input
+              className="code-input"
+              placeholder="粘贴或输入口令"
+              placeholderStyle="color: #8e8e93; font-weight: normal; letter-spacing: 0;"
+              value={code}
+              onInput={(e) => setCode(e.detail.value)}
+              onFocus={() => setIsFocused(true)}
+              onBlur={() => setIsFocused(false)}
+            />
+          </View>
 
-      <View className="copy-schedule-tips">
-        <Text className="tip-icon">🛡️</Text>
-        <Text className="tip-text">
-          安全提示：老师电话等敏感信息不会被复制。建议复制后及时核对课程时间。
-        </Text>
+          <Button
+            className={`copy-btn ${!code.trim() || loading ? 'btn-disabled' : ''}`}
+            onClick={handleCopy}
+            disabled={loading || !code.trim()}
+          >
+            {loading ? '校验中...' : '一键复制'}
+          </Button>
+        </View>
+
+        <View className="safety-notice">
+          <View className="safety-icon" />
+          <Text className="safety-text">
+            安全提示：老师电话等敏感信息不会被复制。建议复制后及时核对课程时间。
+          </Text>
+        </View>
       </View>
     </View>
   );
