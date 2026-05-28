@@ -25,6 +25,8 @@ const DEFAULT_OCR_TIMEOUT_MS = 12000;
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 const OCR_MIN_TEXT_BLOCKS = 6;
 const OCR_MIN_TEXT_CHARS = 20;
+const OCR_PROMPT_MAX_BLOCKS = 80;
+const OCR_PROMPT_MAX_TEXT_LENGTH = 24;
 
 function getCloudBaseAiTimeoutMs() {
   const timeout = Number(process.env.CLOUDBASE_AI_TIMEOUT_MS);
@@ -165,35 +167,173 @@ function getOcrText(blocks) {
     .join('\n');
 }
 
+function parseChineseNumber(text) {
+  const raw = String(text || '').trim();
+  if (/^\d+$/.test(raw)) return Number(raw);
+  const digits = { 一: 1, 二: 2, 两: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9 };
+  if (raw === '十') return 10;
+  const tenIndex = raw.indexOf('十');
+  if (tenIndex >= 0) {
+    const left = raw.slice(0, tenIndex);
+    const right = raw.slice(tenIndex + 1);
+    return (left ? digits[left] || 0 : 1) * 10 + (right ? digits[right] || 0 : 0);
+  }
+  return digits[raw] || null;
+}
+
+function getWeekdayFromText(text) {
+  const raw = String(text || '').replace(/\s/g, '');
+  const aliases = [
+    [/^(周|星期|礼拜)?一$/, 1],
+    [/^(周|星期|礼拜)?二$/, 2],
+    [/^(周|星期|礼拜)?三$/, 3],
+    [/^(周|星期|礼拜)?四$/, 4],
+    [/^(周|星期|礼拜)?五$/, 5],
+    [/^(周|星期|礼拜)?六$/, 6],
+    [/^(周|星期|礼拜)?日$/, 7],
+    [/^(周|星期|礼拜)?天$/, 7],
+  ];
+  const match = aliases.find(([pattern]) => pattern.test(raw));
+  return match ? match[1] : null;
+}
+
+function getSlotFromText(text) {
+  const raw = String(text || '').replace(/\s/g, '');
+  const match = raw.match(/^(?:第)?([一二两三四五六七八九十\d]{1,3})(?:节|课)?$/);
+  return match ? parseChineseNumber(match[1]) : null;
+}
+
+function isIgnoredOcrText(text) {
+  const raw = String(text || '').replace(/\s/g, '');
+  if (!raw) return true;
+  if (getWeekdayFromText(raw) || getSlotFromText(raw)) return true;
+  return /^(课程表|课表|时间|节次|上午|下午|晚上|午休|课间|放学|早餐|午餐|晚餐|升旗|眼保健操|备注|日期)$/.test(raw)
+    || /^\d{1,2}[:：]\d{2}/.test(raw)
+    || /^\d{4}[-/.年]/.test(raw);
+}
+
+function centerOf(block, axis) {
+  if (axis === 'x') return Number(block.x || 0) + Number(block.width || 0) / 2;
+  return Number(block.y || 0) + Number(block.height || 0) / 2;
+}
+
+function nearestBy(items, target, getValue) {
+  if (!items.length) return null;
+  return items.reduce((best, item) => {
+    const distance = Math.abs(getValue(item) - target);
+    if (!best || distance < best.distance) return { item, distance };
+    return best;
+  }, null).item;
+}
+
+function clusterRows(blocks) {
+  const rows = [];
+  blocks
+    .slice()
+    .sort((a, b) => centerOf(a, 'y') - centerOf(b, 'y'))
+    .forEach((block) => {
+      const y = centerOf(block, 'y');
+      const row = rows.find(item => Math.abs(item.y - y) <= 18);
+      if (row) {
+        row.blocks.push(block);
+        row.y = row.blocks.reduce((sum, item) => sum + centerOf(item, 'y'), 0) / row.blocks.length;
+      } else {
+        rows.push({ y, blocks: [block] });
+      }
+    });
+  return rows;
+}
+
+function parseCoursesFromOcrBlocks(ocrBlocks, schedule) {
+  const { periods, totalWeeks } = getSchedulePromptContext(schedule);
+  const maxSlot = Math.min(Math.max(periods.length || MAX_COURSES, 1), MAX_COURSES);
+  const allWeeks = Array.from({ length: Math.max(Number(totalWeeks) || 20, 1) }, (_, i) => i + 1);
+  const blocks = ocrBlocks
+    .map(block => ({ ...block, text: String(block.text || '').trim() }))
+    .filter(block => block.text);
+  const headers = blocks
+    .map(block => ({ block, day: getWeekdayFromText(block.text), x: centerOf(block, 'x'), y: centerOf(block, 'y') }))
+    .filter(item => item.day)
+    .sort((a, b) => a.day - b.day || a.x - b.x);
+
+  if (headers.length < 2) return null;
+
+  const headerBottom = Math.max(...headers.map(item => item.y));
+  const firstHeaderX = Math.min(...headers.map(item => item.x));
+  const slotLabels = blocks
+    .map(block => ({ block, slot: getSlotFromText(block.text), x: centerOf(block, 'x'), y: centerOf(block, 'y') }))
+    .filter(item => item.slot && item.slot >= 1 && item.slot <= maxSlot && item.x < firstHeaderX)
+    .sort((a, b) => a.slot - b.slot || a.y - b.y);
+
+  const candidateBlocks = blocks.filter((block) => {
+    const y = centerOf(block, 'y');
+    const x = centerOf(block, 'x');
+    return y > headerBottom + 6 && x >= firstHeaderX - 12 && !isIgnoredOcrText(block.text);
+  });
+  const rowFallback = clusterRows(candidateBlocks).map((row, index) => ({ slot: index + 1, y: row.y }));
+  const rowRefs = slotLabels.length ? slotLabels : rowFallback;
+  const warnings = ['AI 解析超时，已使用 OCR 坐标规则生成初稿，请重点核对星期和节次。'];
+  const seen = new Set();
+  const courses = [];
+
+  for (const block of candidateBlocks) {
+    const name = block.text.slice(0, 30);
+    const dayRef = nearestBy(headers, centerOf(block, 'x'), item => item.x);
+    const rowRef = nearestBy(rowRefs, centerOf(block, 'y'), item => item.y);
+    const dayOfWeek = dayRef && dayRef.day;
+    const slot = rowRef && rowRef.slot;
+    if (!dayOfWeek || !slot || slot < 1 || slot > maxSlot) continue;
+    const key = `${name}|${dayOfWeek}|${slot}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    courses.push({
+      name,
+      day_of_week: dayOfWeek,
+      slot,
+      teacher: '',
+      room: '',
+      contact: '',
+      color: resolveCourseColor(''),
+      weeks: allWeeks,
+      remark: '',
+    });
+  }
+
+  return courses.length ? success({
+    courses,
+    warnings,
+    rawText: getOcrText(ocrBlocks),
+    aiProvider: 'ocr-heuristic',
+    aiModel: 'local-fallback',
+    aiStage: 'ocr-fallback',
+    ocrProvider: 'tencent',
+  }) : null;
+}
+
 function isOcrUsable(blocks) {
   const text = getOcrText(blocks).replace(/\s/g, '');
   return blocks.length >= OCR_MIN_TEXT_BLOCKS && text.length >= OCR_MIN_TEXT_CHARS;
 }
 
 function buildOcrPrompt(schedule, ocrBlocks) {
-  const { periods, totalWeeks, periodLines } = getSchedulePromptContext(schedule);
+  const { periods, totalWeeks } = getSchedulePromptContext(schedule);
+  const maxSlot = Math.min(Math.max(periods.length || 0, 1), MAX_COURSES);
   const blockLines = ocrBlocks
     .slice()
     .sort((a, b) => (a.y - b.y) || (a.x - b.x))
-    .map((item, index) => `${index + 1}. text=${JSON.stringify(item.text)} x=${Math.round(item.x)} y=${Math.round(item.y)} w=${Math.round(item.width)} h=${Math.round(item.height)} confidence=${Math.round(item.confidence)}`)
+    .slice(0, OCR_PROMPT_MAX_BLOCKS)
+    .map((item, index) => {
+      const text = String(item.text || '').replace(/\s+/g, ' ').slice(0, OCR_PROMPT_MAX_TEXT_LENGTH);
+      return `${index + 1}|${Math.round(item.x)},${Math.round(item.y)},${Math.round(item.width)},${Math.round(item.height)}|${text}`;
+    })
     .join('\n');
 
   return [
-    '你是课程表 OCR 文本结构化助手。下面是 OCR 从课程表图片中识别出的文本块，包含文本、坐标和置信度。',
-    '请只输出严格 JSON，不要 Markdown，不要解释，不要代码块。',
-    '输出格式如下：',
-    '{ "courses": [ { "name": "...", "day_of_week": 1, "slot": 1, "teacher": "", "room": "", "contact": "", "remark": "", "color": "#3b82f6", "weeks": [1,2,3] } ], "warnings": ["..."] }',
-    '解析规则：',
-    '1. 根据坐标推断表格结构：同一行 y 接近的是一行，同一列 x 接近的是一列；表头中的周一/星期一/一映射 day_of_week=1，依此到周日=7。',
-    '2. 根据左侧节次、时间段或行序推断 slot；不要把日期、时间段、午休、课间、放学、早餐、眼保健操、升旗、备注、标题、学校名输出为课程。',
-    '3. 每个课程单元格按所在星期列和节次行输出一条课程；同一课程跨多节时按覆盖的每个 slot 分别输出。',
-    '4. 课程名单元格内如果包含教师、教室、电话或备注，分别填入 teacher、room、contact、remark；无法确定就填空字符串。',
-    `5. 当前学期共 ${totalWeeks} 周。若 OCR 文本没有明确写周次/单双周/起止周，weeks 必须填 1 到 ${totalWeeks} 的完整数组。`,
-    '6. “1-10周”“1～10周”“第1至10周”输出连续数组；“单周”输出奇数周；“双周”输出偶数周；离散周次逐个输出。',
-    `7. 当前课表节次数为 ${periods.length || 0}，slot 范围必须是 1 到 ${Math.min(Math.max(periods.length || 0, 1), MAX_COURSES)}。`,
-    periodLines.length ? `8. 参考节次时间：${periodLines.join('；')}。` : '8. 若 OCR 文本没有节次时间，也必须根据左侧节次序号或行序识别 slot。',
-    '9. 不确定课程名或位置时不要编造课程；把原因写入 warnings。',
-    'OCR 文本块：',
+    '把课程表OCR块转成JSON。只输出JSON。',
+    '{"courses":[{"name":"","day_of_week":1,"slot":1,"teacher":"","room":"","contact":"","remark":"","color":"#3b82f6","weeks":[1]}],"warnings":[]}',
+    `规则: 星期一到日=1-7; 节次slot=1-${maxSlot}; 空白/午休/课间/放学/早餐/眼保健操/升旗/标题/日期/学校名不要输出。`,
+    `未写周次时 weeks=[1..${totalWeeks}]; 单周/双周/1-10周按实际展开; 不确定不要编造, 写warnings。`,
+    'OCR格式: 序号|x,y,w,h|文本',
     blockLines || '(无)',
   ].join('\n');
 }
@@ -379,8 +519,9 @@ async function callTencentOcr(imageBase64) {
   };
 }
 
-async function callCloudBaseAiWithPrompt(prompt, totalWeeks, periodCount) {
+async function callCloudBaseAiWithPrompt(prompt, totalWeeks, periodCount, stage = 'image') {
   const timeoutMs = getCloudBaseAiTimeoutMs();
+  const startedAt = Date.now();
 
   try {
     const model = tcbApp.ai().createModel(CLOUDBASE_AI_PROVIDER);
@@ -397,7 +538,7 @@ async function callCloudBaseAiWithPrompt(prompt, totalWeeks, periodCount) {
     const rawText = result?.text || result?.choices?.[0]?.message?.content || '';
     const parsed = extractJson(rawText);
     if (!parsed) {
-      logger.error(FN, 'cloudbaseAi:parseFailed', { rawText: String(rawText).slice(0, 200) });
+      logger.error(FN, 'cloudbaseAi:parseFailed', { stage, rawText: String(rawText).slice(0, 200) });
       return fail(ERRORS.INTERNAL_ERROR, 'AI识别结果格式异常');
     }
 
@@ -413,17 +554,24 @@ async function callCloudBaseAiWithPrompt(prompt, totalWeeks, periodCount) {
       rawText,
       aiProvider: 'cloudbase',
       aiModel: CLOUDBASE_AI_MODEL,
+      aiStage: stage,
     });
   } catch (err) {
     const message = err && err.message ? err.message : String(err);
     logger.error(FN, 'cloudbaseAi:failed', {
+      stage,
       provider: CLOUDBASE_AI_PROVIDER,
       model: CLOUDBASE_AI_MODEL,
       timeoutMs,
+      durationMs: Date.now() - startedAt,
+      promptChars: prompt.length,
       message,
     });
     if (message.includes('timeout') || message.includes('超时')) {
-      return fail(ERRORS.INTERNAL_ERROR, 'AI 服务响应超时，请稍后重试或换一张更清晰的图片');
+      const timeoutMessage = stage === 'ocr'
+        ? 'AI 解析 OCR 文本超时，请稍后重试或换一张更清晰的图片'
+        : 'AI 服务响应超时，请稍后重试或换一张更清晰的图片';
+      return fail(ERRORS.INTERNAL_ERROR, timeoutMessage);
     }
     return fail(ERRORS.INTERNAL_ERROR, 'AI 服务调用失败');
   }
@@ -432,12 +580,17 @@ async function callCloudBaseAiWithPrompt(prompt, totalWeeks, periodCount) {
 
 async function callCloudBaseAi(schedule) {
   const { periods, totalWeeks } = getSchedulePromptContext(schedule);
-  return await callCloudBaseAiWithPrompt(buildPrompt(schedule), totalWeeks, periods.length || 12);
+  return await callCloudBaseAiWithPrompt(buildPrompt(schedule), totalWeeks, periods.length || 12, 'image');
 }
 
 async function callCloudBaseAiWithOcr(ocrBlocks, schedule) {
   const { periods, totalWeeks } = getSchedulePromptContext(schedule);
-  const result = await callCloudBaseAiWithPrompt(buildOcrPrompt(schedule, ocrBlocks), totalWeeks, periods.length || 12);
+  const prompt = buildOcrPrompt(schedule, ocrBlocks);
+  logger.info(FN, 'recognizeScheduleImage:cloudbaseAiOcr:prompt', {
+    blocks: ocrBlocks.length,
+    promptChars: prompt.length,
+  });
+  const result = await callCloudBaseAiWithPrompt(prompt, totalWeeks, periods.length || 12, 'ocr');
   if (result && result.code === 0 && result.data) {
     result.data.ocrText = getOcrText(ocrBlocks);
   }
@@ -487,6 +640,13 @@ async function recognizeScheduleImage(openid, payload) {
       return result;
     }
     logger.error(FN, 'recognizeScheduleImage:cloudbaseAiOcr:failed', { code: result && result.code });
+    const fallback = parseCoursesFromOcrBlocks(ocrResult.blocks, schedule);
+    if (fallback) {
+      logger.warn(FN, 'recognizeScheduleImage:ocrHeuristicFallback:done', {
+        courses: fallback.data.courses.length,
+      });
+      return fallback;
+    }
     return result || fail(ERRORS.INTERNAL_ERROR, 'AI 解析 OCR 文本失败，请稍后重试');
   }
 
