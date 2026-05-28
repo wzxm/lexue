@@ -1,6 +1,9 @@
 import { View, Text, ScrollView } from '@tarojs/components'
+import { useCallback, useEffect, useState } from 'react'
+import Taro from '@tarojs/taro'
 import { useScheduleStore } from '../../../store/schedule.store'
 import type { Course, ScheduleGrid as ScheduleGridType, Period } from '../../../types/index'
+import { DEFAULT_COURSE_COLOR, isCourseColorHex } from '../../../constants/colors'
 import { formatDate } from '../../../utils/date'
 import './ScheduleDayList.scss'
 
@@ -36,8 +39,35 @@ export default function ScheduleDayList({
   hideWeekend = false,
 }: Props) {
   const weekOffset = useScheduleStore(state => state.weekOffset)
+  const [bodyHeight, setBodyHeight] = useState(0)
   // 隐藏周末时最大可选 index 为 4（周五），否则为 6
   const maxDayIndex = hideWeekend ? 4 : 6
+
+  const measureBodyHeight = useCallback(() => {
+    Taro.nextTick(() => {
+      const page = Taro.getCurrentInstance()?.page
+      const query = page
+        ? Taro.createSelectorQuery().in(page)
+        : Taro.createSelectorQuery()
+      query.select('.day-list-wrap').boundingClientRect()
+      query.select('.day-list-header').boundingClientRect()
+      query.exec(res => {
+        const wrap = res?.[0] as { height?: number } | undefined
+        const header = res?.[1] as { height?: number } | undefined
+        if (wrap?.height && header?.height) {
+          setBodyHeight(Math.max(0, wrap.height - header.height))
+        }
+      })
+    })
+  }, [])
+
+  useEffect(() => {
+    measureBodyHeight()
+  }, [measureBodyHeight, periods.length, selectedDayIndex, weekNum, hideWeekend])
+
+  Taro.useDidShow(() => {
+    measureBodyHeight()
+  })
 
   // 今天所在周的周一（ISO 日期字符串）
   const todayMonday = (() => {
@@ -77,7 +107,7 @@ export default function ScheduleDayList({
 
   return (
     <View className='schedule-view'>
-      <View className='grid-wrap'>
+      <View className='grid-wrap day-list-wrap'>
         <View className='day-list-header'>
           <View className='day-week-picker' onClick={onOpenWeekPicker}>
             <Text className='day-week-picker-text'>第{weekNum}周</Text>
@@ -93,7 +123,13 @@ export default function ScheduleDayList({
           </View>
         </View>
 
-        <ScrollView scrollY className='day-list-body'>
+        <ScrollView
+          scrollY
+          enhanced
+          showScrollbar={false}
+          className='day-list-body'
+          style={bodyHeight > 0 ? { height: `${bodyHeight}px` } : undefined}
+        >
           {periods.map((period, pIdx) => {
             const course = grid[pIdx]?.[selectedDayIndex] || null
             let isCurrentWeek = true
@@ -102,13 +138,9 @@ export default function ScheduleDayList({
               isCurrentWeek = course.weeks.includes(weekNum)
             }
 
-            const bgColor = isCurrentWeek
-              ? (course?.color?.startsWith('#') ? `${course.color}1A` : (course?.color === 'red' ? '#FFEBEB' : '#eff6ff'))
-              : '#EFEFEF'
-
-            const borderColor = isCurrentWeek
-              ? (course?.color?.startsWith('#') ? course.color : (course?.color === 'red' ? '#FF4D4F' : '#3b82f6'))
-              : '#CCCCCC'
+            const courseHex = course && isCourseColorHex(course.color) ? course.color! : DEFAULT_COURSE_COLOR
+            const bgColor = isCurrentWeek ? `${courseHex}1A` : '#EFEFEF'
+            const borderColor = isCurrentWeek ? courseHex : '#CCCCCC'
 
             const titleColor = isCurrentWeek ? '#333333' : '#999999'
             const subTextColor = isCurrentWeek ? '#999999' : '#C0C0C0'

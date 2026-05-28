@@ -1,4 +1,4 @@
-import { View, Text, PageContainer } from '@tarojs/components'
+import { View, Text, PageContainer, PageMeta } from '@tarojs/components'
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import Taro from '@tarojs/taro'
 import { tabState } from '../../utils/tabState'
@@ -250,7 +250,7 @@ export default function SchedulePage () {
         }
         const schedules = await listSchedules(activeStudent.id)
         setSchedules(schedules)
-        const defaultSchedule = schedules.find(s => s.isDefault) || schedules[0]
+        const defaultSchedule = schedules.find(s => s.is_default) || schedules[0]
         if (defaultSchedule) {
           const full = await getSchedule(defaultSchedule.id)
           const st = resolveScheduleStudent(full, studentList)
@@ -452,7 +452,14 @@ export default function SchedulePage () {
   }
 
   return (
-    <View className='schedule-page'>
+    <View
+      className={`schedule-page${
+        currentSchedule?.view_mode === 'day' ? ' schedule-page--day' : ''
+      }`}
+    >
+      {currentSchedule?.view_mode === 'day' && (
+        <PageMeta pageStyle='overflow: hidden; height: 100vh;' />
+      )}
       <View className='custom-nav-bg' />
       <View
         className='custom-nav-bar'

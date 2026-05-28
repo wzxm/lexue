@@ -3,104 +3,197 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="canvas:aspect-ratio" content="375:812"/>
 <title>10 课表创建 - 乐学课表</title>
 <style>
-*{margin:0;padding:0;box-sizing:border-box;}
-:root{--c-brand:#3b82f6;--c-brand-deep:#1456f0;--c-brand-hover:#2563eb;--c-brand-light:#bfdbfe;--c-brand-subtle:#eff6ff;--bg:#f5f6f8;--surface:#ffffff;--surface-muted:#f9fafb;--fg:#1a1a2e;--fg-2:#45515e;--fg-3:#8e8e93;--border:#e5e7eb;--border-light:#f2f3f5;--danger:#ef4444;--success:#16a34a;--warn:#f59e0b;--dark-btn:#181e25;--shadow-sm:0 1px 3px rgba(0,0,0,.06);--shadow-md:0 4px 12px rgba(0,0,0,.06);--r-sm:8px;--r-md:14px;--r-lg:20px;--r-xl:24px;--r-pill:999px;--ff:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif;--ff-mono:ui-monospace,'SF Mono',Menlo,monospace;}
-body{background:#e8eaed;display:grid;place-items:center;min-height:100vh;font-family:var(--ff);}
-.phone{width:375px;height:812px;background:var(--bg);border-radius:44px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.18);display:flex;flex-direction:column;position:relative;}
-.status-bar{height:50px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 6px;background:var(--surface);flex-shrink:0;}
-.status-bar .time{font-size:15px;font-weight:600;color:var(--fg);}
-.status-bar .icons{display:flex;gap:5px;align-items:center;}
-.status-bar .icons svg{width:16px;height:16px;}
-.nav-bar{height:48px;display:flex;align-items:center;padding:0 16px;background:var(--surface);border-bottom:1px solid var(--border-light);flex-shrink:0;}
-.nav-bar .back{width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
-.nav-bar .back svg{width:20px;height:20px;color:var(--fg);}
-.nav-bar .title{flex:1;text-align:center;font-size:16px;font-weight:600;color:var(--fg);margin-right:32px;}
-.content{flex:1;overflow-y:auto;padding:16px;padding-bottom:100px;}
-.card{background:var(--surface);border-radius:var(--r-md);box-shadow:var(--shadow-sm);padding:16px;margin-bottom:14px;}
-.card-title{font-size:14px;font-weight:600;color:var(--fg);margin-bottom:14px;}
-.form-row{display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:1px solid var(--border-light);}
+:root{--c-brand:#3b82f6;--c-brand-deep:#1456f0;--c-brand-hover:#2563eb;--c-brand-light:#bfdbfe;--c-brand-subtle:#eff6ff;--bg:#f5f6f8;--surface:#ffffff;--surface-muted:#f9fafb;--fg:#1a1a2e;--fg-2:#45515e;--fg-3:#8e8e93;--border:#e5e7eb;--border-light:#f2f3f5;--danger:#ef4444;--success:#16a34a;--warn:#f59e0b;--dark-btn:#181e25;--shadow-sm:0 1px 3px rgba(0,0,0,.06);--shadow-md:0 4px 12px rgba(0,0,0,.06);--shadow-brand:0 4px 16px rgba(59,130,246,.12);--r-sm:8px;--r-md:14px;--r-lg:20px;--r-xl:24px;--r-pill:999px;--ff:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif;--ff-mono:ui-monospace,'SF Mono',Menlo,monospace;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{background:#e8eaed;display:grid;place-items:center;font-family:var(--ff);-webkit-font-smoothing:antialiased;}
+.phone{position:relative;width:375px;height:812px;background:var(--bg);border-radius:44px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.18),0 0 0 1px rgba(0,0,0,.05);display:flex;flex-direction:column;}
+
+/* Status bar */
+.statusbar{flex:0 0 44px;padding:14px 24px 0;display:flex;align-items:flex-start;justify-content:space-between;font-size:14px;font-weight:600;color:var(--fg);}
+.statusbar .right{display:flex;align-items:center;gap:5px;}
+.statusbar svg{width:16px;height:10px;fill:var(--fg);}
+.statusbar .battery{width:24px;}
+
+/* Nav */
+.nav{flex:0 0 48px;padding:0 8px;display:flex;align-items:center;background:transparent;}
+.nav-back{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;cursor:pointer;}
+.nav-back svg{width:22px;height:22px;stroke:var(--fg);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.nav-title{flex:1;text-align:center;font-size:16px;font-weight:600;color:var(--fg);margin-right:40px;}
+.nav-actions{display:flex;align-items:center;gap:2px;}
+.nav-icon{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;cursor:pointer;}
+.nav-icon svg{width:20px;height:20px;fill:var(--fg);}
+
+.content{flex:1;overflow-y:auto;padding:8px 16px 120px;}
+.content::-webkit-scrollbar{display:none;}
+
+/* Steps */
+.steps{display:flex;gap:10px;margin-bottom:16px;}
+.step{flex:1;display:flex;align-items:center;gap:8px;padding:12px 14px;background:var(--surface);border-radius:var(--r-md);box-shadow:var(--shadow-sm);cursor:pointer;transition:.2s;}
+.step.active{background:var(--c-brand-subtle);box-shadow:0 0 0 1.5px var(--c-brand-light),var(--shadow-sm);}
+.step-icon{width:28px;height:28px;border-radius:var(--r-sm);display:grid;place-items:center;flex-shrink:0;}
+.step.active .step-icon{background:var(--c-brand);color:#fff;}
+.step:not(.active) .step-icon{background:var(--border-light);color:var(--fg-3);}
+.step-icon svg{width:16px;height:16px;}
+.step-text{font-size:13px;font-weight:600;color:var(--fg-3);}
+.step.active .step-text{color:var(--c-brand);}
+
+/* Form card */
+.form-card{background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--shadow-sm);overflow:hidden;margin-bottom:14px;}
+.form-section-title{padding:14px 16px 6px;font-size:12px;color:var(--fg-3);font-weight:500;letter-spacing:.04em;text-transform:uppercase;}
+.form-row{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border-light);}
 .form-row:last-child{border-bottom:none;}
-.form-row .label{font-size:14px;color:var(--fg);flex-shrink:0;width:80px;}
-.form-row .value{font-size:14px;color:var(--fg-3);text-align:right;flex:1;display:flex;align-items:center;justify-content:flex-end;gap:4px;}
-.form-row input{border:none;outline:none;font-size:14px;color:var(--fg);text-align:right;flex:1;font-family:var(--ff);background:transparent;}
-.form-row input::placeholder{color:var(--fg-3);}
-.toggle-group{display:flex;background:var(--bg);border-radius:var(--r-sm);overflow:hidden;}
-.toggle-btn{padding:6px 14px;font-size:12px;color:var(--fg-3);cursor:pointer;border:none;background:transparent;font-family:var(--ff);transition:all .2s;}
-.toggle-btn.active{background:var(--c-brand);color:#fff;border-radius:var(--r-sm);}
-.info-row{display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:1px solid var(--border-light);}
-.info-row:last-child{border-bottom:none;}
-.info-row .label{font-size:14px;color:var(--fg);}
-.info-row .val{font-size:14px;color:var(--fg-2);font-weight:500;}
-.tip-card{background:var(--c-brand-subtle);border-radius:var(--r-md);padding:14px 16px;display:flex;gap:10px;align-items:flex-start;margin-bottom:14px;}
-.tip-card svg{width:18px;height:18px;color:var(--c-brand);flex-shrink:0;margin-top:1px;}
-.tip-card p{font-size:13px;color:var(--fg-2);line-height:1.5;}
-.bottom-bar{position:absolute;bottom:0;left:0;right:0;padding:12px 20px;padding-bottom:calc(12px + env(safe-area-inset-bottom,20px));background:var(--surface);border-top:1px solid var(--border-light);}
-.btn-dark{width:100%;height:48px;border-radius:var(--r-md);background:var(--dark-btn);color:#fff;font-size:16px;font-weight:600;border:none;cursor:pointer;font-family:var(--ff);transition:opacity .2s;}
-.btn-dark:active{opacity:.85;}
-.arrow-icon{width:16px;height:16px;color:var(--fg-3);}
+.form-label{font-size:14px;color:var(--fg);font-weight:500;display:flex;align-items:center;gap:4px;}
+.form-label .required{color:var(--danger);font-size:14px;}
+.form-value{font-size:14px;color:var(--fg-3);display:flex;align-items:center;gap:4px;}
+.form-value.filled{color:var(--fg);}
+.form-value .arrow{width:14px;height:14px;stroke:var(--fg-3);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.form-subtext{padding:0 16px 12px;font-size:12px;color:var(--fg-3);line-height:1.4;}
+
+/* Period section */
+.period-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border-light);}
+.period-header-left{display:flex;align-items:center;gap:8px;}
+.period-icon{font-size:16px;}
+.period-label{font-size:14px;color:var(--fg);font-weight:500;}
+.counter{display:flex;align-items:center;gap:12px;}
+.counter-btn{width:28px;height:28px;border-radius:50%;border:1.5px solid var(--border);display:grid;place-items:center;cursor:pointer;background:transparent;transition:.15s;}
+.counter-btn:hover{border-color:var(--c-brand);background:var(--c-brand-subtle);}
+.counter-btn svg{width:14px;height:14px;stroke:var(--fg-2);fill:none;stroke-width:2;stroke-linecap:round;}
+.counter-btn:hover svg{stroke:var(--c-brand);}
+.counter-val{font-size:16px;font-weight:600;color:var(--fg);min-width:20px;text-align:center;font-family:var(--ff-mono);}
+.period-row{display:flex;align-items:center;justify-content:space-between;padding:12px 16px 12px 44px;border-bottom:1px solid var(--border-light);}
+.period-row:last-child{border-bottom:none;}
+.period-name{font-size:13px;color:var(--fg);}
+.period-time{font-size:13px;color:var(--fg-3);display:flex;align-items:center;gap:4px;font-family:var(--ff-mono);}
+.period-time .arrow{width:12px;height:12px;stroke:var(--fg-3);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+
+/* Bottom bar */
+.bottom-bar{position:absolute;bottom:0;left:0;right:0;padding:12px 16px;padding-bottom:calc(12px + env(safe-area-inset-bottom,20px));background:transparent;}
+.save-btn{width:100%;padding:15px;background:var(--dark-btn);color:#fff;border:none;border-radius:var(--r-md);font-size:15px;font-weight:600;cursor:pointer;letter-spacing:.02em;box-shadow:0 4px 14px rgba(24,30,37,.22);}
 </style>
 </head>
 <body>
 <main class="phone" data-component="Schedule Form">
-  <!-- Status Bar -->
-  <div class="status-bar">
-    <span class="time">9:41</span>
-    <div class="icons">
-      <svg viewBox="0 0 18 18" fill="currentColor"><rect x="1" y="10" width="3" height="6" rx="1" fill="#1a1a2e"/><rect x="5.5" y="7" width="3" height="9" rx="1" fill="#1a1a2e"/><rect x="10" y="4" width="3" height="12" rx="1" fill="#1a1a2e"/><rect x="14.5" y="1" width="3" height="15" rx="1" fill="#1a1a2e"/></svg>
-      <svg viewBox="0 0 18 18" fill="none"><path d="M9 4C6 4 3.5 5.2 1.5 7.2L3 8.7C4.6 7.1 6.7 6 9 6s4.4 1.1 6 2.7l1.5-1.5C14.5 5.2 12 4 9 4z" fill="#1a1a2e"/><path d="M9 8C7 8 5.2 8.8 4 10.1L5.5 11.6C6.3 10.8 7.6 10 9 10s2.7.8 3.5 1.6L14 10.1C12.8 8.8 11 8 9 8z" fill="#1a1a2e"/><circle cx="9" cy="14" r="2" fill="#1a1a2e"/></svg>
-      <svg viewBox="0 0 28 14" fill="none"><rect x=".5" y=".5" width="23" height="13" rx="3" stroke="#1a1a2e" stroke-opacity=".35"/><rect x="2" y="2" width="18" height="10" rx="1.5" fill="#1a1a2e"/><path d="M25 5v4a2.5 2.5 0 000-4z" fill="#1a1a2e" opacity=".4"/></svg>
+  <div class="statusbar"><span>15:39</span><span class="right"><svg viewBox="0 0 17 11"><rect x="0" y="7" width="3" height="4" rx=".6"/><rect x="4" y="5" width="3" height="6" rx=".6"/><rect x="8" y="3" width="3" height="8" rx=".6"/><rect x="12" y="0" width="3" height="11" rx=".6"/></svg><svg viewBox="0 0 17 11"><path d="M8.5 1.5C5.5 1.5 2.7 2.6.5 4.6L2 6.1c1.8-1.6 4.1-2.5 6.5-2.5 2.4 0 4.7.9 6.5 2.5l1.5-1.5c-2.2-2-5-3.1-8-3.1zM3.5 7.6 5 9.1c1-.9 2.2-1.4 3.5-1.4 1.3 0 2.5.5 3.5 1.4l1.5-1.5c-1.4-1.3-3.1-2-5-2-1.9 0-3.6.7-5 2zM6.5 10.6l2 2 2-2c-.5-.5-1.2-.8-2-.8s-1.5.3-2 .8z"/></svg><svg class="battery" viewBox="0 0 25 11"><rect x=".5" y=".5" width="21" height="10" rx="2.5" fill="none" stroke="currentColor" stroke-opacity=".45"/><rect x="22" y="3.5" width="1.5" height="4" rx=".4" fill="currentColor" fill-opacity=".45"/><rect x="2" y="2" width="18" height="7" rx="1.4"/></svg></span></div>
+
+  <!-- Nav -->
+  <div class="nav" data-component="Nav Bar">
+    <div class="nav-back"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div>
+    <div class="nav-title">新建课表</div>
+    <div class="nav-actions">
+      <div class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></div>
+      <div class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="var(--fg)" stroke-width="1.8"/><path d="M12 8v8M8 12h8" stroke="var(--fg)" stroke-width="1.8" stroke-linecap="round" fill="none"/></svg></div>
     </div>
   </div>
-  <!-- Nav Bar -->
-  <div class="nav-bar">
-    <div class="back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg></div>
-    <div class="title">创建课表</div>
-  </div>
-  <!-- Content -->
+
   <div class="content">
-    <div class="card">
-      <div class="card-title">基本信息</div>
+    <!-- Steps -->
+    <div class="steps" data-component="Steps">
+      <div class="step active">
+        <div class="step-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        </div>
+        <span class="step-text">创建课表</span>
+      </div>
+      <div class="step">
+        <div class="step-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M12 8v8M8 12h8"/></svg>
+        </div>
+        <span class="step-text">添加课程</span>
+      </div>
+    </div>
+
+    <!-- 学年 -->
+    <div class="form-card" data-component="Academic Year">
+      <div class="form-section-title">选择学年</div>
       <div class="form-row">
-        <span class="label">课表名称</span>
-        <input type="text" placeholder="例如：2025春季学期" aria-label="课表名称">
+        <span class="form-label">学期</span>
+        <span class="form-value filled">2025~2026 下学期 <svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></span>
+      </div>
+      <div class="form-subtext">默认按当前日期推算学期</div>
+    </div>
+
+    <!-- 日期与周数 -->
+    <div class="form-card" data-component="Date & Weeks">
+      <div class="form-section-title">日期与周数</div>
+      <div class="form-row">
+        <span class="form-label">开学日期 <span class="required">*</span></span>
+        <span class="form-value">用于计算当前周数 <svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></span>
       </div>
       <div class="form-row">
-        <span class="label">选择学生</span>
-        <div class="value">小明<svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></div>
+        <span class="form-label">本学期周数</span>
+        <span class="form-value filled">20 <svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></span>
       </div>
+    </div>
+
+    <!-- 归属学生 -->
+    <div class="form-card" data-component="Student">
+      <div class="form-section-title">归属学生</div>
       <div class="form-row">
-        <span class="label">学期类型</span>
-        <div class="value">
-          <div class="toggle-group">
-            <button class="toggle-btn active">每学期</button>
-            <button class="toggle-btn">单双周</button>
-          </div>
+        <span class="form-label">学生</span>
+        <span class="form-value filled">默认学生 <svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></span>
+      </div>
+    </div>
+
+    <!-- 设置时间 -->
+    <div class="form-card" data-component="Morning">
+      <div class="form-section-title">设置时间</div>
+      <div class="period-header">
+        <div class="period-header-left">
+          <span class="period-icon">☀️</span>
+          <span class="period-label">上午课节数</span>
+        </div>
+        <div class="counter">
+          <div class="counter-btn"><svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg></div>
+          <span class="counter-val">4</span>
+          <div class="counter-btn"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></div>
+        </div>
+      </div>
+      <div class="period-row"><span class="period-name">第1节课</span><span class="period-time">08:10–08:50 <svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></span></div>
+      <div class="period-row"><span class="period-name">第2节课</span><span class="period-time">09:00–09:40 <svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></span></div>
+      <div class="period-row"><span class="period-name">第3节课</span><span class="period-time">09:50–10:30 <svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></span></div>
+      <div class="period-row"><span class="period-name">第4节课</span><span class="period-time">10:40–11:20 <svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></span></div>
+    </div>
+
+    <div class="form-card" data-component="Afternoon">
+      <div class="period-header">
+        <div class="period-header-left">
+          <span class="period-icon">🌤</span>
+          <span class="period-label">下午课节数</span>
+        </div>
+        <div class="counter">
+          <div class="counter-btn"><svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg></div>
+          <span class="counter-val">4</span>
+          <div class="counter-btn"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></div>
+        </div>
+      </div>
+      <div class="period-row"><span class="period-name">第5节课</span><span class="period-time">14:00–14:40 <svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></span></div>
+      <div class="period-row"><span class="period-name">第6节课</span><span class="period-time">14:50–15:30 <svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></span></div>
+      <div class="period-row"><span class="period-name">第7节课</span><span class="period-time">15:40–16:20 <svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></span></div>
+      <div class="period-row"><span class="period-name">第8节课</span><span class="period-time">16:30–17:10 <svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></span></div>
+    </div>
+
+    <div class="form-card" data-component="Evening">
+      <div class="period-header">
+        <div class="period-header-left">
+          <span class="period-icon">🌙</span>
+          <span class="period-label">晚上课节数</span>
+        </div>
+        <div class="counter">
+          <div class="counter-btn"><svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg></div>
+          <span class="counter-val">0</span>
+          <div class="counter-btn"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></div>
         </div>
       </div>
     </div>
-    <div class="card">
-      <div class="card-title">课程安排</div>
-      <div class="info-row">
-        <span class="label">每天节数</span>
-        <span class="val">7节</span>
-      </div>
-      <div class="info-row">
-        <span class="label">上课天数</span>
-        <span class="val">5天（周一至周五）</span>
-      </div>
-    </div>
-    <div class="tip-card">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-      <p>创建后可在课程编辑页面添加具体课程。</p>
-    </div>
   </div>
-  <!-- Bottom Bar -->
+
   <div class="bottom-bar">
-    <button class="btn-dark">创建课表</button>
+    <button class="save-btn">保存</button>
   </div>
 </main>
 </body>
-
 </html>

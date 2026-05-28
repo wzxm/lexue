@@ -1,7 +1,9 @@
 import { View, Text } from '@tarojs/components'
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, Fragment, type CSSProperties } from 'react'
 import type { Course, ScheduleGrid as ScheduleGridType, Period } from '../../../types/index'
+import { DEFAULT_COURSE_COLOR, isCourseColorHex } from '../../../constants/colors'
 import { tabState } from '../../../utils/tabState'
+import './ScheduleGrid.scss'
 
 interface Props {
   weekNum: number;
@@ -25,6 +27,24 @@ interface Props {
 
 const WEEKDAY_LABELS = ['一', '二', '三', '四', '五', '六', '日']
 
+function getDayNumber(dateStr?: string): string {
+  if (!dateStr) return ''
+  const day = parseInt(dateStr.split('-')[2], 10)
+  return Number.isNaN(day) ? '' : String(day)
+}
+
+function resolveCourseChip(course: Course): { className: string; style?: CSSProperties } {
+  const color = isCourseColorHex(course.color) ? course.color! : DEFAULT_COURSE_COLOR
+  return {
+    className: 'course-chip',
+    style: {
+      background: `${color}22`,
+      color,
+      borderLeftColor: color,
+    },
+  }
+}
+
 export default function ScheduleGrid({
   weekNum,
   weekDates,
@@ -45,25 +65,24 @@ export default function ScheduleGrid({
   const [showWeekPicker, setShowWeekPicker] = useState(false)
   const [tempSelectedWeek, setTempSelectedWeek] = useState(weekNum)
 
+  const gridColumns = `72px repeat(${visibleDayIndices.length}, 1fr)`
+
   // 根据课表开始日期和当前日期计算当前周数
   const getCurrentWeekByDate = (): number => {
     if (!startDate) {
-      // 如果没有开始日期，根据 weekDates 计算
       if (weekDates.length === 0) return 1
       const mondayDate = new Date(weekDates[0])
       const todayDate = new Date(today)
       const diffDays = Math.floor((todayDate.getTime() - mondayDate.getTime()) / (1000 * 60 * 60 * 24))
       return Math.max(1, Math.min(Math.floor(diffDays / 7) + 1, totalWeeks))
     }
-    
-    // 根据课表开始日期计算
+
     const start = new Date(startDate)
     const todayDate = new Date(today)
-    // 确保开始日期是周一
     const startDay = start.getDay()
     const diffToMonday = startDay === 0 ? -6 : 1 - startDay
     start.setDate(start.getDate() + diffToMonday)
-    
+
     const diffMs = todayDate.getTime() - start.getTime()
     const diffWeeks = Math.floor(diffMs / (1000 * 60 * 60 * 24 * 7))
     return Math.max(1, Math.min(diffWeeks + 1, totalWeeks))
@@ -71,12 +90,10 @@ export default function ScheduleGrid({
 
   const currentWeekByDate = getCurrentWeekByDate()
 
-  // 同步 tempSelectedWeek
   useEffect(() => {
     setTempSelectedWeek(weekNum)
   }, [weekNum])
 
-  // 只显示当前周和剩余周数
   const availableWeeks = useMemo(
     () => Array.from({ length: totalWeeks - currentWeekByDate + 1 }, (_, i) => currentWeekByDate + i),
     [currentWeekByDate, totalWeeks]
@@ -107,69 +124,78 @@ export default function ScheduleGrid({
   }
 
   return (
-    <View className='schedule-view'>
-      <View className='grid-wrap'>
-        <View className='week-corner' onClick={allowWeekPicker ? handleOpenWeekPicker : undefined}>
-          <Text className='week-corner-text'>第{weekNum}周</Text>
-        </View>
-
-        <View className='grid-header-row'>
-          {visibleDayIndices.map((idx) => (
-            <View key={idx} className={`grid-header-cell ${highlightToday && weekDates[idx] === today ? 'grid-header-cell--today' : ''}`}>
-              <Text className='grid-header-day'>{WEEKDAY_LABELS[idx]}</Text>
-              <Text className='grid-header-date'>{weekDates[idx]?.slice(5).replace('-', '/') || ''}</Text>
-            </View>
-          ))}
-        </View>
-
-        <View className='grid-body'>
-          {periods.map((period, pIdx) => (
-            <View key={period.index} className='grid-row'>
-              <View className='period-cell'>
-                <Text className='period-num'>{period.index}</Text>
-                <Text className='period-time-line'>{period.startTime}</Text>
-                <Text className='period-time-line'>{period.endTime}</Text>
+    <>
+      <View className='schedule-view'>
+        <View className='week-schedule-grid'>
+          <View className='schedule-card'>
+            <View className='grid-header' style={{ gridTemplateColumns: gridColumns }}>
+              <View
+                className={`time-col ${allowWeekPicker ? 'time-col--picker' : ''}`}
+                onClick={allowWeekPicker ? handleOpenWeekPicker : undefined}
+              >
+                <Text className='week-picker-label'>第{weekNum}周</Text>
               </View>
-              {visibleDayIndices.map((dIdx) => {
-                const course = grid[pIdx]?.[dIdx] || null
-                const cellIsToday = highlightToday && weekDates[dIdx] === today
+
+              {visibleDayIndices.map((idx) => {
+                const isToday = highlightToday && weekDates[idx] === today
                 return (
-                  <View key={dIdx} className={`course-cell-wrap ${cellIsToday ? 'course-cell-wrap--today' : ''}`}>
-                    {course ? (
-                      <View
-                        className='course-block'
-                        style={{
-                          background: course.color ? `${course.color}22` : '#C8F0D8',
-                          color: 'var(--color-primary)',
-                        }}
-                        onClick={interactive ? () => onTapCourse(course) : undefined}
-                      >
-                        <Text className='course-block-name'>{course.name}</Text>
-                      </View>
-                    ) : (
-                      <View className='empty-cell' onClick={interactive ? () => onTapEmpty(dIdx + 1, pIdx + 1) : undefined} />
-                    )}
+                  <View key={idx} className={`day-col ${isToday ? 'day-col--today' : ''}`}>
+                    <Text className='day-name'>{WEEKDAY_LABELS[idx]}</Text>
+                    <Text className='day-num'>{getDayNumber(weekDates[idx])}</Text>
                   </View>
                 )
               })}
             </View>
-          ))}
+
+            <View className='grid-body' style={{ gridTemplateColumns: gridColumns }}>
+              {periods.map((period, pIdx) => (
+                <Fragment key={period.index}>
+                  <View className='time-slot'>
+                    <Text className='period-index'>{period.index}</Text>
+                    <Text className='period-start'>{period.startTime}</Text>
+                  </View>
+                  {visibleDayIndices.map((dIdx) => {
+                    const course = grid[pIdx]?.[dIdx] || null
+                    const chip = course ? resolveCourseChip(course) : null
+                    return (
+                      <View key={dIdx} className='course-cell'>
+                        {course ? (
+                          <View
+                            className={chip?.className}
+                            style={chip?.style}
+                            onClick={interactive ? () => onTapCourse(course) : undefined}
+                          >
+                            <Text className='course-chip-name'>{course.name}</Text>
+                            {course.room ? (
+                              <Text className='course-chip-room'>{course.room}</Text>
+                            ) : null}
+                          </View>
+                        ) : (
+                          <View
+                            className='empty-cell'
+                            onClick={interactive ? () => onTapEmpty(dIdx + 1, pIdx + 1) : undefined}
+                          />
+                        )}
+                      </View>
+                    )
+                  })}
+                </Fragment>
+              ))}
+            </View>
+          </View>
         </View>
       </View>
 
-      {/* 周数选择浮层（用 fixed View 替代 PageContainer，避免同页多实例报错） */}
       {showWeekPicker && (
         <>
           <View className='week-picker-overlay' onClick={handleCancel} />
           <View className='week-picker-popup'>
-            {/* 顶部导航 */}
             <View className='week-picker-nav'>
               <Text className='week-picker-nav-btn' onClick={handleCancel}>取消</Text>
               <Text className='week-picker-nav-title'>选择周数</Text>
               <Text className='week-picker-nav-btn week-picker-nav-btn--primary' onClick={handleConfirm}>完成</Text>
             </View>
 
-            {/* 周数网格 */}
             <View className='week-picker-grid'>
               {availableWeeks.map(week => {
                 const isSelected = week === tempSelectedWeek
@@ -193,6 +219,6 @@ export default function ScheduleGrid({
           </View>
         </>
       )}
-    </View>
+    </>
   )
 }

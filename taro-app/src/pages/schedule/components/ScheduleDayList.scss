@@ -2,6 +2,7 @@
   display: flex;
   align-items: center;
   position: relative;
+  flex-shrink: 0;
   height: 100px;
   border-bottom: 1px solid #f0f0f0;
   padding: 0 32px;
@@ -44,8 +45,15 @@
 
 .day-list-body {
   flex: 1;
+  min-height: 0;
+  height: 0;
   background: #fff;
   padding: 24px 0;
+  box-sizing: border-box;
+}
+
+.day-list-bottom-padding {
+  height: 24px;
 }
 
 .day-row {
