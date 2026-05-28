@@ -1,5 +1,5 @@
 /**
- * 乐学课表主题令牌，与 `docs/class-0329.pen` 的 `variables`（`--lx-*` 及对齐后的 `--primary` 等）一致。
+ * 智鑫课表主题令牌，与 `docs/class-0329.pen` 的 `variables`（`--lx-*` 及对齐后的 `--primary` 等）一致。
  *
  * 使用方式示例：
  * - 内联：`style={{ color: theme.light.textPrimary }}`

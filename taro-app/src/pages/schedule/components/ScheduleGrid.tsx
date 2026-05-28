@@ -65,7 +65,7 @@ export default function ScheduleGrid({
   const [showWeekPicker, setShowWeekPicker] = useState(false)
   const [tempSelectedWeek, setTempSelectedWeek] = useState(weekNum)
 
-  const gridColumns = `72px repeat(${visibleDayIndices.length}, 1fr)`
+  const gridColumns = `45px repeat(${visibleDayIndices.length}, minmax(0, 1fr))`
 
   // 根据课表开始日期和当前日期计算当前周数
   const getCurrentWeekByDate = (): number => {
@@ -157,8 +157,9 @@ export default function ScheduleGrid({
                   {visibleDayIndices.map((dIdx) => {
                     const course = grid[pIdx]?.[dIdx] || null
                     const chip = course ? resolveCourseChip(course) : null
+                    const isTodayCol = highlightToday && weekDates[dIdx] === today
                     return (
-                      <View key={dIdx} className='course-cell'>
+                      <View key={dIdx} className={`course-cell${isTodayCol ? ' course-cell--today' : ''}`}>
                         {course ? (
                           <View
                             className={chip?.className}

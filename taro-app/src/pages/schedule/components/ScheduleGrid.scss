@@ -19,7 +19,7 @@
 }
 
 .time-col {
-  padding: 16px 4px;
+  padding: 14px 2px;
   font-size: 18px;
   color: #8e8e93;
   text-align: center;
@@ -46,6 +46,7 @@
 }
 
 .day-col {
+  min-width: 0;
   padding: 16px 4px;
   text-align: center;
   display: flex;
@@ -57,6 +58,14 @@
 .day-col--today {
   background: #eff6ff;
   border-radius: 16px 16px 0 0;
+}
+
+.course-cell--today {
+  background: #eff6ff;
+}
+
+.course-cell--today:last-child {
+  border-radius: 0 0 16px 16px;
 }
 
 .day-name {
@@ -78,8 +87,22 @@
   line-height: 1.2;
 }
 
+.day-col--today .day-num {
+  color: #ffffff;
+  background: #3b82f6;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
 .time-slot {
-  padding: 16px 4px 12px;
+  padding: 14px 2px 10px;
   font-size: 18px;
   color: #8e8e93;
   text-align: center;
@@ -100,13 +123,15 @@
 }
 
 .period-start {
-  font-size: 18px;
+  font-size: 16px;
   color: #8e8e93;
   margin-top: 4px;
   line-height: 1.2;
 }
 
 .course-cell {
+  min-width: 0;
+  overflow: hidden;
   padding: 4px;
   border-bottom: 1px solid #f2f3f5;
   min-height: 108px;
@@ -122,6 +147,8 @@
 
 .course-chip {
   flex: 1;
+  min-width: 0;
+  max-width: 100%;
   border-radius: 12px;
   padding: 6px 8px;
   display: flex;
@@ -133,22 +160,32 @@
 }
 
 .course-chip-name {
+  display: -webkit-box;
+  max-width: 100%;
   font-weight: 600;
   font-size: 19px;
   line-height: 1.3;
   margin-bottom: 2px;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  word-break: break-word;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
 .course-chip-room {
+  display: -webkit-box;
+  max-width: 100%;
   font-size: 16px;
   line-height: 1.3;
   opacity: 0.7;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  word-break: break-word;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
 }
 
 /* 预设课程色 — 对齐 mockup c-* */

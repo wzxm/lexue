@@ -8,13 +8,18 @@ import { useScheduleStore, buildGrid } from '../../store/schedule.store'
 import { useAuthStore } from '../../store/auth.store'
 import { ROUTES } from '../../constants/routes'
 import { DEFAULT_PERIODS } from '../../constants/periods'
-import { DEFAULT_COURSE_COLOR } from '../../constants/colors'
+import { DEFAULT_COURSE_COLOR, COURSE_COLORS } from '../../constants/colors'
 import { getCurrentWeekOffset, getWeekDates, formatDate } from '../../utils/date'
 import { chooseMediaSource } from '../../utils/media'
 import ScheduleGrid from '../schedule/components/ScheduleGrid'
+import { mockRecognizeScheduleImageResult } from './mockRecognizeResult'
 import type { Course, Schedule } from '../../types/index'
 import '../schedule/index.scss'
 import './index.scss'
+
+declare const AI_PREVIEW_MOCK: string | undefined
+
+const useMockPreview = typeof AI_PREVIEW_MOCK !== 'undefined' && AI_PREVIEW_MOCK === 'true'
 
 function buildAllWeeks(totalWeeks: number): number[] {
   return Array.from({ length: totalWeeks }, (_, i) => i + 1)
@@ -27,11 +32,17 @@ function getDatePathParts(date = new Date()) {
   return { year, month, day }
 }
 
+function getCourseColor(name: string, index: number) {
+  const seed = Array.from(name || '').reduce((sum, char) => sum + char.charCodeAt(0), index)
+  return COURSE_COLORS[seed % COURSE_COLORS.length]?.hex || DEFAULT_COURSE_COLOR
+}
+
 export default function ScheduleAiPage() {
   const router = useRouter()
   const scheduleId = router.params.scheduleId || ''
   const currentSchedule = useScheduleStore(s => s.currentSchedule)
   const setCurrentSchedule = useScheduleStore(s => s.setCurrentSchedule)
+  const userInfo = useAuthStore(s => s.userInfo)
 
   const [fileId, setFileId] = useState('')
   const [loading, setLoading] = useState(false)
@@ -50,6 +61,7 @@ export default function ScheduleAiPage() {
 
   const totalWeeks = schedule?.total_weeks || schedule?.totalWeeks || 20
   const periods = schedule?.periods?.length ? schedule.periods : DEFAULT_PERIODS
+  const hideWeekend = userInfo?.settings?.hide_weekend ?? false
   const normalizedDraftCourses = useMemo(() => {
     const weeksFallback = buildAllWeeks(totalWeeks)
     return (draftCourses || []).map(course => ({
@@ -183,16 +195,18 @@ export default function ScheduleAiPage() {
     setRecognizing(true)
     try {
       Taro.showLoading({ title: 'AI识别中', mask: true })
-      const result = await recognizeScheduleImage({
-        scheduleId,
-        fileId: targetFileId,
-        mimeType,
-      })
+      const result = useMockPreview
+        ? mockRecognizeScheduleImageResult
+        : await recognizeScheduleImage({
+          scheduleId,
+          fileId: targetFileId,
+          mimeType,
+        })
 
       const schedulePeriods = schedule?.periods?.length || 0
       const maxWeeks = totalWeeks
       const normalized = (result.courses || [])
-        .map(course => {
+        .map((course, index) => {
           const weeks = Array.isArray(course.weeks) && course.weeks.length > 0
             ? course.weeks
             : buildAllWeeks(maxWeeks)
@@ -203,7 +217,7 @@ export default function ScheduleAiPage() {
             room: String(course.room || '').trim(),
             contact: String(course.contact || '').trim(),
             remark: String(course.remark || '').trim(),
-            color: course.color || DEFAULT_COURSE_COLOR,
+            color: getCourseColor(course.name, index),
             weeks,
           }
         })
@@ -219,6 +233,14 @@ export default function ScheduleAiPage() {
       Taro.hideLoading()
       setRecognizing(false)
     }
+  }
+
+  const handleMockPreview = async () => {
+    if (!scheduleId) {
+      Taro.showToast({ title: '课表ID缺失', icon: 'none' })
+      return
+    }
+    await handleRecognize('mock-file-id')
   }
 
   const handleConfirmImport = async () => {
@@ -261,6 +283,11 @@ export default function ScheduleAiPage() {
           <Button className='primary-btn' onClick={handlePickImage} disabled={loading || recognizing}>
             {loading || recognizing ? '处理中...' : '拍照 / 相册识别课表'}
           </Button>
+          {useMockPreview ? (
+            <Button className='ghost-btn mock-btn' onClick={handleMockPreview} disabled={loading || recognizing}>
+              使用 mock 数据预览
+            </Button>
+          ) : null}
           <Text className='tip'>支持相册图片和现场拍照。建议选择清晰、正向、包含完整星期和节次的课表图。</Text>
         </View>
       )}
@@ -279,7 +306,7 @@ export default function ScheduleAiPage() {
             </View>
           ) : null}
 
-          <View className='card'>
+          <View className={`card preview-card${hideWeekend ? ' preview-card--hide-weekend' : ''}`}>
             <View className='preview-header'>
               <View className='list-header'>
                 <Text className='section-title'>课表预览</Text>
@@ -304,6 +331,7 @@ export default function ScheduleAiPage() {
                 interactive={false}
                 allowWeekPicker
                 highlightToday={false}
+                hideWeekend={hideWeekend}
               />
             ) : (
               <Text className='tip'>当前课表信息未加载完成，稍后再试。</Text>
