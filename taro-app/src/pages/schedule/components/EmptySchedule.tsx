@@ -1,6 +1,7 @@
 import { View, Text } from '@tarojs/components'
 import Taro from '@tarojs/taro'
 import { ROUTES } from '../../../constants/routes'
+import './EmptySchedule.scss'
 
 interface Props {
   scheduleId?: string;
