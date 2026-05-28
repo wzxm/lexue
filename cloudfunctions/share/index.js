@@ -17,6 +17,7 @@ const {
 } = require('../../shared/family');
 const validator = require('../../shared/validator');
 const logger = require('../../shared/logger');
+const { resolveCourseColor } = require('../../shared/courseColors');
 
 const FN = 'share';
 
@@ -283,7 +284,7 @@ async function copyByInviteCode(openid, payload) {
       teacher: '',
       room: course.room || '',
       contact: '',
-      color: course.color || '',
+      color: resolveCourseColor(course.color),
       weeks: Array.isArray(course.weeks) ? [...course.weeks] : [],
     });
   }

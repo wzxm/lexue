@@ -77,7 +77,7 @@
 | teacher | string | 否 | 教师姓名 |
 | room | string | 否 | 教室/地点 |
 | contact | string | 否 | 联系方式 |
-| color | string | 否 | 课程颜色标识（hex色值） |
+| color | string | 是 | 课程颜色 hex 色值（`#RRGGBB`，如 `#3b82f6`） |
 | weeks | array | 否 | 上课周次，空数组表示每周都上 |
 | remark | string | 否 | 备注 |
 | created_at | date | 是 | 创建时间 |

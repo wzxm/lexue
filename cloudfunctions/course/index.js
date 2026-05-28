@@ -12,6 +12,7 @@ const { ERRORS, success, fail } = require('../../shared/errors');
 const { getOpenId, requireMember, requireEdit } = require('../../shared/auth');
 const validator = require('../../shared/validator');
 const logger = require('../../shared/logger');
+const { validateCourseColor } = require('../../shared/courseColors');
 
 const FN = 'course';
 
@@ -47,7 +48,7 @@ function toCourseDoc(schedule, scheduleId, course, weeks) {
     room: course.room || '',
     day_of_week: course.day_of_week,
     slot: course.slot,
-    color: course.color,
+    color: validateCourseColor(course.color, 'color'),
     weeks,
     remark: course.remark || '',
     contact: course.contact !== undefined && course.contact !== null ? String(course.contact) : '',
@@ -61,7 +62,7 @@ function validateCourseInput(course, index) {
   validator.enumValue(course.day_of_week, VALID_DAYS, `第${index + 1}个课程的 day_of_week`);
   validator.enumValue(course.slot, VALID_SLOTS, `第${index + 1}个课程的 slot`);
   validator.maxLength(course.name, 30, `第${index + 1}个课程名称`);
-  validator.maxLength(course.color, 20, `第${index + 1}个课程 color`);
+  validateCourseColor(course.color, `第${index + 1}个课程的 color`);
   return null;
 }
 
@@ -129,7 +130,7 @@ async function create(openid, payload) {
   validator.maxLength(payload.name, 30, '课程名称');
   validator.enumValue(payload.day_of_week, VALID_DAYS, 'day_of_week');
   validator.enumValue(payload.slot, VALID_SLOTS, 'slot');
-  validator.maxLength(payload.color, 20, 'color');
+  const color = validateCourseColor(payload.color, 'color');
 
   // 需要编辑权限，同时拿到所属课表用于补齐归属字段
   const schedule = await requireEdit(openid, payload.schedule_id);
@@ -162,7 +163,7 @@ async function create(openid, payload) {
     room: payload.room || '',
     day_of_week: payload.day_of_week,
     slot: payload.slot,
-    color: payload.color,
+    color,
     weeks: normalizedWeeks,
     remark: payload.remark || '',
     contact: payload.contact !== undefined && payload.contact !== null ? String(payload.contact) : '',
@@ -189,6 +190,9 @@ async function update(openid, payload) {
   if (payload.day_of_week !== undefined) validator.enumValue(payload.day_of_week, VALID_DAYS, 'day_of_week');
   if (payload.slot !== undefined) validator.enumValue(payload.slot, VALID_SLOTS, 'slot');
   if (payload.name) validator.maxLength(payload.name, 30, '课程名称');
+  if (payload.color !== undefined) {
+    payload.color = validateCourseColor(payload.color, 'color');
+  }
 
   const allowed = ['name', 'teacher', 'room', 'day_of_week', 'slot', 'color', 'weeks', 'remark', 'contact'];
   const updateData = {};
@@ -262,12 +266,8 @@ async function batchCreate(openid, payload) {
 
   // 逐个校验课程数据
   for (let i = 0; i < payload.courses.length; i++) {
-    const c = payload.courses[i];
-    if (!c.name || !c.color || c.day_of_week === undefined || c.slot === undefined) {
-      return fail(ERRORS.PARAM_ERROR, `第 ${i + 1} 个课程缺少必填字段`);
-    }
-    validator.enumValue(c.day_of_week, VALID_DAYS, `第${i + 1}个课程的 day_of_week`);
-    validator.enumValue(c.slot, VALID_SLOTS, `第${i + 1}个课程的 slot`);
+    const invalid = validateCourseInput(payload.courses[i], i);
+    if (invalid) return invalid;
   }
 
   // 批量创建，云开发没有批量 add，用循环（50条以内影响不大）
@@ -320,7 +320,7 @@ async function batchCreate(openid, payload) {
       room: c.room || '',
       day_of_week: c.day_of_week,
       slot: c.slot,
-      color: c.color,
+      color: validateCourseColor(c.color, `第${i + 1}个课程的 color`),
       weeks: normalizedWeeks,
       remark: c.remark || '',
       contact: c.contact !== undefined && c.contact !== null ? String(c.contact) : '',

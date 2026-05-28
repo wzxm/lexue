@@ -8,6 +8,7 @@ import { useScheduleStore, buildGrid } from '../../store/schedule.store'
 import { useAuthStore } from '../../store/auth.store'
 import { ROUTES } from '../../constants/routes'
 import { DEFAULT_PERIODS } from '../../constants/periods'
+import { DEFAULT_COURSE_COLOR } from '../../constants/colors'
 import { getCurrentWeekOffset, getWeekDates, formatDate } from '../../utils/date'
 import { chooseMediaSource } from '../../utils/media'
 import ScheduleGrid from '../schedule/components/ScheduleGrid'
@@ -202,7 +203,7 @@ export default function ScheduleAiPage() {
             room: String(course.room || '').trim(),
             contact: String(course.contact || '').trim(),
             remark: String(course.remark || '').trim(),
-            color: course.color || 'red',
+            color: course.color || DEFAULT_COURSE_COLOR,
             weeks,
           }
         })

@@ -13,6 +13,7 @@ const { ERRORS, success, fail } = require('../../shared/errors');
 const { getOpenId, requireEdit } = require('../../shared/auth');
 const validator = require('../../shared/validator');
 const logger = require('../../shared/logger');
+const { resolveCourseColor } = require('../../shared/courseColors');
 const https = require('https');
 const crypto = require('crypto');
 
@@ -92,7 +93,7 @@ function buildPrompt(schedule) {
     '你是通用学校课程表图片识别助手，适用于小学、中学、大学等不同阶段课表，目标是把图片表格精确转换为课程 JSON。',
     '请只输出严格 JSON，不要 Markdown，不要解释，不要代码块。',
     '输出格式如下：',
-    '{ "courses": [ { "name": "...", "day_of_week": 1, "slot": 1, "teacher": "", "room": "", "contact": "", "remark": "", "color": "red", "weeks": [1,2,3] } ], "warnings": ["..."] }',
+    '{ "courses": [ { "name": "...", "day_of_week": 1, "slot": 1, "teacher": "", "room": "", "contact": "", "remark": "", "color": "#3b82f6", "weeks": [1,2,3] } ], "warnings": ["..."] }',
     '识别步骤：',
     '1. 先定位表头中的星期列：一/二/三/四/五/六/日、周一/周二、星期一/星期二都要映射到 day_of_week=1-7。',
     '2. 再定位左侧节次行：第1节、1、第一节等都映射为 slot；不要把日期、时间段识别成课程。',
@@ -108,7 +109,7 @@ function buildPrompt(schedule) {
     `10. 当前课表节次数为 ${periods.length || 0}，slot 范围必须是 1 到 ${Math.min(Math.max(periods.length || 0, 1), MAX_COURSES)}。`,
     periodLines.length ? `11. 参考节次时间：${periodLines.join('；')}。` : '11. 若图片中没有节次时间，也必须根据左侧节次序号识别 slot。',
     '12. 不确定课程名或位置时不要编造课程；把原因写入 warnings。',
-    '13. 输出前自检：每条课程必须有 name、day_of_week、slot、color、weeks；day_of_week 和 slot 必须是数字。',
+    '13. 输出前自检：每条课程必须有 name、day_of_week、slot、color、weeks；day_of_week 和 slot 必须是数字；color 必须是 hex 色值（如 #3b82f6）。',
   ].join('\n');
 }
 
@@ -181,7 +182,7 @@ function buildOcrPrompt(schedule, ocrBlocks) {
     '你是课程表 OCR 文本结构化助手。下面是 OCR 从课程表图片中识别出的文本块，包含文本、坐标和置信度。',
     '请只输出严格 JSON，不要 Markdown，不要解释，不要代码块。',
     '输出格式如下：',
-    '{ "courses": [ { "name": "...", "day_of_week": 1, "slot": 1, "teacher": "", "room": "", "contact": "", "remark": "", "color": "red", "weeks": [1,2,3] } ], "warnings": ["..."] }',
+    '{ "courses": [ { "name": "...", "day_of_week": 1, "slot": 1, "teacher": "", "room": "", "contact": "", "remark": "", "color": "#3b82f6", "weeks": [1,2,3] } ], "warnings": ["..."] }',
     '解析规则：',
     '1. 根据坐标推断表格结构：同一行 y 接近的是一行，同一列 x 接近的是一列；表头中的周一/星期一/一映射 day_of_week=1，依此到周日=7。',
     '2. 根据左侧节次、时间段或行序推断 slot；不要把日期、时间段、午休、课间、放学、早餐、眼保健操、升旗、备注、标题、学校名输出为课程。',
@@ -233,7 +234,7 @@ function normalizeCourses(payloadCourses, totalWeeks, periodCount) {
       teacher: String(raw.teacher || '').trim(),
       room: String(raw.room || '').trim(),
       contact: String(raw.contact || '').trim(),
-      color: 'red',
+      color: resolveCourseColor(raw.color),
       weeks,
       remark: String(raw.remark || '').trim(),
     });
