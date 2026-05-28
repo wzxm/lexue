@@ -45,8 +45,7 @@ export interface Course {
 export interface Schedule {
   id: string; // 前端可能会映射 _id 到 id
   _id?: string;
-  studentId: string;
-  student_id?: string;
+  student_id: string;
   name: string;
   semester: string;
   totalWeeks?: number;

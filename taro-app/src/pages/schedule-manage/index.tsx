@@ -105,8 +105,8 @@ export default function ScheduleManagePage() {
     const map = new Map<string, { studentName: string, isShared: boolean, ownerName?: string, items: Schedule[] }>()
     for (const s of schedules) {
       const isOwner = !s.owner_openid || s.owner_openid === currentOpenId
-      const studentInfo = students.find(st => st.id === (s.studentId || s.student_id))
-      const key = s.studentId || s.student_id || 'unknown'
+      const studentInfo = students.find(st => st.id === s.student_id)
+      const key = s.student_id || 'unknown'
 
       if (!map.has(key)) {
         let stuName = studentInfo?.name || '未知学生'

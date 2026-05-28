@@ -98,7 +98,7 @@ export default function ScheduleFormPage() {
     );
     setSemesterIndex(semesterIdx);
 
-    const studentId = target.studentId || target.student_id || "";
+    const studentId = target.student_id || "";
     if (studentId && students.length > 0) {
       const idx = students.findIndex((s) => s.id === studentId);
       if (idx >= 0) setStudentIndex(idx);
@@ -240,7 +240,6 @@ export default function ScheduleFormPage() {
             start_date: startDate,
             startDate,
             student_id: student?.id || s.student_id,
-            studentId: student?.id || s.studentId,
             total_weeks: totalWeeks,
             totalWeeks,
             periods: buildPeriods(),
@@ -263,7 +262,6 @@ export default function ScheduleFormPage() {
             start_date: startDate,
             startDate,
             student_id: student?.id || currentSchedule.student_id,
-            studentId: student?.id || currentSchedule.studentId,
             total_weeks: totalWeeks,
             totalWeeks,
             periods: buildPeriods(),
@@ -284,7 +282,7 @@ export default function ScheduleFormPage() {
       }
 
       const raw = await createSchedule({
-        studentId: student?.id,
+        student_id: student?.id,
         name: `${semester.label}课表`,
         semester: semester.value,
         totalWeeks,
@@ -299,7 +297,7 @@ export default function ScheduleFormPage() {
       const r = raw as unknown as Record<string, unknown>;
       const schedule: Schedule = {
         id: (r._id || r.id || "") as string,
-        studentId: (r.student_id || student?.id || "") as string,
+        student_id: (r.student_id || student?.id || "") as string,
         name: (r.name || `${semester.label}课表`) as string,
         semester: (r.semester || semester.value) as string,
         start_date: ((r.start_date || startDate) as string) || undefined,

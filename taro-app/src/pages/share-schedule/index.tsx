@@ -19,7 +19,7 @@ export default function ShareSchedulePage() {
   const schedulesByStudent = useMemo(() => {
     const map: Record<string, Schedule[]> = {}
     schedules.forEach(s => {
-      const studentId = s.student_id || s.studentId || 'unknown'
+      const studentId = s.student_id || 'unknown'
       if (!map[studentId]) map[studentId] = []
       map[studentId].push(s)
     })

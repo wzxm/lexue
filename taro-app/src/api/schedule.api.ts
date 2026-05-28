@@ -19,21 +19,22 @@ function normalizeTimestamp(value?: string | number | Date): number {
 function toFrontendSchedule(data: BackendSchedule): Schedule {
   return {
     ...data,
+    student_id: data.student_id || '',
     createdAt: data.createdAt || normalizeTimestamp(data.createTime),
     updatedAt: data.updatedAt || normalizeTimestamp(data.updateTime),
   }
 }
 
-export async function listSchedules(studentId?: string): Promise<Schedule[]> {
+export async function listSchedules(student_id?: string): Promise<Schedule[]> {
   const payload: Record<string, unknown> = {};
-  if (studentId) payload.studentId = studentId;
+  if (student_id) payload.student_id = student_id;
   const result = await cloud.call<{ own: BackendSchedule[]; shared: BackendSchedule[] }>('schedule', { action: 'list', payload });
   // 云函数返回 { own, shared }，拍平成数组供前端使用
   return [...(result.own || []), ...(result.shared || [])].map(toFrontendSchedule);
 }
 
 export async function createSchedule(data: {
-  studentId?: string;
+  student_id?: string;
   name: string;
   semester: string;
   totalWeeks?: number;
@@ -45,7 +46,7 @@ export async function createSchedule(data: {
     name: data.name,
     semester: data.semester,
   };
-  if (data.studentId) payload.student_id = data.studentId;
+  if (data.student_id) payload.student_id = data.student_id;
   if (data.totalWeeks) payload.total_weeks = data.totalWeeks;
   if (data.startDate) payload.start_date = data.startDate;
   if (data.periods) payload.periods = data.periods;

@@ -88,7 +88,7 @@ export default function SchedulePage () {
 
   const resolveScheduleStudent = useCallback(
     (schedule: typeof schedules[number], list: typeof students) => {
-      const sid = schedule?.studentId || schedule?.student_id
+      const sid = schedule?.student_id
       if (sid) {
         return list.find(s => s.id === sid) || null
       }
@@ -98,7 +98,7 @@ export default function SchedulePage () {
   )
 
   const headerStudent = useMemo(() => {
-    const sid = currentSchedule?.studentId || currentSchedule?.student_id
+    const sid = currentSchedule?.student_id
     if (sid) {
       const fromList = students.find(s => s.id === sid)
       if (fromList) return fromList

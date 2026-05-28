@@ -14,7 +14,7 @@ export function groupSchedulesByStudent (
 ): GroupedSchedules[] {
   const map = new Map<string, GroupedSchedules>()
   for (const s of schedules) {
-    const key = s.studentId || s.student_id || 'default'
+    const key = s.student_id || 'default'
     if (!map.has(key)) {
       const st = students.find(x => x.id === key)
       map.set(key, {

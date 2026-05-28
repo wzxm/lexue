@@ -83,7 +83,7 @@ export default function ToolsPage () {
 
   /** 当前课表对应学生（与抽屉分组逻辑一致） */
   const headerStudent = useMemo(() => {
-    const sid = currentSchedule?.studentId || currentSchedule?.student_id
+    const sid = currentSchedule?.student_id
     if (sid) {
       const fromList = students.find(s => s.id === sid)
       if (fromList) return fromList
@@ -122,7 +122,7 @@ export default function ToolsPage () {
     try {
       Taro.showLoading({ title: '切换中', mask: true })
       const full = await getSchedule(schedule.id)
-      const sid = full.studentId || full.student_id
+      const sid = full.student_id
       if (sid) {
         const st = students.find(s => s.id === sid)
         if (st) setCurrentStudent(st)

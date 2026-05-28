@@ -80,7 +80,7 @@ export default function CourseFormPage() {
   }, [currentSchedule, mode, routeCourseId])
 
   const defaultCourseGradeLevel = useMemo<GradeLevel>(() => {
-    const sid = currentSchedule?.studentId || currentSchedule?.student_id
+    const sid = currentSchedule?.student_id
     const scheduleStudent = sid ? students.find(s => s.id === sid) : null
     const grade = scheduleStudent?.grade || currentStudent?.grade
     return resolveGradeLevelFromStudentGrade(grade)
