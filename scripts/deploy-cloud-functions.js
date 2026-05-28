@@ -7,7 +7,7 @@
  *   node scripts/deploy-cloud-functions.js auth schedule  # 部署多个
  */
 
-const { execSync, spawnSync } = require('child_process')
+const { spawnSync } = require('child_process')
 const path = require('path')
 const fs = require('fs')
 const os = require('os')
@@ -22,6 +22,7 @@ if (fs.existsSync(envFile)) {
   }
 }
 const CF_ROOT = path.join(ROOT, 'cloudfunctions')
+const LOCAL_MINIPROGRAM_CI = path.join(ROOT, 'taro-app', 'node_modules', '.bin', 'miniprogram-ci')
 const ENV_ID = process.env.CLOUDBASE_ENV_ID || process.env.ENV_ID
 const APPID = process.env.WX_APPID || process.env.APPID
 const PRIVATE_KEY_PATH = process.env.WX_PRIVATE_KEY_PATH
@@ -30,6 +31,7 @@ const PRIVATE_KEY_PATH = process.env.WX_PRIVATE_KEY_PATH
     ? path.join(ROOT, `private.${APPID}.key`)
     : ''
 const ONE_OFF_FUNCTIONS = new Set(['init-db'])
+const DEPLOY_RETRY_COUNT = Number(process.env.CLOUD_FUNCTION_DEPLOY_RETRIES) || 3
 
 /** 需要部署的云函数列表（自动发现有 package.json 的目录） */
 function discoverFunctions() {
@@ -48,15 +50,21 @@ function log(msg) { process.stdout.write(msg) }
 function ok()     { console.log(' ✅') }
 function fail(e)  { console.log(` ❌\n  ${e.message || e}`) }
 
-function pnpmInstall(fnName) {
+function validateFunctionPackage(fnName) {
   const dir = path.join(CF_ROOT, fnName)
-  const result = spawnSync('pnpm', ['install', '--silent'], {
-    cwd: dir,
-    stdio: 'pipe',
-    encoding: 'utf8',
-  })
-  if (result.status !== 0) {
-    throw new Error(result.stderr || result.stdout || 'pnpm install failed')
+  const pkgPath = path.join(dir, 'package.json')
+  if (!fs.existsSync(pkgPath)) {
+    throw new Error(`缺少 package.json: ${pkgPath}`)
+  }
+  JSON.parse(fs.readFileSync(pkgPath, 'utf8'))
+}
+
+function hasCompleteLocalDependencies(fnName) {
+  try {
+    require.resolve('wx-server-sdk', { paths: [path.join(CF_ROOT, fnName)] })
+    return true
+  } catch {
+    return false
   }
 }
 
@@ -68,9 +76,10 @@ function buildFnDir(fnName) {
   const srcDir = path.join(CF_ROOT, fnName)
   const sharedSrc = path.join(ROOT, 'shared')
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), `lexue-${fnName}-`))
+  const uploadLocalDependencies = hasCompleteLocalDependencies(fnName)
 
-  // 递归复制函数目录（排除 node_modules）
-  copyDirSync(srcDir, tmpDir, ['node_modules'])
+  // 递归复制函数目录。优先上传本地 node_modules，避免云端 remote npm install 偶发失败。
+  copyDirSync(srcDir, tmpDir, uploadLocalDependencies ? [] : ['node_modules'])
 
   // 把 shared/ 复制进去
   copyDirSync(sharedSrc, path.join(tmpDir, 'shared'))
@@ -78,7 +87,7 @@ function buildFnDir(fnName) {
   // 修正所有 JS 文件里的 require 路径：../../shared/ → ./shared/
   fixRequirePaths(tmpDir)
 
-  return tmpDir
+  return { tmpDir, uploadLocalDependencies }
 }
 
 /** 递归复制目录 */
@@ -90,6 +99,8 @@ function copyDirSync(src, dest, excludes = []) {
     const destPath = path.join(dest, entry.name)
     if (entry.isDirectory()) {
       copyDirSync(srcPath, destPath, excludes)
+    } else if (entry.isSymbolicLink()) {
+      fs.symlinkSync(fs.readlinkSync(srcPath), destPath)
     } else {
       fs.copyFileSync(srcPath, destPath)
     }
@@ -130,21 +141,47 @@ function createFunctionViaAPI(fnName) {
 }
 
 function deployFunction(fnName) {
-  const tmpDir = buildFnDir(fnName)
+  const { tmpDir, uploadLocalDependencies } = buildFnDir(fnName)
   try {
-    const cmd = [
-      'npx', 'miniprogram-ci',
-      'cloud', 'functions', 'upload',
-      '--appid', APPID,
-      '--private-key-path', PRIVATE_KEY_PATH,
-      '--project-path', ROOT,
-      '--env', ENV_ID,
-      '--name', fnName,
-      '--path', tmpDir,
-      '--remote-npm-install',  // 云端自动 npm install，不上传 node_modules
-    ].join(' ')
+    const ciBin = fs.existsSync(LOCAL_MINIPROGRAM_CI) ? LOCAL_MINIPROGRAM_CI : 'npx'
+    const ciArgs = fs.existsSync(LOCAL_MINIPROGRAM_CI)
+      ? [
+        'cloud', 'functions', 'upload',
+        '--appid', APPID,
+        '--private-key-path', PRIVATE_KEY_PATH,
+        '--project-path', ROOT,
+        '--env', ENV_ID,
+        '--name', fnName,
+        '--path', tmpDir,
+        '--remote-npm-install', uploadLocalDependencies ? 'false' : 'true',
+      ]
+      : [
+        'miniprogram-ci',
+        'cloud', 'functions', 'upload',
+        '--appid', APPID,
+        '--private-key-path', PRIVATE_KEY_PATH,
+        '--project-path', ROOT,
+        '--env', ENV_ID,
+        '--name', fnName,
+        '--path', tmpDir,
+        '--remote-npm-install', uploadLocalDependencies ? 'false' : 'true',
+      ]
 
-    execSync(cmd, { cwd: ROOT, stdio: 'pipe' })
+    const result = spawnSync(ciBin, ciArgs, {
+      cwd: ROOT,
+      stdio: 'pipe',
+      encoding: 'utf8',
+    })
+
+    if (result.status !== 0) {
+      throw new Error(
+        [
+          `Command failed: ${ciBin} ${ciArgs.join(' ')}`,
+          result.stderr,
+          result.stdout,
+        ].filter(Boolean).join('\n')
+      )
+    }
   } catch (e) {
     // 如果是函数不存在的错误，给出提示
     if (e.message?.includes('ResourceNotFound.Function')) {
@@ -161,6 +198,39 @@ function deployFunction(fnName) {
     // 无论成败都清理临时目录
     fs.rmSync(tmpDir, { recursive: true, force: true })
   }
+}
+
+function isTransientDeployError(error) {
+  const message = String(error && (error.message || error))
+  return (
+    message.includes('Unexpected end of JSON input') ||
+    message.includes('Empty body') ||
+    message.includes('getaddrinfo ENOTFOUND servicewechat.com') ||
+    message.includes('upload') && message.includes('failed:  {}')
+  )
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+async function deployFunctionWithRetry(fnName) {
+  let lastError = null
+  for (let attempt = 1; attempt <= DEPLOY_RETRY_COUNT; attempt++) {
+    try {
+      deployFunction(fnName)
+      return
+    } catch (e) {
+      lastError = e
+      if (!isTransientDeployError(e) || attempt === DEPLOY_RETRY_COUNT) {
+        throw e
+      }
+      const delayMs = attempt * 3000
+      log(` retry ${attempt}/${DEPLOY_RETRY_COUNT - 1} in ${delayMs / 1000}s...`)
+      await sleep(delayMs)
+    }
+  }
+  throw lastError
 }
 
 // ─── 主流程 ───────────────────────────────────────────────────────────────────
@@ -204,10 +274,10 @@ async function main() {
   const results = { success: [], fail: [] }
 
   for (const fnName of targets) {
-    // Step 1: pnpm install
-    log(`  [${fnName}] pnpm install...`)
+    // Step 1: validate package metadata. Dependencies are installed remotely by miniprogram-ci.
+    log(`  [${fnName}] validate...`)
     try {
-      pnpmInstall(fnName)
+      validateFunctionPackage(fnName)
       log(' ✓  deploy...')
     } catch (e) {
       fail(e)
@@ -217,7 +287,7 @@ async function main() {
 
     // Step 2: 上传云函数
     try {
-      deployFunction(fnName)
+      await deployFunctionWithRetry(fnName)
       ok()
       results.success.push(fnName)
     } catch (e) {

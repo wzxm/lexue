@@ -35,7 +35,7 @@ export default defineAppConfig({
     backgroundColor: '#F5F5F5',
     backgroundTextStyle: 'light',
     navigationBarBackgroundColor: '#FFFFFF',
-    navigationBarTitleText: '乐学课表',
+    navigationBarTitleText: '智鑫课表',
     navigationBarTextStyle: 'black',
   },
   cloud: true,

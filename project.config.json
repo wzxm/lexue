@@ -1,7 +1,7 @@
 {
   "appid": "wx9e61c736ed51e5d1",
   "projectname": "lexue-kebiao",
-  "description": "乐学课表 - 家庭共享课表小程序",
+  "description": "智鑫课表 - 家庭共享课表小程序",
   "miniprogramRoot": "taro-app/dist/",
   "cloudfunctionRoot": "cloudfunctions/",
   "cloudbaseRoot": "cloudfunctions/",
