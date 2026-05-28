@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 项目说明
 
-**乐学课表** taro-app 子目录 — Taro 4.x + React + TypeScript + Zustand + Sass 微信小程序前端。
+**智鑫课表** taro-app 子目录 — Taro 4.x + React + TypeScript + Zustand + Sass 微信小程序前端。
 
 ## 常用命令
 

@@ -436,7 +436,7 @@ export default function SchedulePage () {
           }}
         >
           <View className='nav-title-wrap'>
-            <Text className='nav-title'>😊 欢迎使用乐学课表</Text>
+            <Text className='nav-title'>😊 欢迎使用智鑫课表</Text>
           </View>
         </View>
 

@@ -57,7 +57,7 @@ export default function SettingsPage() {
   const [contactVisible, setContactVisible] = useState(false)
 
   useShareAppMessage(() => ({
-    title: '乐学课表：课程管理、家庭共享、上课提醒',
+    title: '智鑫课表：课程管理、家庭共享、上课提醒',
     path: ROUTES.SCHEDULE,
   }))
 
@@ -323,7 +323,7 @@ export default function SettingsPage() {
       </View>
 
       <View className='version-area'>
-        <Text className='version-text'>乐学课表 v1.0.0</Text>
+        <Text className='version-text'>智鑫课表 v1.0.0</Text>
       </View>
       </View>
 

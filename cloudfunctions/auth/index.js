@@ -20,6 +20,12 @@ const USER_STATUS = {
   DELETED: 'deleted',
 };
 
+const DEFAULT_USER_SETTINGS = {
+  notify_enabled: true,
+  notify_advance_minutes: 30,
+  hide_weekend: true,
+};
+
 function isUserBlocked(user) {
   const status = user && user.status ? user.status : USER_STATUS.ACTIVE;
   return status === USER_STATUS.DISABLED || status === USER_STATUS.DELETED;
@@ -31,9 +37,9 @@ function toUserPayload(user) {
     phone: user.phone || '',
     nickname: user.nickname || '',
     avatarUrl: user.avatar_url || '',
-    settings: user.settings || {
-      notify_enabled: true,
-      notify_advance_minutes: 30,
+    settings: {
+      ...DEFAULT_USER_SETTINGS,
+      ...(user.settings || {}),
     },
   };
 }
@@ -182,10 +188,7 @@ async function resolvePhoneLoginUser(openid, unionid, phone, payload = {}) {
       status: USER_STATUS.ACTIVE,
       nickname: nickname || generateDefaultNickname(),
       avatar_url: avatarUrl || '',
-      settings: {
-        notify_enabled: true,
-        notify_advance_minutes: 30,
-      },
+      settings: DEFAULT_USER_SETTINGS,
       subscribe_tokens: [],
     });
     user = await db.getOne('users', _id);
@@ -222,10 +225,7 @@ async function login(openid, unionid, payload = {}) {
       status: USER_STATUS.ACTIVE,
       nickname: nickname || generateDefaultNickname(),
       avatar_url: avatarUrl || '',
-      settings: {
-        notify_enabled: true,
-        notify_advance_minutes: 30,
-      },
+      settings: DEFAULT_USER_SETTINGS,
       subscribe_tokens: [],
     });
     user = await db.getOne('users', _id);

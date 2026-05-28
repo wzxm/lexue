@@ -26,7 +26,7 @@ export default function FamilyManagePage() {
   const [selectedMember, setSelectedMember] = useState<MemberInfo | null>(null)
 
   useShareAppMessage(() => ({
-    title: `${userInfo?.nickname || '家人'}邀请你加入乐学课表家庭共享`,
+    title: `${userInfo?.nickname || '家人'}邀请你加入智鑫课表家庭共享`,
     path: `${ROUTES.INVITE_ACCEPT}?inviterOpenId=${currentOpenId}`,
   }))
 
