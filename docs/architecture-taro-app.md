@@ -1,8 +1,8 @@
-# 乐学课表 - 前端架构文档（taro-app）
+# 智鑫课表 - 前端架构文档（taro-app）
 
 ## 执行摘要
 
-`taro-app` 是乐学课表的微信小程序前端，基于 Taro 4.x + React 18 构建，使用 TypeScript 开发，Zustand 管理状态，Sass（SCSS）与内联样式处理界面样式。编译产物在 `dist/` 目录，通过微信开发者工具调试和发布。
+`taro-app` 是智鑫课表的微信小程序前端，基于 Taro 4.x + React 18 构建，使用 TypeScript 开发，Zustand 管理状态，Sass（SCSS）与内联样式处理界面样式。编译产物在 `dist/` 目录，通过微信开发者工具调试和发布。
 
 ---
 

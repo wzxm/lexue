@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 项目简介
 
-**乐学课表** — 面向学生家长的微信小程序，用于管理学生课表、家庭成员共享、上课提醒等。
+**智鑫课表** — 面向学生家长的微信小程序，用于管理学生课表、家庭成员共享、上课提醒等。
 
 技术栈：Taro 4.x + React + TypeScript + Zustand + Sass + Tailwind CSS + 微信云开发（wx-server-sdk）
 

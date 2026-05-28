@@ -1,8 +1,8 @@
-# 乐学课表 - 云函数架构文档（cloudfunctions）
+# 智鑫课表 - 云函数架构文档（cloudfunctions）
 
 ## 执行摘要
 
-`cloudfunctions` 是乐学课表的后端，运行在微信云开发 Serverless 平台上。共9个云函数，使用 Node.js 开发，通过 `shared/` 公共模块共享数据库访问、鉴权、错误处理等逻辑。所有业务数据存储在微信云数据库（NoSQL）。
+`cloudfunctions` 是智鑫课表的后端，运行在微信云开发 Serverless 平台上。共9个云函数，使用 Node.js 开发，通过 `shared/` 公共模块共享数据库访问、鉴权、错误处理等逻辑。所有业务数据存储在微信云数据库（NoSQL）。
 
 ---
 
