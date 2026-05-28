@@ -7,6 +7,13 @@ import { useAuthStore } from '../../store/auth.store'
 import { ROUTES } from '../../constants/routes'
 import './index.scss'
 
+const FEATURES = [
+  { icon: '\ue600', label: '家庭共享' },
+  { icon: '\ue696', label: '多孩课表' },
+  { icon: '\ue759', label: '上课提醒' },
+  { icon: '\ue603', label: 'AI 识别' },
+] as const
+
 export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [agreed, setAgreed] = useState(false)
@@ -86,48 +93,72 @@ export default function LoginPage() {
 
   return (
     <View className='login-page'>
-      <View className='brand-area'>
-        <View className='logo-circle'>
-          <Text className='iconfont logo-icon'>{'\ue696'}</Text>
-        </View>
-        <Text className='app-name'>乐学课表</Text>
-        <View className='feature-list'>
-          <Text className='feature-line'>· 家人共享，随时看课表</Text>
-          <Text className='feature-line'>· 放学提醒，接送更准时</Text>
-          <Text className='feature-line'>· 实用工具，起步更稳定</Text>
-        </View>
-      </View>
-
-      <View className='login-area'>
-        <View className='agree-row' onClick={() => setAgreed(!agreed)}>
-          <View className={`agree-check ${agreed ? 'agree-check--on' : ''}`}>
-            {agreed ? <Text className='agree-mark'>✓</Text> : null}
+      <View className='content'>
+        <View className='brand-area'>
+          <View className='logo-icon'>
+            <Text className='iconfont logo-icon-inner'>{'\ue696'}</Text>
           </View>
-          <Text className='agree-text'>
-            我已充分阅读并同意<Text className='agree-text-link'>《课表平台服务协议》</Text>和<Text className='agree-text-link'>《课表隐私政策》</Text>
-          </Text>
+          <Text className='app-name'>乐学课表</Text>
+          <Text className='app-slogan'>让每个家庭的课表管理更轻松</Text>
+
+          <View className='features'>
+            {FEATURES.map(item => (
+              <View key={item.label} className='feature-chip'>
+                <Text className='iconfont feature-chip-icon'>{item.icon}</Text>
+                <Text className='feature-chip-label'>{item.label}</Text>
+              </View>
+            ))}
+          </View>
         </View>
 
-        {isPhoneMode ? (
-          <Button
-            className={`btn-login ${showDisabledStyle ? 'btn-login--disabled' : ''}`}
-            openType='getPhoneNumber'
-            onGetPhoneNumber={onPhoneLogin}
-            loading={loading}
-            disabled={loginDisabled}
-          >
-            {!loading ? <Text className='btn-text'>手机号快捷登录</Text> : null}
-          </Button>
-        ) : (
-          <Button
-            className={`btn-login ${showDisabledStyle ? 'btn-login--disabled' : ''}`}
-            onClick={onWechatLogin}
-            loading={loading}
-            disabled={loginDisabled}
-          >
-            {!loading ? <Text className='btn-text'>微信一键登录</Text> : null}
-          </Button>
-        )}
+        <View className='login-card'>
+          <Text className='login-title'>登录后可管理课表</Text>
+
+          <View className='agreement' onClick={() => setAgreed(!agreed)}>
+            <View className={`checkbox ${agreed ? 'checkbox--checked' : ''}`}>
+              {agreed ? <Text className='checkbox-mark'>✓</Text> : null}
+            </View>
+            <Text className='agreement-text'>
+              我已阅读并同意
+              <Text className='agreement-link'>《用户协议》</Text>
+              和
+              <Text className='agreement-link'>《隐私政策》</Text>
+            </Text>
+          </View>
+
+          {isPhoneMode ? (
+            <Button
+              className={`login-btn ${showDisabledStyle ? 'login-btn--disabled' : ''}`}
+              openType='getPhoneNumber'
+              onGetPhoneNumber={onPhoneLogin}
+              loading={loading}
+              disabled={loginDisabled}
+            >
+              {!loading ? (
+                <View className='login-btn-content'>
+                  <View className='login-btn-icon login-btn-icon--phone' />
+                  <Text className='login-btn-text'>手机号快捷登录</Text>
+                </View>
+              ) : null}
+            </Button>
+          ) : (
+            <Button
+              className={`login-btn ${showDisabledStyle ? 'login-btn--disabled' : ''}`}
+              onClick={onWechatLogin}
+              loading={loading}
+              disabled={loginDisabled}
+            >
+              {!loading ? (
+                <View className='login-btn-content'>
+                  <View className='login-btn-icon login-btn-icon--wechat' />
+                  <Text className='login-btn-text'>微信一键登录</Text>
+                </View>
+              ) : null}
+            </Button>
+          )}
+        </View>
+
+        <Text className='bottom-text'>无需注册账号，基于微信安全登录</Text>
       </View>
     </View>
   )

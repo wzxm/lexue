@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="canvas:aspect-ratio" content="375:812"/>
+<title>05 课表管理 - 乐学课表</title>
+<style>
+:root{--c-brand:#3b82f6;--c-brand-deep:#1456f0;--c-brand-hover:#2563eb;--c-brand-light:#bfdbfe;--c-brand-subtle:#eff6ff;--bg:#f5f6f8;--surface:#ffffff;--surface-muted:#f9fafb;--fg:#1a1a2e;--fg-2:#45515e;--fg-3:#8e8e93;--border:#e5e7eb;--border-light:#f2f3f5;--danger:#ef4444;--success:#16a34a;--warn:#f59e0b;--dark-btn:#181e25;--shadow-sm:0 1px 3px rgba(0,0,0,.06);--shadow-md:0 4px 12px rgba(0,0,0,.06);--r-sm:8px;--r-md:14px;--r-lg:20px;--r-xl:24px;--r-pill:999px;--ff:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif;--ff-mono:ui-monospace,'SF Mono',Menlo,monospace;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{background:#e8eaed;display:grid;place-items:center;font-family:var(--ff);-webkit-font-smoothing:antialiased;}
+.phone{position:relative;width:375px;height:812px;background:var(--bg);border-radius:44px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.18),0 0 0 1px rgba(0,0,0,.05);display:flex;flex-direction:column;}
+
+/* Status bar */
+.statusbar{flex:0 0 44px;padding:14px 24px 0;display:flex;align-items:flex-start;justify-content:space-between;font-size:14px;font-weight:600;color:var(--fg);background:var(--surface);}
+.statusbar .right{display:flex;align-items:center;gap:5px;}
+.statusbar svg{width:16px;height:10px;fill:var(--fg);}
+.statusbar .battery{width:24px;}
+
+/* Nav bar */
+.nav{flex:0 0 48px;padding:0 16px;display:flex;align-items:center;justify-content:space-between;background:var(--surface);border-bottom:1px solid var(--border-light);}
+.nav-back{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;cursor:pointer;}
+.nav-back svg{width:20px;height:20px;stroke:var(--fg);fill:none;stroke-width:2;}
+.nav h1{font-size:16px;font-weight:600;color:var(--fg);letter-spacing:-.01em;}
+.nav-action{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;cursor:pointer;}
+.nav-action svg{width:18px;height:18px;stroke:var(--fg-2);fill:none;stroke-width:1.8;}
+
+.content{flex:1;overflow-y:auto;padding:12px 16px 32px;}
+.content::-webkit-scrollbar{display:none;}
+
+/* Tip card */
+.tip-card{background:var(--surface-muted);border:1px solid var(--border-light);border-radius:var(--r-md);padding:14px 16px;margin-bottom:16px;}
+.tip-item{display:flex;align-items:flex-start;gap:8px;margin-bottom:8px;}
+.tip-item:last-child{margin-bottom:0;}
+.tip-dot{width:5px;height:5px;border-radius:50%;background:var(--fg-3);flex-shrink:0;margin-top:6px;}
+.tip-item p{font-size:12.5px;color:var(--fg-2);line-height:1.55;}
+
+/* Summary row */
+.summary-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding:0 2px;}
+.summary-count{font-size:13px;font-weight:600;color:var(--fg-2);letter-spacing:.01em;}
+.summary-link{font-size:13px;font-weight:500;color:var(--c-brand);cursor:pointer;display:flex;align-items:center;gap:4px;transition:.15s;}
+.summary-link:hover{color:var(--c-brand-hover);}
+.summary-link svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;}
+
+/* Schedule card */
+.schedule-card{background:var(--surface);border-radius:var(--r-lg);padding:16px;box-shadow:var(--shadow-sm);margin-bottom:8px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:.15s;}
+.schedule-card:active{transform:scale(.98);}
+.schedule-info{flex:1;min-width:0;}
+.schedule-title{font-size:14.5px;font-weight:600;color:var(--fg);margin-bottom:3px;letter-spacing:-.01em;}
+.schedule-meta{font-size:12px;color:var(--fg-3);display:flex;align-items:center;gap:4px;}
+.schedule-meta .dot{width:3px;height:3px;border-radius:50%;background:var(--fg-3);opacity:.5;}
+.schedule-actions{display:flex;gap:6px;flex-shrink:0;}
+.sch-action{width:32px;height:32px;border-radius:50%;background:var(--surface-muted);display:grid;place-items:center;cursor:pointer;border:1px solid var(--border-light);transition:.15s;}
+.sch-action:hover{background:var(--c-brand-subtle);border-color:var(--c-brand-light);}
+.sch-action svg{width:14px;height:14px;stroke:var(--fg-3);fill:none;stroke-width:1.8;}
+.sch-action.share:hover svg{stroke:var(--c-brand);}
+.sch-action.danger:hover{background:#fef2f2;border-color:#fecaca;}
+.sch-action.danger:hover svg{stroke:var(--danger);}
+
+/* Group header */
+.group-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding:0 2px;}
+.group-title{font-size:13px;font-weight:600;color:var(--fg-2);letter-spacing:.02em;}
+.group-count{font-size:11px;color:var(--fg-3);font-family:var(--ff-mono);}
+.section-gap{height:16px;}
+
+/* CTA button */
+.cta-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px 20px;background:var(--c-brand);color:#fff;border:none;border-radius:var(--r-md);font-size:15px;font-weight:600;cursor:pointer;box-shadow:var(--shadow-brand);transition:.2s;letter-spacing:-.01em;margin-top:20px;}
+.cta-btn:hover{background:var(--c-brand-hover);box-shadow:0 6px 20px rgba(59,130,246,.2);}
+.cta-btn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;}
+</style>
+</head>
+<body>
+<main class="phone" data-component="Schedule Manage">
+  <!-- Status bar -->
+  <div class="statusbar">
+    <span>10:18</span>
+    <span class="right">
+      <svg viewBox="0 0 17 11"><rect x="0" y="7" width="3" height="4" rx=".6"/><rect x="4" y="5" width="3" height="6" rx=".6"/><rect x="8" y="3" width="3" height="8" rx=".6"/><rect x="12" y="0" width="3" height="11" rx=".6"/></svg>
+      <svg viewBox="0 0 17 11"><path d="M8.5 1.5C5.5 1.5 2.7 2.6.5 4.6L2 6.1c1.8-1.6 4.1-2.5 6.5-2.5 2.4 0 4.7.9 6.5 2.5l1.5-1.5c-2.2-2-5-3.1-8-3.1zM3.5 7.6 5 9.1c1-.9 2.2-1.4 3.5-1.4 1.3 0 2.5.5 3.5 1.4l1.5-1.5c-1.4-1.3-3.1-2-5-2-1.9 0-3.6.7-5 2zM6.5 10.6l2 2 2-2c-.5-.5-1.2-.8-2-.8s-1.5.3-2 .8z"/></svg>
+      <svg class="battery" viewBox="0 0 25 11"><rect x=".5" y=".5" width="21" height="10" rx="2.5" fill="none" stroke="currentColor" stroke-opacity=".45"/><rect x="22" y="3.5" width="1.5" height="4" rx=".4" fill="currentColor" fill-opacity=".45"/><rect x="2" y="2" width="18" height="7" rx="1.4"/></svg>
+    </span>
+  </div>
+
+  <!-- Nav bar -->
+  <div class="nav" data-component="Navigation Bar">
+    <div class="nav-back"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div>
+    <h1>课表管理</h1>
+    <div class="nav-action">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.5" fill="currentColor" stroke="none"/></svg>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="content">
+    <!-- Tip card -->
+    <div class="tip-card" data-component="Tip Card">
+      <div class="tip-item">
+        <div class="tip-dot"></div>
+        <p>支持多位学生的课表管理，适用于多孩家庭。</p>
+      </div>
+      <div class="tip-item">
+        <div class="tip-dot"></div>
+        <p>家人共享的课表支持共同维护，修改后会同步给所有相关家人。</p>
+      </div>
+    </div>
+
+    <!-- Summary row -->
+    <div class="summary-row" data-component="Summary Row">
+      <span class="summary-count">共 3 份课表</span>
+      <span class="summary-link">
+        <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        学生管理
+      </span>
+    </div>
+
+    <!-- Schedule list -->
+    <div data-component="Schedule List">
+      <!-- 小明的课表 -->
+      <div class="group-header">
+        <span class="group-title">小明的课表</span>
+        <span class="group-count">2 份</span>
+      </div>
+
+      <div class="schedule-card">
+        <div class="schedule-info">
+          <div class="schedule-title">2025～2026 下学期</div>
+          <div class="schedule-meta">
+            <span>20周</span>
+            <span class="dot"></span>
+            <span>创建于 2026-05-28</span>
+          </div>
+        </div>
+        <div class="schedule-actions">
+          <div class="sch-action share" aria-label="分享">
+            <svg viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+          </div>
+          <div class="sch-action danger" aria-label="删除">
+            <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="schedule-card">
+        <div class="schedule-info">
+          <div class="schedule-title">2024～2025 上学期</div>
+          <div class="schedule-meta">
+            <span>18周</span>
+            <span class="dot"></span>
+            <span>已归档</span>
+          </div>
+        </div>
+        <div class="schedule-actions">
+          <div class="sch-action share" aria-label="分享">
+            <svg viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+          </div>
+          <div class="sch-action danger" aria-label="删除">
+            <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-gap"></div>
+
+      <!-- 小红的课表 -->
+      <div class="group-header">
+        <span class="group-title">小红的课表</span>
+        <span class="group-count">1 份</span>
+      </div>
+
+      <div class="schedule-card">
+        <div class="schedule-info">
+          <div class="schedule-title">2025～2026 下学期</div>
+          <div class="schedule-meta">
+            <span>20周</span>
+            <span class="dot"></span>
+            <span>创建于 2026-05-20</span>
+          </div>
+        </div>
+        <div class="schedule-actions">
+          <div class="sch-action share" aria-label="分享">
+            <svg viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+          </div>
+          <div class="sch-action danger" aria-label="删除">
+            <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CTA -->
+    <button class="cta-btn" data-component="Add Schedule Button">
+      <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+      新增课表
+    </button>
+  </div>
+</main>
+</body>
+
+</html>

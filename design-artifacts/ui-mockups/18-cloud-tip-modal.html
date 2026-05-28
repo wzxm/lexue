@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="canvas:aspect-ratio" content="375:812"/>
+<title>18 底部提示面板 - 乐学课表</title>
+<style>
+:root{--c-brand:#3b82f6;--c-brand-deep:#1456f0;--c-brand-hover:#2563eb;--c-brand-light:#bfdbfe;--c-brand-subtle:#eff6ff;--bg:#f5f6f8;--surface:#ffffff;--surface-muted:#f9fafb;--fg:#1a1a2e;--fg-2:#45515e;--fg-3:#8e8e93;--border:#e5e7eb;--border-light:#f2f3f5;--danger:#ef4444;--success:#16a34a;--warn:#f59e0b;--dark-btn:#181e25;--shadow-sm:0 1px 3px rgba(0,0,0,.06);--shadow-md:0 4px 12px rgba(0,0,0,.06);--r-sm:8px;--r-md:14px;--r-lg:20px;--r-xl:24px;--r-pill:999px;--ff:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif;--ff-mono:ui-monospace,'SF Mono',Menlo,monospace;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{background:#e8eaed;display:grid;place-items:center;font-family:var(--ff);-webkit-font-smoothing:antialiased;}
+
+.phone{position:relative;width:375px;height:812px;background:var(--bg);border-radius:44px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.18),0 0 0 1px rgba(0,0,0,.05);display:flex;flex-direction:column;}
+
+/* Status bar */
+.statusbar{flex:0 0 44px;padding:14px 24px 0;display:flex;align-items:flex-start;justify-content:space-between;font-size:14px;font-weight:600;color:var(--fg);background:var(--c-brand);}
+.statusbar .right{display:flex;align-items:center;gap:5px;}
+.statusbar svg{width:16px;height:10px;fill:#fff;}
+.statusbar span{color:#fff;}
+.statusbar .battery{width:24px;}
+
+/* Nav bar */
+.navbar{flex:0 0 auto;padding:4px 16px 14px;background:var(--c-brand);color:#fff;}
+.nav-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.nav-title{font-size:17px;font-weight:600;letter-spacing:-.01em;}
+.nav-actions{display:flex;gap:8px;}
+.nav-actions button{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.18);border:none;color:#fff;display:grid;place-items:center;cursor:pointer;}
+.nav-actions svg{width:18px;height:18px;stroke:#fff;fill:none;stroke-width:1.8;}
+.student-row{display:flex;align-items:center;gap:8px;}
+.student-avatar{width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.25);border:1.5px solid rgba(255,255,255,.4);display:grid;place-items:center;font-size:12px;color:#fff;}
+.student-name{font-size:14px;font-weight:500;opacity:.92;}
+.schedule-tag{padding:3px 10px;background:rgba(255,255,255,.2);border-radius:var(--r-pill);font-size:11px;color:#fff;margin-left:auto;}
+
+/* Week tabs */
+.week-tabs{flex:0 0 auto;display:flex;padding:10px 16px 6px;gap:4px;background:var(--bg);}
+.week-tab{flex:1;text-align:center;padding:6px 0;border-radius:var(--r-sm);font-size:12px;color:var(--fg-3);cursor:pointer;}
+.week-tab.active{background:var(--c-brand);color:#fff;font-weight:600;}
+.week-tab .day{font-weight:500;margin-bottom:2px;font-size:13px;}
+.week-tab .date{font-size:10px;opacity:.7;}
+
+/* Content (behind overlay) */
+.content{flex:1;overflow-y:auto;padding:0 12px 16px;}
+.content::-webkit-scrollbar{display:none;}
+.schedule-card{background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--shadow-sm);overflow:hidden;}
+.grid-header{display:grid;grid-template-columns:44px repeat(5,1fr);border-bottom:1px solid var(--border-light);}
+.grid-header .time-col{padding:8px 4px;font-size:10px;color:var(--fg-3);text-align:center;font-family:var(--ff-mono);}
+.grid-header .day-col{padding:8px 2px;text-align:center;}
+.grid-header .day-col .name{font-size:12px;font-weight:500;color:var(--fg-2);}
+.grid-header .day-col .num{font-size:10px;color:var(--fg-3);font-family:var(--ff-mono);}
+.grid-header .day-col.today{background:var(--c-brand-subtle);border-radius:var(--r-sm) var(--r-sm) 0 0;}
+.grid-header .day-col.today .name{color:var(--c-brand);font-weight:600;}
+.grid-body{display:grid;grid-template-columns:44px repeat(5,1fr);}
+.time-slot{padding:6px 4px;font-size:10px;color:var(--fg-3);text-align:center;font-family:var(--ff-mono);border-bottom:1px solid var(--border-light);display:flex;flex-direction:column;align-items:center;padding-top:8px;}
+.time-slot .period{font-size:11px;font-weight:600;color:var(--fg-2);}
+.course-cell{padding:3px;border-bottom:1px solid var(--border-light);min-height:54px;}
+.course-chip{border-radius:var(--r-sm);padding:4px 6px;font-size:10px;line-height:1.35;height:100%;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden;}
+.course-chip::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2.5px;border-radius:0 2px 2px 0;}
+.course-chip .name{font-weight:600;font-size:10.5px;margin-bottom:1px;}
+.course-chip .room{font-size:9px;opacity:.7;}
+.c-blue{background:#eff6ff;color:#1d4ed8;}.c-blue::before{background:#3b82f6;}
+.c-green{background:#f0fdf4;color:#15803d;}.c-green::before{background:#22c55e;}
+.c-orange{background:#fff7ed;color:#c2410c;}.c-orange::before{background:#f97316;}
+.c-rose{background:#fff1f2;color:#be123c;}.c-rose::before{background:#f43f5e;}
+.c-teal{background:#f0fdfa;color:#0f766e;}.c-teal::before{background:#14b8a6;}
+
+/* ─── Bottom Sheet Modal (CloudTipModal) ─── */
+.overlay{position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.4);z-index:10;}
+
+.bottom-sheet{position:absolute;left:0;right:0;bottom:0;z-index:11;background:var(--surface);border-radius:20px 20px 0 0;padding:48px 28px 60px;animation:slideUp .3s ease;}
+
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+
+/* Handle bar */
+.sheet-handle{position:absolute;top:10px;left:50%;transform:translateX(-50%);width:36px;height:4px;background:var(--border);border-radius:999px;}
+
+/* Close button */
+.sheet-close{position:absolute;top:14px;right:14px;width:32px;height:32px;border-radius:50%;background:var(--surface-muted);border:1px solid var(--border-light);display:grid;place-items:center;cursor:pointer;color:var(--fg-3);font-size:16px;line-height:1;transition:.15s;}
+.sheet-close:hover{background:var(--border-light);color:var(--fg-2);}
+.sheet-close svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;}
+
+/* Sheet content */
+.sheet-title{font-size:18px;font-weight:600;color:var(--fg);text-align:center;margin-bottom:16px;letter-spacing:-.01em;line-height:1.3;}
+.sheet-body{font-size:14px;color:var(--fg-2);line-height:1.7;margin-bottom:24px;}
+.sheet-body strong{color:var(--fg);font-weight:500;}
+
+/* Variants shown side by side */
+.variant-label{font-size:10px;font-family:var(--ff-mono);color:var(--fg-3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;text-align:center;}
+
+/* Variant: update notice */
+.sheet-title.with-icon{display:flex;align-items:center;justify-content:center;gap:8px;}
+.sheet-title.with-icon svg{width:20px;height:20px;stroke:var(--c-brand);fill:none;stroke-width:1.8;}
+
+/* Variant: tip with steps */
+.tip-steps{margin:12px 0 20px;display:flex;flex-direction:column;gap:10px;}
+.tip-step{display:flex;align-items:flex-start;gap:10px;}
+.step-num{width:22px;height:22px;border-radius:50%;background:var(--c-brand-subtle);color:var(--c-brand);display:grid;place-items:center;font-size:11px;font-weight:700;font-family:var(--ff-mono);flex-shrink:0;margin-top:1px;}
+.step-text{font-size:13px;color:var(--fg-2);line-height:1.5;}
+
+/* Home indicator */
+.home-ind{height:0;position:relative;z-index:12;}
+.home-ind::after{content:'';position:absolute;left:50%;bottom:6px;transform:translateX(-50%);width:134px;height:5px;background:var(--fg);border-radius:999px;opacity:.18;}
+
+/* Tab bar (visible behind overlay, dimmed) */
+.tabbar{flex:0 0 auto;display:grid;grid-template-columns:repeat(3,1fr);padding:6px 8px 20px;border-top:1px solid var(--border-light);background:rgba(255,255,255,.92);backdrop-filter:blur(16px);opacity:.5;}
+.tab{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;color:var(--fg-3);font-size:10px;letter-spacing:.02em;}
+.tab.active{color:var(--c-brand);}
+.tab svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.7;}
+.tab.active svg{stroke-width:2;}
+</style>
+</head>
+<body>
+<main class="phone" data-component="Bottom Sheet Tip Modal">
+  <!-- Status bar -->
+  <div class="statusbar">
+    <span>9:41</span>
+    <span class="right">
+      <svg viewBox="0 0 17 11"><rect x="0" y="7" width="3" height="4" rx=".6"/><rect x="4" y="5" width="3" height="6" rx=".6"/><rect x="8" y="3" width="3" height="8" rx=".6"/><rect x="12" y="0" width="3" height="11" rx=".6"/></svg>
+      <svg viewBox="0 0 17 11"><path d="M8.5 1.5C5.5 1.5 2.7 2.6.5 4.6L2 6.1c1.8-1.6 4.1-2.5 6.5-2.5 2.4 0 4.7.9 6.5 2.5l1.5-1.5c-2.2-2-5-3.1-8-3.1zM3.5 7.6 5 9.1c1-.9 2.2-1.4 3.5-1.4 1.3 0 2.5.5 3.5 1.4l1.5-1.5c-1.4-1.3-3.1-2-5-2-1.9 0-3.6.7-5 2zM6.5 10.6l2 2 2-2c-.5-.5-1.2-.8-2-.8s-1.5.3-2 .8z"/></svg>
+      <svg class="battery" viewBox="0 0 25 11"><rect x=".5" y=".5" width="21" height="10" rx="2.5" fill="none" stroke="#fff" stroke-opacity=".45"/><rect x="22" y="3.5" width="1.5" height="4" rx=".4" fill="#fff" fill-opacity=".45"/><rect x="2" y="2" width="18" height="7" rx="1.4" fill="#fff"/></svg>
+    </span>
+  </div>
+
+  <!-- Nav bar -->
+  <div class="navbar">
+    <div class="nav-top">
+      <span class="nav-title">乐学课表</span>
+      <div class="nav-actions">
+        <button aria-label="AI识别"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z"/><path d="M12 8v4l3 3"/></svg></button>
+        <button aria-label="添加课程"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+      </div>
+    </div>
+    <div class="student-row">
+      <div class="student-avatar">明</div>
+      <span class="student-name">小明</span>
+      <span class="schedule-tag">2025春季学期</span>
+    </div>
+  </div>
+
+  <!-- Week tabs -->
+  <div class="week-tabs">
+    <div class="week-tab"><div class="day">一</div><div class="date num">26</div></div>
+    <div class="week-tab active"><div class="day">二</div><div class="date num">27</div></div>
+    <div class="week-tab"><div class="day">三</div><div class="date num">28</div></div>
+    <div class="week-tab"><div class="day">四</div><div class="date num">29</div></div>
+    <div class="week-tab"><div class="day">五</div><div class="date num">30</div></div>
+  </div>
+
+  <!-- Schedule content (behind overlay) -->
+  <div class="content">
+    <div class="schedule-card">
+      <div class="grid-header">
+        <div class="time-col"></div>
+        <div class="day-col"><div class="name">一</div><div class="num">26</div></div>
+        <div class="day-col today"><div class="name">二</div><div class="num">27</div></div>
+        <div class="day-col"><div class="name">三</div><div class="num">28</div></div>
+        <div class="day-col"><div class="name">四</div><div class="num">29</div></div>
+        <div class="day-col"><div class="name">五</div><div class="num">30</div></div>
+      </div>
+      <div class="grid-body">
+        <div class="time-slot"><span class="period">1</span>08:00</div>
+        <div class="course-cell"><div class="course-chip c-blue"><span class="name">语文</span><span class="room">301</span></div></div>
+        <div class="course-cell"><div class="course-chip c-green"><span class="name">数学</span><span class="room">301</span></div></div>
+        <div class="course-cell"><div class="course-chip c-blue"><span class="name">语文</span><span class="room">301</span></div></div>
+        <div class="course-cell"><div class="course-chip c-rose"><span class="name">美术</span><span class="room">美术室</span></div></div>
+        <div class="course-cell"><div class="course-chip c-green"><span class="name">数学</span><span class="room">301</span></div></div>
+        <div class="time-slot"><span class="period">2</span>08:50</div>
+        <div class="course-cell"><div class="course-chip c-green"><span class="name">数学</span><span class="room">301</span></div></div>
+        <div class="course-cell"><div class="course-chip c-blue"><span class="name">语文</span><span class="room">301</span></div></div>
+        <div class="course-cell"><div class="course-chip c-orange"><span class="name">科学</span><span class="room">实验室</span></div></div>
+        <div class="course-cell"><div class="course-chip c-green"><span class="name">数学</span><span class="room">301</span></div></div>
+        <div class="course-cell"><div class="course-chip c-blue"><span class="name">语文</span><span class="room">301</span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab bar (dimmed behind overlay) -->
+  <nav class="tabbar">
+    <div class="tab active"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 4V2M16 4V2"/></svg>课表</div>
+    <div class="tab"><svg viewBox="0 0 24 24"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>工具</div>
+    <div class="tab"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>设置</div>
+  </nav>
+
+  <!-- Overlay -->
+  <div class="overlay" data-component="Overlay"></div>
+
+  <!-- Bottom Sheet (CloudTipModal component) -->
+  <div class="bottom-sheet" data-component="Bottom Sheet Tip">
+    <div class="sheet-handle"></div>
+    <button class="sheet-close" aria-label="关闭">
+      <svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+
+    <div class="sheet-title with-icon">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+      课表更新提醒
+    </div>
+
+    <div class="sheet-body">
+      <p style="margin-bottom:12px;">学校教务处发布了<strong>下周课表调整通知</strong>，以下课程有变动：</p>
+      <div class="tip-steps">
+        <div class="tip-step">
+          <div class="step-num">1</div>
+          <div class="step-text"><strong>周三第3节</strong>：英语 → 科学（临时调课）</div>
+        </div>
+        <div class="tip-step">
+          <div class="step-num">2</div>
+          <div class="step-text"><strong>周五第5节</strong>：体育课改为室内活动（天气原因）</div>
+        </div>
+        <div class="tip-step">
+          <div class="step-num">3</div>
+          <div class="step-text">以上调整<strong>仅影响下周</strong>，之后恢复原课表</div>
+        </div>
+      </div>
+      <p style="font-size:12px;color:var(--fg-3);">你可以在课表管理中查看详细变动记录，或联系班主任确认。</p>
+    </div>
+  </div>
+
+  <div class="home-ind"></div>
+</main>
+</body>
+</html>

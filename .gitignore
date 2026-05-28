@@ -16,3 +16,6 @@ qrcode.jpg
 
 # 环境变量
 .env
+
+# Qoder 工作树
+.qoder/

@@ -156,6 +156,14 @@
   display: block;
 }
 
+.section-hint {
+  font-size: 24px;
+  color: var(--color-text-gray);
+  line-height: 1.5;
+  padding: 0 32px 28px;
+  margin-top: -6px;
+}
+
 .list-item {
   display: flex;
   align-items: center;
@@ -318,8 +326,9 @@
   box-shadow: none;
 }
 
-.save-btn--loading {
-  background: var(--color-primary-light);
+.save-btn[loading='true'] {
+  background: var(--color-dark-btn);
+  color: #FFFFFF;
 }
 
 .save-btn::after {

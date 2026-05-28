@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="canvas:aspect-ratio" content="375:812"/>
+<title>01b 无课表缺省页 - 乐学课表</title>
+<style>
+:root{
+  --c-brand:#3b82f6;--c-brand-deep:#1456f0;--c-brand-hover:#2563eb;
+  --c-brand-light:#bfdbfe;--c-brand-subtle:#eff6ff;
+  --bg:#f5f6f8;--surface:#ffffff;--surface-muted:#f9fafb;
+  --fg:#1a1a2e;--fg-2:#45515e;--fg-3:#8e8e93;
+  --border:#e5e7eb;--border-light:#f2f3f5;
+  --danger:#ef4444;--success:#16a34a;--warn:#f59e0b;
+  --dark-btn:#181e25;
+  --shadow-sm:0 1px 3px rgba(0,0,0,.06);
+  --shadow-md:0 4px 12px rgba(0,0,0,.06);
+  --shadow-brand:0 4px 16px rgba(59,130,246,.12);
+  --r-sm:8px;--r-md:14px;--r-lg:20px;--r-xl:24px;--r-pill:999px;
+  --ff:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif;
+  --ff-mono:ui-monospace,'SF Mono',Menlo,monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{background:#e8eaed;display:grid;place-items:center;font-family:var(--ff);-webkit-font-smoothing:antialiased;}
+
+/* Device */
+.phone{position:relative;width:375px;height:812px;background:var(--bg);border-radius:44px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.18),0 0 0 1px rgba(0,0,0,.05);display:flex;flex-direction:column;}
+
+/* Status bar */
+.statusbar{flex:0 0 44px;padding:14px 24px 0;display:flex;align-items:flex-start;justify-content:space-between;font-size:14px;font-weight:600;color:var(--fg);background:linear-gradient(180deg,var(--c-brand) 0%,var(--c-brand-deep) 100%);}
+.statusbar .right{display:flex;align-items:center;gap:5px;}
+.statusbar svg{width:16px;height:10px;fill:#fff;}
+.statusbar span{color:#fff;}
+
+/* Nav bar */
+.navbar{flex:0 0 auto;padding:4px 16px 14px;background:linear-gradient(180deg,var(--c-brand-deep) 0%,#2a6df5 60%,var(--c-brand) 100%);color:#fff;}
+.nav-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.nav-title{font-size:17px;font-weight:600;letter-spacing:-.01em;}
+.nav-actions{display:flex;gap:8px;}
+.nav-actions button{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.18);border:none;color:#fff;display:grid;place-items:center;cursor:pointer;}
+.nav-actions svg{width:18px;height:18px;stroke:#fff;fill:none;stroke-width:1.8;}
+.student-row{display:flex;align-items:center;gap:8px;}
+.student-avatar{width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.25);border:1.5px solid rgba(255,255,255,.4);display:grid;place-items:center;font-size:12px;color:#fff;}
+.student-name{font-size:14px;font-weight:500;opacity:.92;}
+.schedule-tag{padding:3px 10px;background:rgba(255,255,255,.2);border-radius:var(--r-pill);font-size:11px;color:#fff;margin-left:auto;letter-spacing:.02em;}
+
+/* Empty state content */
+.empty-content{flex:1;overflow-y:auto;display:flex;flex-direction:column;padding:0 20px 16px;}
+.empty-content::-webkit-scrollbar{display:none;}
+
+/* Illustration */
+.illust-area{display:flex;flex-direction:column;align-items:center;padding:32px 0 20px;}
+.illust-circle{width:120px;height:120px;border-radius:50%;background:linear-gradient(135deg,var(--c-brand-subtle) 0%,#dbeafe 100%);display:grid;place-items:center;margin-bottom:20px;position:relative;}
+.illust-circle::after{content:'';position:absolute;inset:-6px;border-radius:50%;border:2px dashed var(--c-brand-light);opacity:.5;}
+.illust-circle svg{width:56px;height:56px;stroke:var(--c-brand);fill:none;stroke-width:1.4;}
+.welcome-title{font-size:18px;font-weight:700;color:var(--fg);letter-spacing:-.02em;margin-bottom:6px;text-align:center;}
+.welcome-desc{font-size:13px;color:var(--fg-3);text-align:center;line-height:1.5;max-width:260px;}
+
+/* Feature cards */
+.features{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:24px;}
+.feature-card{background:var(--surface);border-radius:var(--r-md);padding:14px 12px;box-shadow:var(--shadow-sm);border:1px solid var(--border-light);display:flex;flex-direction:column;gap:8px;transition:.2s;}
+.feature-card:hover{box-shadow:var(--shadow-md);border-color:var(--c-brand-light);}
+.feature-icon{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;}
+.feature-icon svg{width:18px;height:18px;stroke:#fff;fill:none;stroke-width:1.8;}
+.fi-blue{background:linear-gradient(135deg,#3b82f6,#2563eb);}
+.fi-teal{background:linear-gradient(135deg,#14b8a6,#0d9488);}
+.fi-amber{background:linear-gradient(135deg,#f59e0b,#d97706);}
+.fi-rose{background:linear-gradient(135deg,#f43f5e,#e11d48);}
+.feature-title{font-size:13px;font-weight:600;color:var(--fg);letter-spacing:-.01em;}
+.feature-desc{font-size:11px;color:var(--fg-3);line-height:1.4;}
+
+/* CTA */
+.cta-area{margin-top:auto;padding-bottom:8px;}
+.cta-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px 20px;background:var(--dark-btn);color:#fff;border:none;border-radius:var(--r-md);font-size:15px;font-weight:600;cursor:pointer;box-shadow:0 4px 20px rgba(24,30,37,.18);transition:.2s;letter-spacing:-.01em;}
+.cta-btn:hover{background:#232b36;box-shadow:0 6px 24px rgba(24,30,37,.24);}
+.cta-btn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;}
+.cta-hint{text-align:center;margin-top:10px;font-size:11px;color:var(--fg-3);}
+.cta-hint span{color:var(--c-brand);font-weight:500;}
+
+/* Quick actions */
+.quick-actions{display:flex;justify-content:center;gap:20px;margin-bottom:20px;}
+.quick-action{display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;}
+.quick-action .qa-icon{width:44px;height:44px;border-radius:50%;background:var(--surface);border:1px solid var(--border-light);display:grid;place-items:center;box-shadow:var(--shadow-sm);transition:.15s;}
+.quick-action .qa-icon:hover{border-color:var(--c-brand-light);background:var(--c-brand-subtle);}
+.quick-action .qa-icon svg{width:20px;height:20px;stroke:var(--fg-2);fill:none;stroke-width:1.7;}
+.quick-action .qa-label{font-size:11px;color:var(--fg-3);font-weight:500;}
+
+/* Bottom tab bar */
+.tabbar{flex:0 0 auto;display:grid;grid-template-columns:repeat(3,1fr);padding:6px 8px 20px;border-top:1px solid var(--border-light);background:rgba(255,255,255,.92);backdrop-filter:blur(16px);}
+.tab{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;color:var(--fg-3);font-size:10px;letter-spacing:.02em;cursor:pointer;}
+.tab.active{color:var(--c-brand);}
+.tab svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.7;}
+.tab.active svg{stroke-width:2;}
+
+/* Home indicator */
+.home-ind{height:0;position:relative;}
+.home-ind::after{content:'';position:absolute;left:50%;bottom:6px;transform:translateX(-50%);width:134px;height:5px;background:var(--fg);border-radius:999px;opacity:.18;}
+</style>
+</head>
+<body>
+<main class="phone" data-component="Schedule Empty State">
+  <!-- Status bar -->
+  <div class="statusbar">
+    <span>9:41</span>
+    <span class="right">
+      <svg viewBox="0 0 17 11"><rect x="0" y="7" width="3" height="4" rx=".6"/><rect x="4" y="5" width="3" height="6" rx=".6"/><rect x="8" y="3" width="3" height="8" rx=".6"/><rect x="12" y="0" width="3" height="11" rx=".6"/></svg>
+      <svg viewBox="0 0 17 11"><path d="M8.5 1.5C5.5 1.5 2.7 2.6.5 4.6L2 6.1c1.8-1.6 4.1-2.5 6.5-2.5 2.4 0 4.7.9 6.5 2.5l1.5-1.5c-2.2-2-5-3.1-8-3.1zM3.5 7.6 5 9.1c1-.9 2.2-1.4 3.5-1.4 1.3 0 2.5.5 3.5 1.4l1.5-1.5c-1.4-1.3-3.1-2-5-2-1.9 0-3.6.7-5 2zM6.5 10.6l2 2 2-2c-.5-.5-1.2-.8-2-.8s-1.5.3-2 .8z"/></svg>
+      <svg style="width:24px" viewBox="0 0 25 11"><rect x=".5" y=".5" width="21" height="10" rx="2.5" fill="none" stroke="#fff" stroke-opacity=".45"/><rect x="22" y="3.5" width="1.5" height="4" rx=".4" fill="#fff" fill-opacity=".45"/><rect x="2" y="2" width="18" height="7" rx="1.4" fill="#fff"/></svg>
+    </span>
+  </div>
+
+  <!-- Nav bar -->
+  <div class="navbar" data-component="Navigation Bar">
+    <div class="nav-top">
+      <span class="nav-title">乐学课表</span>
+      <div class="nav-actions">
+        <button aria-label="AI识别">
+          <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z"/><path d="M12 8v4l3 3"/></svg>
+        </button>
+        <button aria-label="添加课程">
+          <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="student-row">
+      <div class="student-avatar">明</div>
+      <span class="student-name">小明</span>
+      <span class="schedule-tag">2025春季学期</span>
+    </div>
+  </div>
+
+  <!-- Empty state content -->
+  <div class="empty-content" data-component="Empty State">
+    <!-- Illustration -->
+    <div class="illust-area">
+      <div class="illust-circle">
+        <svg viewBox="0 0 24 24">
+          <rect x="3" y="4" width="18" height="16" rx="2"/>
+          <path d="M3 10h18"/>
+          <path d="M8 4V2M16 4V2"/>
+          <path d="M12 14v4M10 16h4" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="welcome-title">还没有课表哦</div>
+      <div class="welcome-desc">为孩子创建一份课程表，轻松管理每周的课程安排和提醒</div>
+    </div>
+
+    <!-- Feature highlights -->
+    <div class="features" data-component="Feature Cards">
+      <div class="feature-card">
+        <div class="feature-icon fi-blue">
+          <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        </div>
+        <div class="feature-title">微信通知</div>
+        <div class="feature-desc">提前提醒家人接送</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon fi-teal">
+          <svg viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+        </div>
+        <div class="feature-title">课表共享</div>
+        <div class="feature-desc">家人随时查看孩子课程</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon fi-amber">
+          <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 4V2M16 4V2"/><path d="M9 16l2 2 4-4"/></svg>
+        </div>
+        <div class="feature-title">课周定位</div>
+        <div class="feature-desc">不怕单双周记不住</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon fi-rose">
+          <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <div class="feature-title">多孩管理</div>
+        <div class="feature-desc">多个孩子课表轻松管理</div>
+      </div>
+    </div>
+
+    <!-- Quick actions -->
+    <div class="quick-actions" data-component="Quick Actions">
+      <div class="quick-action">
+        <div class="qa-icon">
+          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        </div>
+        <span class="qa-label">拍照导入</span>
+      </div>
+      <div class="quick-action">
+        <div class="qa-icon">
+          <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+        </div>
+        <span class="qa-label">邀请家人</span>
+      </div>
+      <div class="quick-action">
+        <div class="qa-icon">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </div>
+        <span class="qa-label">使用帮助</span>
+      </div>
+    </div>
+
+    <!-- CTA -->
+    <div class="cta-area">
+      <button class="cta-btn">
+        <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+        创建课表
+      </button>
+      <div class="cta-hint">约耗时 <span>1 分钟</span>，也可拍照导入已有课表</div>
+    </div>
+  </div>
+
+  <!-- Tab bar -->
+  <nav class="tabbar" data-component="Tab Bar">
+    <div class="tab active">
+      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 4V2M16 4V2"/></svg>
+      课表
+    </div>
+    <div class="tab">
+      <svg viewBox="0 0 24 24"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="M12 18v-6M9 15l3-3 3 3"/></svg>
+      工具
+    </div>
+    <div class="tab">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+      设置
+    </div>
+  </nav>
+</main>
+</body>
+
+</html>

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>07 提醒设置 - 乐学课表</title>
+<style>
+:root{--c-brand:#3b82f6;--c-brand-deep:#1456f0;--c-brand-hover:#2563eb;--c-brand-light:#bfdbfe;--c-brand-subtle:#eff6ff;--bg:#f5f6f8;--surface:#ffffff;--surface-muted:#f9fafb;--fg:#1a1a2e;--fg-2:#45515e;--fg-3:#8e8e93;--border:#e5e7eb;--border-light:#f2f3f5;--danger:#ef4444;--success:#16a34a;--warn:#f59e0b;--dark-btn:#181e25;--shadow-sm:0 1px 3px rgba(0,0,0,.06);--shadow-md:0 4px 12px rgba(0,0,0,.06);--r-sm:8px;--r-md:14px;--r-lg:20px;--r-xl:24px;--r-pill:999px;--ff:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif;--ff-mono:ui-monospace,'SF Mono',Menlo,monospace;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#e8eaed;display:grid;place-items:center;min-height:100vh;font-family:var(--ff);}
+.phone{position:relative;width:375px;height:812px;background:var(--bg);border-radius:44px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.18),0 0 0 1px rgba(0,0,0,.05);display:flex;flex-direction:column;}
+.status-bar{flex:0 0 44px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;background:var(--surface);}
+.status-time{font-size:15px;font-weight:600;color:var(--fg);}
+.status-icons{display:flex;align-items:center;gap:5px;}
+.status-icons svg{width:16px;height:16px;color:var(--fg);}
+.nav{flex:0 0 48px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;background:var(--surface);border-bottom:1px solid var(--border-light);}
+.nav-back{width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.nav-back svg{width:22px;height:22px;stroke:var(--fg);stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;}
+.nav h1{font-size:17px;font-weight:600;color:var(--fg);}
+.nav-action{width:32px;}
+.content{flex:1;overflow-y:auto;padding:16px;}
+.form-card{background:var(--surface);border-radius:var(--r-md);overflow:hidden;margin-bottom:16px;box-shadow:var(--shadow-sm);}
+.form-card-title{font-size:13px;color:var(--fg-3);font-weight:500;padding:0 4px;margin-bottom:8px;}
+.form-row{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;min-height:52px;}
+.form-row+.form-row{border-top:1px solid var(--border-light);}
+.form-row-label{font-size:15px;color:var(--fg);font-weight:400;}
+.form-row-value{font-size:14px;color:var(--fg-3);display:flex;align-items:center;gap:4px;}
+.form-row-value svg{width:16px;height:16px;stroke:var(--fg-3);stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;}
+.toggle{width:50px;height:30px;border-radius:var(--r-pill);background:var(--c-brand);position:relative;cursor:pointer;border:none;padding:0;transition:background .2s;}
+.toggle::after{content:'';position:absolute;width:26px;height:26px;background:#fff;border-radius:50%;top:2px;left:22px;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.15);}
+.section-title{font-size:13px;color:var(--fg-3);font-weight:500;padding:16px 4px 8px;margin-bottom:0;}
+.student-row{display:flex;align-items:center;gap:12px;padding:14px 16px;}
+.student-row+.student-row{border-top:1px solid var(--border-light);}
+.avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;color:#fff;flex-shrink:0;}
+.avatar-blue{background:linear-gradient(135deg,#3b82f6,#1d4ed8);}
+.avatar-purple{background:linear-gradient(135deg,#0d9488,#0f766e);}
+.student-info{flex:1;}
+.student-name{font-size:15px;font-weight:500;color:var(--fg);}
+.student-meta{font-size:12px;color:var(--fg-3);margin-top:2px;}
+.tip-card{background:var(--c-brand-subtle);border-radius:var(--r-md);padding:14px 16px;margin-top:8px;display:flex;gap:10px;align-items:flex-start;}
+.tip-card svg{width:18px;height:18px;flex-shrink:0;color:var(--c-brand);margin-top:1px;}
+.tip-card p{font-size:13px;color:var(--fg-2);line-height:1.6;}
+.home-indicator{flex:0 0 34px;display:flex;align-items:center;justify-content:center;background:var(--bg);}
+.home-indicator-bar{width:134px;height:5px;background:var(--fg);opacity:.2;border-radius:var(--r-pill);}
+</style>
+</head>
+<body>
+<main class="phone" data-component="Notification Settings">
+  <div class="status-bar">
+    <span class="status-time">9:41</span>
+    <div class="status-icons">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 17h2v4H2zm4-4h2v8H6zm4-4h2v12h-2zm4-4h2v16h-2zm4 8h2v8h-2z"/></svg>
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3a4.24 4.24 0 00-6 0zm-4-4l2 2a7.07 7.07 0 0110 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+      <svg viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="6" width="18" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><rect x="4" y="8" width="12" height="8" rx="1" fill="currentColor" opacity=".7"/><path d="M22 10v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </div>
+  </div>
+  <div class="nav">
+    <div class="nav-back"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div>
+    <h1>提醒设置</h1>
+    <div class="nav-action"></div>
+  </div>
+  <div class="content">
+    <div class="form-card-title">全局提醒</div>
+    <div class="form-card">
+      <div class="form-row">
+        <span class="form-row-label">上课提醒</span>
+        <button class="toggle"></button>
+      </div>
+      <div class="form-row">
+        <span class="form-row-label">提前时间</span>
+        <span class="form-row-value">15分钟<svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></span>
+      </div>
+      <div class="form-row">
+        <span class="form-row-label">提醒方式</span>
+        <span class="form-row-value">微信通知<svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></span>
+      </div>
+    </div>
+    <div class="section-title">按学生设置</div>
+    <div class="form-card">
+      <div class="student-row">
+        <div class="avatar avatar-blue">明</div>
+        <div class="student-info">
+          <div class="student-name">小明</div>
+          <div class="student-meta">08:00 第一节前</div>
+        </div>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--fg-3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
+      <div class="student-row">
+        <div class="avatar avatar-purple">红</div>
+        <div class="student-info">
+          <div class="student-name">小红</div>
+          <div class="student-meta">07:50 第一节前</div>
+        </div>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--fg-3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
+    </div>
+    <div class="tip-card">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+      <p>提醒将通过微信服务通知推送，请确保已关注相关公众号。</p>
+    </div>
+  </div>
+  <div class="home-indicator"><div class="home-indicator-bar"></div></div>
+</main>
+</body>
+
+</html>

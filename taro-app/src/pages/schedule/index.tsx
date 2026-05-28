@@ -451,9 +451,6 @@ export default function SchedulePage () {
     )
   }
 
-  /** 有数据页面 */
-  const hasCourses =
-    currentSchedule.courses && currentSchedule.courses.length > 0
   return (
     <View className='schedule-page'>
       <View className='custom-nav-bg' />
@@ -464,9 +461,8 @@ export default function SchedulePage () {
           height: `${menuButtonInfo.height}px`,
           paddingRight: `${windowInfo.windowWidth - menuButtonInfo.left}px`
         }}
-      >
-        <View className='nav-title-wrap'>
-          {hasCourses && (
+        >
+          <View className='nav-title-wrap'>
             <View className='nav-left-icons'>
               <Text
                 className='iconfont header-icon-btn'
@@ -478,22 +474,21 @@ export default function SchedulePage () {
                 {'\ue604'}
               </Text>
             </View>
-          )}
-          <View
-            className='header-center'
-            onClick={openDrawer}
-            style={{
-              position: 'absolute',
-              left: '50%',
-              transform: 'translateX(-50%)'
-            }}
-          >
-            <Text className='student-name'>
-              <Text>{headerStudent?.name || '未选择学生'}</Text>
-              <Text className='student-sub-icon'>⇌</Text>
-            </Text>
-            <Text className='student-sub'>{currentSchedule.name}</Text>
-          </View>
+            <View
+              className='header-center'
+              onClick={openDrawer}
+              style={{
+                position: 'absolute',
+                left: '50%',
+                transform: 'translateX(-50%)'
+              }}
+            >
+              <Text className='student-name'>
+                <Text>{headerStudent?.name || '未选择学生'}</Text>
+                <Text className='student-sub-icon'>⇌</Text>
+              </Text>
+              <Text className='student-sub'>{currentSchedule.name}</Text>
+            </View>
           {/* 仅为占位保持中间居中不跑偏 */}
           {/* <View className='nav-right-icons' style={{ visibility: 'hidden' }}>
             <Text className='header-icon-btn'>📋</Text>
@@ -509,9 +504,7 @@ export default function SchedulePage () {
         }}
       />
 
-      {!hasCourses ? (
-        <EmptySchedule scheduleId={currentSchedule?.id} onAiRecognize={onAiRecognize} />
-      ) : currentSchedule?.view_mode === 'day' ? (
+      {currentSchedule?.view_mode === 'day' ? (
         <ScheduleDayList
           key='day'
           weekNum={weekNum}

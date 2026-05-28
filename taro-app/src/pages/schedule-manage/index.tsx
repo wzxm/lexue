@@ -128,84 +128,86 @@ export default function ScheduleManagePage() {
 
   return (
     <View className='schedule-manage-page'>
-      <View className='header-hints'>
-        <View className='hint-item'>
-          <View className='dot' />
-          <Text>支持多位学生的课表管理，适用于多孩家庭。</Text>
-        </View>
-        <View className='hint-item'>
-          <View className='dot' />
-          <Text>家人共享的课表支持共同维护，修改后会同步给所有相关家人。</Text>
-        </View>
-      </View>
-
-      {schedules.length === 0 && !loading ? (
-        <View className='empty-state'>
-          <Image className='empty-img' src={noDataImg} mode='aspectFit' />
-          <Text className='empty-text'>暂无课表数据</Text>
-          <View className='add-btn' onClick={goAddSchedule}>
-            新增课表
+      <View className='page-shell'>
+        <View className='header-hints'>
+          <View className='hint-item'>
+            <View className='dot' />
+            <Text>支持多位学生的课表管理，适用于多孩家庭。</Text>
+          </View>
+          <View className='hint-item'>
+            <View className='dot' />
+            <Text>家人共享的课表支持共同维护，修改后会同步给所有相关家人。</Text>
           </View>
         </View>
-      ) : (
-        <View className='list-container'>
-          <View className='list-header'>
-            <Text className='count-text'>共{schedules.length}份课表</Text>
-            <Text className='student-manage-link' onClick={goStudentManage}>学生管理</Text>
-          </View>
 
-          {groupedSchedules.map((group, idx) => (
-            <View key={idx} className='student-group'>
-              {/* <View className='student-name'>
-                {group.studentName}
-                {group.isShared && <Text className='shared-tag'>({group.ownerName}共享)</Text>}
-              </View> */}
-
-              <View className='schedule-cards'>
-                {group.items.map(schedule => {
-                  const isOwner = !schedule.owner_openid || schedule.owner_openid === currentOpenId;
-
-                  return (
-                    <View className='schedule-card-wrap' key={schedule.id || schedule._id}>
-                      <View
-                        className='schedule-card'
-                        onClick={() => goEditSchedule(schedule.id || schedule._id!)}
-                      >
-                        <View className='card-left'>
-                          <View className='card-title-wrap'>
-                            <Text className='card-subtitle'>{group.studentName}</Text>
-                            <Text className='card-title'>
-                              {formatSemesterDisplay(schedule.semester) || schedule.name}
-                            </Text>
-                          </View>
-                          <Text className='card-meta'>
-                            {schedule.total_weeks || schedule.totalWeeks || 20}周
-                            {` • `}
-                            {formatCreateTime(schedule.createdAt)}
-                          </Text>
-                        </View>
-                      </View>
-
-                      <View className='card-actions'>
-                        {isOwner && (
-                          <View className='action-btn action-share' onClick={(e) => handleShare(e, schedule)} />
-                        )}
-                        <View className='action-btn action-delete' onClick={(e) => handleDelete(e, schedule)} />
-                      </View>
-                    </View>
-                  )
-                })}
-              </View>
-            </View>
-          ))}
-
-          <View className='bottom-btn-wrap'>
+        {schedules.length === 0 && !loading ? (
+          <View className='empty-state'>
+            <Image className='empty-img' src={noDataImg} mode='aspectFit' />
+            <Text className='empty-text'>暂无课表数据</Text>
             <View className='add-btn' onClick={goAddSchedule}>
               新增课表
             </View>
           </View>
-        </View>
-      )}
+        ) : (
+          <View className='list-container'>
+            <View className='list-header'>
+              <Text className='count-text'>共{schedules.length}份课表</Text>
+              <Text className='student-manage-link' onClick={goStudentManage}>学生管理</Text>
+            </View>
+
+            {groupedSchedules.map((group, idx) => (
+              <View key={`${group.studentName}-${idx}`} className='student-group'>
+                <View className='group-header'>
+                  <Text className='group-title'>{group.studentName}</Text>
+                  <Text className='group-count'>{group.items.length}份</Text>
+                </View>
+
+                <View className='schedule-cards'>
+                  {group.items.map(schedule => {
+                    const isOwner = !schedule.owner_openid || schedule.owner_openid === currentOpenId
+                    const scheduleId = schedule.id || schedule._id || ''
+
+                    return (
+                      <View className='schedule-card-wrap' key={scheduleId}>
+                        <View className='schedule-card' onClick={() => goEditSchedule(scheduleId)}>
+                          <View className='card-left'>
+                            <Text className='card-title'>
+                              {formatSemesterDisplay(schedule.semester) || schedule.name}
+                            </Text>
+                            <Text className='card-meta'>
+                              {schedule.total_weeks || schedule.totalWeeks || 20}周
+                              {` · `}
+                              {formatCreateTime(schedule.createdAt)}
+                            </Text>
+                          </View>
+                          <View className='card-actions'>
+                            {isOwner && (
+                              <View
+                                className='action-btn action-share'
+                                onClick={(e) => handleShare(e, schedule)}
+                              />
+                            )}
+                            <View
+                              className='action-btn action-delete'
+                              onClick={(e) => handleDelete(e, schedule)}
+                            />
+                          </View>
+                        </View>
+                      </View>
+                    )
+                  })}
+                </View>
+              </View>
+            ))}
+
+            <View className='bottom-btn-wrap'>
+              <View className='add-btn' onClick={goAddSchedule}>
+                新增课表
+              </View>
+            </View>
+          </View>
+        )}
+      </View>
     </View>
   )
 }

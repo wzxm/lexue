@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="canvas:aspect-ratio" content="375:812"/>
+<title>01 课表首页 - 乐学课表</title>
+<style>
+:root{
+  --c-brand:#3b82f6;--c-brand-deep:#1456f0;--c-brand-hover:#2563eb;
+  --c-brand-light:#bfdbfe;--c-brand-subtle:#eff6ff;
+  --bg:#f5f6f8;--surface:#ffffff;--surface-muted:#f9fafb;
+  --fg:#1a1a2e;--fg-2:#45515e;--fg-3:#8e8e93;
+  --border:#e5e7eb;--border-light:#f2f3f5;
+  --danger:#ef4444;--success:#16a34a;--warn:#f59e0b;
+  --dark-btn:#181e25;
+  --shadow-sm:0 1px 3px rgba(0,0,0,.06);
+  --shadow-md:0 4px 12px rgba(0,0,0,.06);
+  --shadow-brand:0 4px 16px rgba(59,130,246,.12);
+  --r-sm:8px;--r-md:14px;--r-lg:20px;--r-xl:24px;--r-pill:999px;
+  --ff:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif;
+  --ff-mono:ui-monospace,'SF Mono',Menlo,monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{background:#e8eaed;display:grid;place-items:center;font-family:var(--ff);-webkit-font-smoothing:antialiased;}
+
+/* Device */
+.phone{position:relative;width:375px;height:812px;background:var(--bg);border-radius:44px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.18),0 0 0 1px rgba(0,0,0,.05);display:flex;flex-direction:column;}
+
+/* Status bar */
+.statusbar{flex:0 0 44px;padding:14px 24px 0;display:flex;align-items:flex-start;justify-content:space-between;font-size:14px;font-weight:600;color:var(--fg);background:linear-gradient(180deg,var(--c-brand) 0%,var(--c-brand-deep) 100%);}
+.statusbar .right{display:flex;align-items:center;gap:5px;}
+.statusbar svg{width:16px;height:10px;fill:#fff;}
+.statusbar span{color:#fff;}
+
+/* Nav bar */
+.navbar{flex:0 0 auto;padding:4px 16px 14px;background:linear-gradient(180deg,var(--c-brand-deep) 0%,#2a6df5 60%,var(--c-brand) 100%);color:#fff;}
+.nav-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.nav-title{font-size:17px;font-weight:600;letter-spacing:-.01em;}
+.nav-actions{display:flex;gap:8px;}
+.nav-actions button{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.18);border:none;color:#fff;display:grid;place-items:center;cursor:pointer;}
+.nav-actions svg{width:18px;height:18px;stroke:#fff;fill:none;stroke-width:1.8;}
+.student-row{display:flex;align-items:center;gap:8px;}
+.student-avatar{width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.25);border:1.5px solid rgba(255,255,255,.4);display:grid;place-items:center;font-size:12px;color:#fff;}
+.student-name{font-size:14px;font-weight:500;opacity:.92;}
+.schedule-tag{padding:3px 10px;background:rgba(255,255,255,.2);border-radius:var(--r-pill);font-size:11px;color:#fff;margin-left:auto;letter-spacing:.02em;}
+
+/* Week navigator */
+.week-nav{display:flex;align-items:center;justify-content:space-between;padding:8px 16px;background:var(--bg);}
+.week-nav .week-switcher{display:flex;align-items:center;gap:6px;}
+.week-arrow{width:30px;height:30px;border-radius:50%;background:var(--surface);border:1px solid var(--border-light);display:grid;place-items:center;cursor:pointer;box-shadow:var(--shadow-sm);transition:.15s;}
+.week-arrow:hover{background:var(--c-brand-subtle);border-color:var(--c-brand-light);}
+.week-arrow svg{width:14px;height:14px;stroke:var(--fg-2);fill:none;stroke-width:2;}
+.week-arrow.disabled{opacity:.35;pointer-events:none;}
+.week-info{text-align:center;min-width:140px;}
+.week-label{font-size:14px;font-weight:600;color:var(--fg);letter-spacing:-.01em;}
+.week-date-range{font-size:11px;color:var(--fg-3);font-family:var(--ff-mono);margin-top:1px;}
+.week-nav .nav-right{display:flex;align-items:center;gap:8px;}
+
+/* View toggle */
+.view-toggle{display:flex;align-items:center;gap:2px;background:var(--surface);border:1px solid var(--border-light);border-radius:var(--r-pill);padding:2px;box-shadow:var(--shadow-sm);}
+.view-btn{padding:4px 12px;border-radius:var(--r-pill);font-size:11px;color:var(--fg-3);background:transparent;border:none;cursor:pointer;font-weight:500;transition:.2s;}
+.view-btn.active{background:var(--c-brand);color:#fff;font-weight:600;}
+
+/* Today indicator dot */
+.today-dot{width:4px;height:4px;border-radius:50%;background:var(--c-brand);margin:2px auto 0;}
+
+/* Content */
+.content{flex:1;overflow-y:auto;padding:0 12px 16px;}
+.content::-webkit-scrollbar{display:none;}
+
+/* Schedule grid */
+.schedule-card{background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--shadow-sm);overflow:hidden;margin-bottom:12px;}
+.grid-header{display:grid;grid-template-columns:36px repeat(7,1fr);border-bottom:1px solid var(--border-light);}
+.grid-header .time-col{padding:8px 2px;font-size:9px;color:var(--fg-3);text-align:center;font-family:var(--ff-mono);}
+.grid-header .day-col{padding:8px 2px;text-align:center;}
+.grid-header .day-col .name{font-size:11px;font-weight:500;color:var(--fg-2);}
+.grid-header .day-col .num{font-size:9px;color:var(--fg-3);font-family:var(--ff-mono);}
+.grid-header .day-col.today{background:var(--c-brand-subtle);border-radius:var(--r-sm) var(--r-sm) 0 0;}
+.grid-header .day-col.today .name{color:var(--c-brand);font-weight:600;}
+
+.grid-body{display:grid;grid-template-columns:36px repeat(7,1fr);}
+.time-slot{padding:6px 2px;font-size:9px;color:var(--fg-3);text-align:center;font-family:var(--ff-mono);border-bottom:1px solid var(--border-light);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:8px;}
+.time-slot .period{font-size:10px;font-weight:600;color:var(--fg-2);}
+.course-cell{padding:2px;border-bottom:1px solid var(--border-light);min-height:54px;}
+.course-chip{border-radius:6px;padding:3px 4px;font-size:9px;line-height:1.3;height:100%;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden;}
+.course-chip::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;border-radius:0 2px 2px 0;}
+.course-chip .name{font-weight:600;font-size:9.5px;margin-bottom:1px;}
+.course-chip .room{font-size:8px;opacity:.7;}
+
+/* Course colors */
+.c-blue{background:#eff6ff;color:#1d4ed8;}.c-blue::before{background:#3b82f6;}
+.c-green{background:#f0fdf4;color:#15803d;}.c-green::before{background:#22c55e;}
+.c-orange{background:#fff7ed;color:#c2410c;}.c-orange::before{background:#f97316;}
+.c-purple{background:#faf5ff;color:#0f766e;}.c-purple::before{background:#0d9488;}
+.c-rose{background:#fff1f2;color:#be123c;}.c-rose::before{background:#f43f5e;}
+.c-teal{background:#f0fdfa;color:#0f766e;}.c-teal::before{background:#14b8a6;}
+.c-amber{background:#fffbeb;color:#b45309;}.c-amber::before{background:#f59e0b;}
+
+/* Bottom tab bar */
+.tabbar{flex:0 0 auto;display:grid;grid-template-columns:repeat(3,1fr);padding:6px 8px 20px;border-top:1px solid var(--border-light);background:rgba(255,255,255,.92);backdrop-filter:blur(16px);}
+.tab{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;color:var(--fg-3);font-size:10px;letter-spacing:.02em;cursor:pointer;}
+.tab.active{color:var(--c-brand);}
+.tab svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.7;}
+.tab.active svg{stroke-width:2;}
+
+/* Home indicator */
+.home-ind{height:0;position:relative;}
+.home-ind::after{content:'';position:absolute;left:50%;bottom:6px;transform:translateX(-50%);width:134px;height:5px;background:var(--fg);border-radius:999px;opacity:.18;}
+
+</style>
+</head>
+<body>
+<main class="phone" data-component="Schedule Home">
+  <!-- Status bar -->
+  <div class="statusbar">
+    <span>9:41</span>
+    <span class="right">
+      <svg viewBox="0 0 17 11"><rect x="0" y="7" width="3" height="4" rx=".6"/><rect x="4" y="5" width="3" height="6" rx=".6"/><rect x="8" y="3" width="3" height="8" rx=".6"/><rect x="12" y="0" width="3" height="11" rx=".6"/></svg>
+      <svg viewBox="0 0 17 11"><path d="M8.5 1.5C5.5 1.5 2.7 2.6.5 4.6L2 6.1c1.8-1.6 4.1-2.5 6.5-2.5 2.4 0 4.7.9 6.5 2.5l1.5-1.5c-2.2-2-5-3.1-8-3.1zM3.5 7.6 5 9.1c1-.9 2.2-1.4 3.5-1.4 1.3 0 2.5.5 3.5 1.4l1.5-1.5c-1.4-1.3-3.1-2-5-2-1.9 0-3.6.7-5 2zM6.5 10.6l2 2 2-2c-.5-.5-1.2-.8-2-.8s-1.5.3-2 .8z"/></svg>
+      <svg style="width:24px" viewBox="0 0 25 11"><rect x=".5" y=".5" width="21" height="10" rx="2.5" fill="none" stroke="#fff" stroke-opacity=".45"/><rect x="22" y="3.5" width="1.5" height="4" rx=".4" fill="#fff" fill-opacity=".45"/><rect x="2" y="2" width="18" height="7" rx="1.4" fill="#fff"/></svg>
+    </span>
+  </div>
+
+  <!-- Nav bar -->
+  <div class="navbar" data-component="Navigation Bar">
+    <div class="nav-top">
+      <span class="nav-title">乐学课表</span>
+      <div class="nav-actions">
+        <button aria-label="AI识别">
+          <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z"/><path d="M12 8v4l3 3"/></svg>
+        </button>
+        <button aria-label="添加课程">
+          <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="student-row">
+      <div class="student-avatar">明</div>
+      <span class="student-name">小明</span>
+      <span class="schedule-tag">2025春季学期</span>
+    </div>
+  </div>
+
+  <!-- Week navigator -->
+  <div class="week-nav" data-component="Week Navigator">
+    <div class="week-switcher">
+      <div class="week-arrow" aria-label="上一周">
+        <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+      </div>
+      <div class="week-info">
+        <div class="week-label">第 12 周</div>
+        <div class="week-date-range">5.26 — 6.1</div>
+      </div>
+      <div class="week-arrow" aria-label="下一周">
+        <svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
+    </div>
+    <div class="nav-right">
+      <div class="view-toggle">
+        <button class="view-btn active">周</button>
+        <button class="view-btn">日</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Schedule content -->
+  <div class="content" data-component="Schedule Grid">
+    <div class="schedule-card">
+      <div class="grid-header">
+        <div class="time-col"></div>
+        <div class="day-col"><div class="name">一</div><div class="num">26</div></div>
+        <div class="day-col today"><div class="name">二</div><div class="num">27</div></div>
+        <div class="day-col"><div class="name">三</div><div class="num">28</div></div>
+        <div class="day-col"><div class="name">四</div><div class="num">29</div></div>
+        <div class="day-col"><div class="name">五</div><div class="num">30</div></div>
+        <div class="day-col"><div class="name">六</div><div class="num">31</div></div>
+        <div class="day-col"><div class="name">日</div><div class="num">1</div></div>
+      </div>
+      <div class="grid-body">
+        <!-- Period 1 -->
+        <div class="time-slot"><span class="period">1</span>08:00</div>
+        <div class="course-cell"><div class="course-chip c-blue"><span class="name">语文</span><span class="room">教室 301</span></div></div>
+        <div class="course-cell"><div class="course-chip c-green"><span class="name">数学</span><span class="room">教室 301</span></div></div>
+        <div class="course-cell"><div class="course-chip c-blue"><span class="name">语文</span><span class="room">教室 301</span></div></div>
+        <div class="course-cell"><div class="course-chip c-purple"><span class="name">英语</span><span class="room">教室 301</span></div></div>
+        <div class="course-cell"><div class="course-chip c-green"><span class="name">数学</span><span class="room">教室 301</span></div></div>
+        <div class="course-cell"><div class="course-chip c-teal"><span class="name">社团</span><span class="room">多功能厅</span></div></div>
+        <div class="course-cell"></div>
+
+        <!-- Period 2 -->
+        <div class="time-slot"><span class="period">2</span>08:50</div>
+        <div class="course-cell"><div class="course-chip c-green"><span class="name">数学</span><span class="room">教室 301</span></div></div>
+        <div class="course-cell"><div class="course-chip c-blue"><span class="name">语文</span><span class="room">教室 301</span></div></div>
+        <div class="course-cell"><div class="course-chip c-purple"><span class="name">英语</span><span class="room">教室 301</span></div></div>
+        <div class="course-cell"><div class="course-chip c-green"><span class="name">数学</span><span class="room">教室 301</span></div></div>
+        <div class="course-cell"><div class="course-chip c-blue"><span class="name">语文</span><span class="room">教室 301</span></div></div>
+        <div class="course-cell"><div class="course-chip c-amber"><span class="name">游泳</span><span class="room">游泳馆</span></div></div>
+        <div class="course-cell"></div>
+
+        <!-- Period 3 -->
+        <div class="time-slot"><span class="period">3</span>10:00</div>
+        <div class="course-cell"><div class="course-chip c-purple"><span class="name">英语</span><span class="room">教室 301</span></div></div>
+        <div class="course-cell"><div class="course-chip c-orange"><span class="name">科学</span><span class="room">实验室</span></div></div>
+        <div class="course-cell"><div class="course-chip c-green"><span class="name">数学</span><span class="room">教室 301</span></div></div>
+        <div class="course-cell"><div class="course-chip c-rose"><span class="name">美术</span><span class="room">美术室</span></div></div>
+        <div class="course-cell"><div class="course-chip c-teal"><span class="name">体育</span><span class="room">操场</span></div></div>
+        <div class="course-cell"></div>
+        <div class="course-cell"></div>
+
+        <!-- Period 4 -->
+        <div class="time-slot"><span class="period">4</span>10:50</div>
+        <div class="course-cell"><div class="course-chip c-teal"><span class="name">体育</span><span class="room">操场</span></div></div>
+        <div class="course-cell"><div class="course-chip c-rose"><span class="name">音乐</span><span class="room">音乐室</span></div></div>
+        <div class="course-cell"><div class="course-chip c-orange"><span class="name">科学</span><span class="room">实验室</span></div></div>
+        <div class="course-cell"><div class="course-chip c-blue"><span class="name">语文</span><span class="room">教室 301</span></div></div>
+        <div class="course-cell"><div class="course-chip c-amber"><span class="name">班会</span><span class="room">教室 301</span></div></div>
+        <div class="course-cell"></div>
+        <div class="course-cell"></div>
+
+        <!-- Period 5 -->
+        <div class="time-slot"><span class="period">5</span>14:00</div>
+        <div class="course-cell"><div class="course-chip c-amber"><span class="name">道法</span><span class="room">教室 301</span></div></div>
+        <div class="course-cell"><div class="course-chip c-teal"><span class="name">信息</span><span class="room">机房</span></div></div>
+        <div class="course-cell"><div class="course-chip c-rose"><span class="name">美术</span><span class="room">美术室</span></div></div>
+        <div class="course-cell"><div class="course-chip c-orange"><span class="name">科学</span><span class="room">实验室</span></div></div>
+        <div class="course-cell"></div>
+        <div class="course-cell"></div>
+        <div class="course-cell"></div>
+
+        <!-- Period 6 -->
+        <div class="time-slot"><span class="period">6</span>14:50</div>
+        <div class="course-cell"><div class="course-chip c-rose"><span class="name">音乐</span><span class="room">音乐室</span></div></div>
+        <div class="course-cell"><div class="course-chip c-amber"><span class="name">阅读</span><span class="room">图书馆</span></div></div>
+        <div class="course-cell"><div class="course-chip c-teal"><span class="name">体育</span><span class="room">操场</span></div></div>
+        <div class="course-cell"></div>
+        <div class="course-cell"></div>
+        <div class="course-cell"></div>
+        <div class="course-cell"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab bar -->
+  <nav class="tabbar" data-component="Tab Bar">
+    <div class="tab active">
+      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 4V2M16 4V2"/></svg>
+      课表
+    </div>
+    <div class="tab">
+      <svg viewBox="0 0 24 24"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="M12 18v-6M9 15l3-3 3 3"/></svg>
+      工具
+    </div>
+    <div class="tab">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+      设置
+    </div>
+  </nav>
+</main>
+</body>
+
+</html>

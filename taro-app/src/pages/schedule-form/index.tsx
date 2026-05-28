@@ -202,6 +202,8 @@ export default function ScheduleFormPage() {
   };
 
   const onSave = async () => {
+    if (loading) return;
+
     if (!startDate) {
       Taro.showToast({ title: '请选择开学日期', icon: 'none' });
       return;
@@ -419,6 +421,7 @@ export default function ScheduleFormPage() {
                 </View>
               </View>
             </Picker>
+            <Text className="section-hint">默认按当前日期推算学期</Text>
           </View>
 
           {/* 开学日期 */}
@@ -492,8 +495,8 @@ export default function ScheduleFormPage() {
 
       {step === 1 && (
         <View className="footer">
-          <Button className={`save-btn ${loading ? "save-btn--loading" : ""}`} onClick={onSave} disabled={loading}>
-            保存
+          <Button className="save-btn" onClick={onSave} loading={loading}>
+            {loading ? (isEditMode ? '保存中' : '创建中') : '保存'}
           </Button>
         </View>
       )}

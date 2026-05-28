@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>06 家庭共享 - 乐学课表</title>
+<style>
+:root{--c-brand:#3b82f6;--c-brand-deep:#1456f0;--c-brand-hover:#2563eb;--c-brand-light:#bfdbfe;--c-brand-subtle:#eff6ff;--bg:#f5f6f8;--surface:#ffffff;--surface-muted:#f9fafb;--fg:#1a1a2e;--fg-2:#45515e;--fg-3:#8e8e93;--border:#e5e7eb;--border-light:#f2f3f5;--danger:#ef4444;--success:#16a34a;--warn:#f59e0b;--dark-btn:#181e25;--shadow-sm:0 1px 3px rgba(0,0,0,.06);--shadow-md:0 4px 12px rgba(0,0,0,.06);--r-sm:8px;--r-md:14px;--r-lg:20px;--r-xl:24px;--r-pill:999px;--ff:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif;--ff-mono:ui-monospace,'SF Mono',Menlo,monospace;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#e8eaed;display:grid;place-items:center;min-height:100vh;font-family:var(--ff);}
+.phone{position:relative;width:375px;height:812px;background:var(--bg);border-radius:44px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.18),0 0 0 1px rgba(0,0,0,.05);display:flex;flex-direction:column;}
+.status-bar{flex:0 0 44px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;background:var(--surface);}
+.status-time{font-size:15px;font-weight:600;color:var(--fg);}
+.status-icons{display:flex;align-items:center;gap:5px;}
+.status-icons svg{width:16px;height:16px;color:var(--fg);}
+.nav{flex:0 0 48px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;background:var(--surface);border-bottom:1px solid var(--border-light);}
+.nav-back{width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.nav-back svg{width:22px;height:22px;stroke:var(--fg);stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;}
+.nav h1{font-size:17px;font-weight:600;color:var(--fg);}
+.nav-action{width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.nav-action svg{width:22px;height:22px;stroke:var(--c-brand);stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;}
+.content{flex:1;overflow-y:auto;padding:16px;}
+.tip-card{background:var(--c-brand-subtle);border-radius:var(--r-md);padding:14px 16px;margin-bottom:16px;display:flex;gap:10px;align-items:flex-start;}
+.tip-card svg{width:18px;height:18px;flex-shrink:0;color:var(--c-brand);margin-top:1px;}
+.tip-card p{font-size:13px;color:var(--fg-2);line-height:1.6;}
+.group-title{font-size:13px;color:var(--fg-3);font-weight:500;padding:0 4px;margin-bottom:8px;}
+.member-card{background:var(--surface);border-radius:var(--r-md);padding:16px;display:flex;align-items:center;gap:12px;margin-bottom:1px;}
+.member-card:first-child{border-radius:var(--r-md) var(--r-md) 0 0;}
+.member-card:last-of-type{border-radius:0 0 var(--r-md) var(--r-md);}
+.member-card:only-child{border-radius:var(--r-md);}
+.member-group{background:var(--surface);border-radius:var(--r-md);overflow:hidden;margin-bottom:24px;box-shadow:var(--shadow-sm);}
+.member-group .member-card{margin-bottom:0;border-radius:0;}
+.member-group .member-card:first-child{border-radius:var(--r-md) var(--r-md) 0 0;}
+.member-group .member-card:last-child{border-radius:0 0 var(--r-md) var(--r-md);}
+.member-group .member-card+.member-card{border-top:1px solid var(--border-light);}
+.avatar{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:600;color:#fff;flex-shrink:0;}
+.avatar-blue{background:linear-gradient(135deg,#3b82f6,#1d4ed8);}
+.avatar-green{background:linear-gradient(135deg,#22c55e,#15803d);}
+.avatar-purple{background:linear-gradient(135deg,#0d9488,#0f766e);}
+.member-info{flex:1;min-width:0;}
+.member-name{font-size:15px;font-weight:500;color:var(--fg);}
+.badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:var(--r-pill);font-weight:500;margin-left:6px;vertical-align:middle;}
+.badge-brand{background:var(--c-brand-subtle);color:var(--c-brand);}
+.badge-green{background:#f0fdf4;color:var(--success);}
+.badge-gray{background:var(--border-light);color:var(--fg-3);}
+.member-actions{display:flex;gap:4px;}
+.member-actions button{width:32px;height:32px;border:none;background:transparent;border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--fg-3);transition:background .15s;}
+.member-actions button:hover{background:var(--border-light);}
+.member-actions button svg{width:18px;height:18px;stroke:currentColor;stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round;}
+.invite-btn{width:100%;padding:14px;border:none;border-radius:var(--r-md);background:var(--c-brand);color:#fff;font-size:16px;font-weight:600;cursor:pointer;font-family:var(--ff);transition:background .15s;box-shadow:0 2px 8px rgba(59,130,246,.3);}
+.invite-btn:hover{background:var(--c-brand-hover);}
+.home-indicator{flex:0 0 34px;display:flex;align-items:center;justify-content:center;background:var(--bg);}
+.home-indicator-bar{width:134px;height:5px;background:var(--fg);opacity:.2;border-radius:var(--r-pill);}
+</style>
+</head>
+<body>
+<main class="phone" data-component="Family Manage">
+  <div class="status-bar">
+    <span class="status-time">9:41</span>
+    <div class="status-icons">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 17h2v4H2zm4-4h2v8H6zm4-4h2v12h-2zm4-4h2v16h-2zm4 8h2v8h-2z"/></svg>
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3a4.24 4.24 0 00-6 0zm-4-4l2 2a7.07 7.07 0 0110 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+      <svg viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="6" width="18" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><rect x="4" y="8" width="12" height="8" rx="1" fill="currentColor" opacity=".7"/><path d="M22 10v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </div>
+  </div>
+  <div class="nav">
+    <div class="nav-back"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div>
+    <h1>家庭共享</h1>
+    <div class="nav-action"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></div>
+  </div>
+  <div class="content">
+    <div class="tip-card">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+      <p>邀请家庭成员共享课表，家人可查看或编辑孩子的课表信息。</p>
+    </div>
+    <div class="group-title">家庭成员</div>
+    <div class="member-group">
+      <div class="member-card">
+        <div class="avatar avatar-blue">我</div>
+        <div class="member-info">
+          <div class="member-name">我（王哲）<span class="badge badge-brand">创建者</span></div>
+        </div>
+      </div>
+      <div class="member-card">
+        <div class="avatar avatar-green">妈</div>
+        <div class="member-info">
+          <div class="member-name">妈妈<span class="badge badge-green">可编辑</span></div>
+        </div>
+        <div class="member-actions">
+          <button><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+          <button><svg viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button>
+        </div>
+      </div>
+      <div class="member-card">
+        <div class="avatar avatar-purple">奶</div>
+        <div class="member-info">
+          <div class="member-name">奶奶<span class="badge badge-gray">仅查看</span></div>
+        </div>
+        <div class="member-actions">
+          <button><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+          <button><svg viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button>
+        </div>
+      </div>
+    </div>
+    <button class="invite-btn">邀请新成员</button>
+  </div>
+  <div class="home-indicator"><div class="home-indicator-bar"></div></div>
+</main>
+</body>
+
+</html>
