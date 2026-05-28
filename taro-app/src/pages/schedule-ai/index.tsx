@@ -9,6 +9,7 @@ import { useAuthStore } from '../../store/auth.store'
 import { ROUTES } from '../../constants/routes'
 import { DEFAULT_PERIODS } from '../../constants/periods'
 import { getCurrentWeekOffset, getWeekDates, formatDate } from '../../utils/date'
+import { chooseMediaSource } from '../../utils/media'
 import ScheduleGrid from '../schedule/components/ScheduleGrid'
 import type { Course, Schedule } from '../../types/index'
 import '../schedule/index.scss'
@@ -128,18 +129,6 @@ export default function ScheduleAiPage() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-
-  const chooseMediaSource = async () => {
-    try {
-      const { tapIndex } = await Taro.showActionSheet({
-        itemList: ['拍照', '相册选择'],
-      })
-      return tapIndex === 0 ? 'camera' : 'album'
-    } catch (err: any) {
-      if (err?.errMsg?.includes('cancel')) return null
-      throw err
-    }
-  }
 
   const handlePickImage = async () => {
     if (recognizing || loading) return

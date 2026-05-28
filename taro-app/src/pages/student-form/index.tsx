@@ -5,6 +5,7 @@ import { createStudent, updateStudent, deleteStudent } from '../../api/student.a
 import { useStudentStore } from '../../store/student.store'
 import { useAuthStore } from '../../store/auth.store'
 import type { Student } from '../../types/index'
+import { chooseMediaSource } from '../../utils/media'
 import './index.scss'
 
 const GRADE_OPTIONS = [
@@ -29,8 +30,10 @@ export default function StudentFormPage() {
 
   const [name, setName] = useState('')
   const [school, setSchool] = useState('')
+  const [className, setClassName] = useState('')
+  const [studentNo, setStudentNo] = useState('')
   const [grade, setGrade] = useState('小学，一年级')
-  const [gender, setGender] = useState<number>(0) // 0=未选, 1=男, 2=女
+  const [gender, setGender] = useState<number>(1) // 1=男, 2=女
   const [gradeIndex, setGradeIndex] = useState(0)
   const [avatar, setAvatar] = useState('')
   const [loading, setLoading] = useState(false)
@@ -43,8 +46,10 @@ export default function StudentFormPage() {
       if (student) {
         setName(student.name)
         setSchool(student.school || '')
+        setClassName(student.className || '')
+        setStudentNo(student.studentNo || '')
         setGrade(student.grade || '小学，一年级')
-        setGender(student.gender || 0)
+        setGender(student.gender || 1)
         setAvatar(student.avatar || '')
 
         const gIdx = GRADE_OPTIONS.indexOf(student.grade)
@@ -67,6 +72,8 @@ export default function StudentFormPage() {
     const payload: Omit<Student, 'id'> = {
       name: name.trim(),
       school: school.trim(),
+      className: className.trim(),
+      studentNo: studentNo.trim(),
       grade,
       gender,
       avatar,
@@ -96,11 +103,13 @@ export default function StudentFormPage() {
   const onChooseAvatar = async () => {
     if (avatarUploading) return
     try {
+      const sourceType = await chooseMediaSource()
+      if (!sourceType) return
       const res = await Taro.chooseMedia({
         count: 1,
         mediaType: ['image'],
         sizeType: ['compressed'],
-        sourceType: ['album', 'camera'],
+        sourceType: [sourceType],
       })
       const filePath = res.tempFiles?.[0]?.tempFilePath
       const fileSize = res.tempFiles?.[0]?.size || 0
@@ -160,34 +169,94 @@ export default function StudentFormPage() {
   return (
     <View className='form-page'>
       <ScrollView scrollY className='form-body'>
-        <View className='form-group-title'>昵称或姓名</View>
-        <View className='form-card avatar-card' onClick={onChooseAvatar}>
-          <View className='avatar-edit-row'>
-            <Text className='row-label'>头像</Text>
-            <View className='avatar-edit-right'>
+        <View className='avatar-section' onClick={onChooseAvatar}>
+          <View className='avatar-wrap'>
+            <View className='avatar-circle'>
               {avatar ? (
                 <Image className='avatar-preview' src={avatar} mode='aspectFill' />
               ) : (
                 <View className='avatar-preview avatar-preview--text'>{getAvatarInitial()}</View>
               )}
-              <Text className='row-arrow'>›</Text>
+            </View>
+            <View className='camera-badge'>
+              <View className='camera-badge-icon' />
             </View>
           </View>
-        </View>
-        <View className='form-card'>
-          <Input
-            className='name-input'
-            placeholder='请输入学生姓名'
-            placeholderClass='input-placeholder'
-            value={name}
-            onInput={(e) => setName(e.detail.value)}
-            maxlength={20}
-          />
+          <Text className='avatar-hint'>点击设置头像</Text>
         </View>
 
-        <View className='form-group-title mt-40'>就读信息</View>
         <View className='form-card'>
           <View className='form-row border-bottom'>
+            <Text className='row-label'>姓名</Text>
+            <Input
+              className='row-input'
+              placeholder='输入学生姓名'
+              placeholderClass='input-placeholder'
+              value={name}
+              onInput={(e) => setName(e.detail.value)}
+              maxlength={20}
+            />
+          </View>
+
+          <View className='form-row border-bottom gender-row-wrap'>
+            <Text className='row-label'>性别</Text>
+            <View className='gender-seg' role='radiogroup' aria-label='性别'>
+              <View
+                className={`seg-btn ${gender === 1 ? 'active' : ''}`}
+                role='radio'
+                aria-checked={gender === 1}
+                onClick={() => setGender(1)}
+              >
+                男
+              </View>
+              <View
+                className={`seg-btn ${gender === 2 ? 'active' : ''}`}
+                role='radio'
+                aria-checked={gender === 2}
+                onClick={() => setGender(2)}
+              >
+                女
+              </View>
+            </View>
+          </View>
+
+          <View className='form-row border-bottom'>
+            <Text className='row-label'>学校</Text>
+            <Input
+              className='row-input'
+              placeholder='输入学校名称'
+              placeholderClass='input-placeholder'
+              value={school}
+              onInput={(e) => setSchool(e.detail.value)}
+              maxlength={30}
+            />
+          </View>
+
+          <View className='form-row border-bottom'>
+            <Text className='row-label'>班级（选填）</Text>
+            <Input
+              className='row-input'
+              placeholder='输入班级'
+              placeholderClass='input-placeholder'
+              value={className}
+              onInput={(e) => setClassName(e.detail.value)}
+              maxlength={30}
+            />
+          </View>
+
+          <View className='form-row border-bottom'>
+            <Text className='row-label'>学号（选填）</Text>
+            <Input
+              className='row-input'
+              placeholder='输入学号'
+              placeholderClass='input-placeholder'
+              value={studentNo}
+              onInput={(e) => setStudentNo(e.detail.value)}
+              maxlength={30}
+            />
+          </View>
+
+          <View className='form-row'>
             <Text className='row-label'>学龄段</Text>
             <Picker mode='selector' range={GRADE_OPTIONS} value={gradeIndex} onChange={onGradeChange}>
               <View className='row-value-wrap'>
@@ -197,36 +266,6 @@ export default function StudentFormPage() {
                 <Text className='row-arrow'>›</Text>
               </View>
             </Picker>
-          </View>
-          <View className='form-row'>
-            <Text className='row-label'>学校</Text>
-            <View className='row-value-wrap' style={{ flex: 1 }}>
-              <Input
-                className='school-input'
-                placeholder='请完善'
-                placeholderClass='input-placeholder'
-                value={school}
-                onInput={(e) => setSchool(e.detail.value)}
-                maxlength={30}
-              />
-              <Text className='row-arrow'>›</Text>
-            </View>
-          </View>
-        </View>
-
-        <View className='form-group-title mt-40'>性别</View>
-        <View className='gender-row'>
-          <View className='gender-option' onClick={() => setGender(1)}>
-            <View className={`radio-circle ${gender === 1 ? 'active' : ''}`}>
-              {gender === 1 && <Text className='radio-inner'>✓</Text>}
-            </View>
-            <Text className='gender-text'>男</Text>
-          </View>
-          <View className='gender-option' onClick={() => setGender(2)}>
-            <View className={`radio-circle ${gender === 2 ? 'active' : ''}`}>
-              {gender === 2 && <Text className='radio-inner'>✓</Text>}
-            </View>
-            <Text className='gender-text'>女</Text>
           </View>
         </View>
       </ScrollView>
