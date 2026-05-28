@@ -6,6 +6,8 @@ type BackendStudent = {
   name: string;
   avatar_url?: string;
   school_name?: string;
+  class_name?: string;
+  student_no?: string;
   grade?: string;
   gender?: number;
   is_shared?: boolean;
@@ -22,6 +24,8 @@ function toFrontendStudent(data: BackendStudent): Student {
     name: data.name || '',
     avatar: data.avatar_url || '',
     school: data.school_name || '',
+    className: data.class_name || '',
+    studentNo: data.student_no || '',
     grade: data.grade || '',
     gender: data.gender || 0,
     isShared: !!data.is_shared,
@@ -39,6 +43,8 @@ function toBackendPayload(data: Partial<Omit<Student, 'id'>>) {
     gender: data.gender,
     avatar_url: data.avatar,
     school_name: data.school,
+    class_name: data.className,
+    student_no: data.studentNo,
     grade: data.grade,
   };
 }

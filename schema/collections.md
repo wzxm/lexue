@@ -26,6 +26,8 @@
 | _id | string | 是 | 云数据库自动生成的文档ID |
 | owner_openid | string | 是 | 创建者的 openid |
 | name | string | 是 | 学生姓名 |
+| class_name | string | 否 | 班级名称 |
+| student_no | string | 否 | 学号 |
 | grade | string | 否 | 年级（如：三年级、初一） |
 | avatar | string | 否 | 学生头像（emoji 或 URL） |
 | source | string | 否 | 来源：`init`=系统初始化，`user`=用户手动新增（旧数据无此字段视为 `user`） |

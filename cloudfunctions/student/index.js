@@ -112,6 +112,8 @@ async function create(openid, payload) {
   validator.requireFields(payload, ['name']);
   validator.maxLength(payload.name, 20, '学生姓名');
   if (payload.school_name) validator.maxLength(payload.school_name, 50, '学校名称');
+  if (payload.class_name) validator.maxLength(payload.class_name, 50, '班级名称');
+  if (payload.student_no) validator.maxLength(payload.student_no, 30, '学号');
   if (payload.grade) validator.maxLength(payload.grade, 20, '年级');
 
   logger.info(FN, 'create', { openid, name: payload.name });
@@ -120,6 +122,8 @@ async function create(openid, payload) {
     owner_openid: openid,
     name: payload.name,
     school_name: payload.school_name || '',
+    class_name: payload.class_name || '',
+    student_no: payload.student_no || '',
     grade: payload.grade || '',
     gender: payload.gender || 0,
     avatar_url: payload.avatar_url || '',
@@ -174,7 +178,7 @@ async function update(openid, payload) {
   logger.info(FN, 'update', { openid, studentId: payload.studentId });
 
   // 只允许更新这些字段
-  const allowed = ['name', 'school_name', 'grade', 'gender', 'avatar_url'];
+  const allowed = ['name', 'school_name', 'class_name', 'student_no', 'grade', 'gender', 'avatar_url'];
   const updateData = {};
   for (const key of allowed) {
     if (payload[key] !== undefined) {
@@ -184,6 +188,8 @@ async function update(openid, payload) {
 
   if (payload.name) validator.maxLength(payload.name, 20, '学生姓名');
   if (payload.school_name) validator.maxLength(payload.school_name, 50, '学校名称');
+  if (payload.class_name) validator.maxLength(payload.class_name, 50, '班级名称');
+  if (payload.student_no) validator.maxLength(payload.student_no, 30, '学号');
   if (payload.grade) validator.maxLength(payload.grade, 20, '年级');
 
   const hasAvatarUpdate = Object.prototype.hasOwnProperty.call(updateData, 'avatar_url');

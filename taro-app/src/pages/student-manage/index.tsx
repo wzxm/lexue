@@ -28,9 +28,16 @@ function getAvatarVariant(id: string) {
 
 function getStudentSchoolLine(student: Student) {
   const school = student.school?.trim()
+  const className = student.className?.trim()
+  const studentNo = student.studentNo?.trim()
   const grade = student.grade?.trim()?.replace(/，/g, '')
+  const classLine = [className, studentNo].filter(Boolean).join(' · ')
+  if (school && classLine && grade) return `${school} · ${classLine} · ${grade}`
+  if (school && classLine) return `${school} · ${classLine}`
   if (school && grade) return `${school} · ${grade}`
   if (school) return school
+  if (classLine && grade) return `${classLine} · ${grade}`
+  if (classLine) return classLine
   if (grade) return grade
   return '未完善学校信息'
 }
