@@ -33,7 +33,11 @@ body{background:#e8eaed;display:grid;place-items:center;min-height:100vh;font-fa
 .form-row input::placeholder{color:var(--fg-3);}
 .form-row .value{font-size:14px;color:var(--fg-3);text-align:right;flex:1;display:flex;align-items:center;justify-content:flex-end;gap:4px;}
 .arrow-icon{width:16px;height:16px;color:var(--fg-3);}
-.bottom-bar{position:absolute;bottom:0;left:0;right:0;padding:12px 20px;padding-bottom:calc(12px + env(safe-area-inset-bottom,20px));background:var(--surface);border-top:1px solid var(--border-light);}
+/* Gender selector */
+.gender-seg{display:flex;gap:0;background:var(--surface-muted);border-radius:var(--r-pill);border:1px solid var(--border-light);padding:2px;overflow:hidden;}
+.gender-seg .seg-btn{padding:5px 18px;border-radius:var(--r-pill);font-size:13px;color:var(--fg-3);font-weight:500;cursor:pointer;transition:.2s;border:none;background:transparent;font-family:var(--ff);}
+.gender-seg .seg-btn.active{background:var(--c-brand);color:#fff;font-weight:600;box-shadow:0 1px 4px rgba(59,130,246,.25);}
+.bottom-bar{position:absolute;bottom:0;left:0;right:0;padding:12px 20px;padding-bottom:calc(12px + env(safe-area-inset-bottom,20px));background:transparent;border-top:none;}
 .btn-dark{width:100%;height:48px;border-radius:var(--r-md);background:var(--dark-btn);color:#fff;font-size:16px;font-weight:600;border:none;cursor:pointer;font-family:var(--ff);transition:opacity .2s;}
 .btn-dark:active{opacity:.85;}
 </style>
@@ -73,12 +77,19 @@ body{background:#e8eaed;display:grid;place-items:center;min-height:100vh;font-fa
         <input type="text" placeholder="输入学生姓名" aria-label="学生姓名">
       </div>
       <div class="form-row">
+        <span class="label">性别</span>
+        <div class="gender-seg" role="radiogroup" aria-label="性别">
+          <button class="seg-btn active" role="radio" aria-checked="true">男</button>
+          <button class="seg-btn" role="radio" aria-checked="false">女</button>
+        </div>
+      </div>
+      <div class="form-row">
         <span class="label">学校</span>
         <input type="text" placeholder="输入学校名称" aria-label="学校名称">
       </div>
       <div class="form-row">
-        <span class="label">年级</span>
-        <div class="value">三年级<svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></div>
+        <span class="label">学龄段</span>
+        <div class="value">小学，三年级<svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></div>
       </div>
       <div class="form-row">
         <span class="label">班级</span>
