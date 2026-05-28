@@ -316,7 +316,7 @@ export default function ScheduleFormPage() {
         courses: [],
         viewMode: 'week',
         view_mode: 'week',
-        isDefault: (r.is_default ?? false) as boolean,
+        is_default: (r.is_default ?? false) as boolean,
         createdAt: Date.now(),
         updatedAt: Date.now(),
       };

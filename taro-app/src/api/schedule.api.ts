@@ -20,6 +20,7 @@ function toFrontendSchedule(data: BackendSchedule): Schedule {
   return {
     ...data,
     student_id: data.student_id || '',
+    is_default: data.is_default ?? false,
     createdAt: data.createdAt || normalizeTimestamp(data.createTime),
     updatedAt: data.updatedAt || normalizeTimestamp(data.updateTime),
   }
