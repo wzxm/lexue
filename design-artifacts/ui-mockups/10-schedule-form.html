@@ -31,15 +31,18 @@ body{background:#e8eaed;display:grid;place-items:center;font-family:var(--ff);-w
 .content::-webkit-scrollbar{display:none;}
 
 /* Steps */
-.steps{display:flex;gap:10px;margin-bottom:16px;}
-.step{flex:1;display:flex;align-items:center;gap:8px;padding:12px 14px;background:var(--surface);border-radius:var(--r-md);box-shadow:var(--shadow-sm);cursor:pointer;transition:.2s;}
-.step.active{background:var(--c-brand-subtle);box-shadow:0 0 0 1.5px var(--c-brand-light),var(--shadow-sm);}
-.step-icon{width:28px;height:28px;border-radius:var(--r-sm);display:grid;place-items:center;flex-shrink:0;}
-.step.active .step-icon{background:var(--c-brand);color:#fff;}
-.step:not(.active) .step-icon{background:var(--border-light);color:var(--fg-3);}
-.step-icon svg{width:16px;height:16px;}
-.step-text{font-size:13px;font-weight:600;color:var(--fg-3);}
+.steps{display:flex;align-items:center;gap:0;margin-bottom:18px;padding:0 12px;}
+.step{display:flex;align-items:center;gap:10px;flex:1;}
+.step-dot{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:700;font-family:var(--ff-mono);flex-shrink:0;transition:.2s;position:relative;}
+.step.active .step-dot{background:var(--c-brand);color:#fff;box-shadow:0 2px 8px rgba(59,130,246,.3);}
+.step:not(.active) .step-dot{background:var(--surface);color:var(--fg-3);border:1.5px solid var(--border);}
+.step-info{display:flex;flex-direction:column;gap:1px;}
+.step-text{font-size:13px;font-weight:600;}
 .step.active .step-text{color:var(--c-brand);}
+.step:not(.active) .step-text{color:var(--fg-3);}
+.step-desc{font-size:10px;color:var(--fg-3);font-weight:400;}
+.step-connector{width:32px;height:2px;border-radius:1px;background:var(--border);flex-shrink:0;margin:0 4px;position:relative;}
+.step-connector::after{content:'';position:absolute;left:0;top:0;height:100%;width:50%;border-radius:1px;background:var(--c-brand);opacity:.5;}
 
 /* Form card */
 .form-card{background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--shadow-sm);overflow:hidden;margin-bottom:14px;}
@@ -51,7 +54,7 @@ body{background:#e8eaed;display:grid;place-items:center;font-family:var(--ff);-w
 .form-value{font-size:14px;color:var(--fg-3);display:flex;align-items:center;gap:4px;}
 .form-value.filled{color:var(--fg);}
 .form-value .arrow{width:14px;height:14px;stroke:var(--fg-3);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
-.form-subtext{padding:0 16px 12px;font-size:12px;color:var(--fg-3);line-height:1.4;}
+.form-subtext{padding:6px 16px 14px;font-size:12px;color:var(--fg-3);line-height:1.4;}
 
 /* Period section */
 .period-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border-light);}
@@ -93,16 +96,19 @@ body{background:#e8eaed;display:grid;place-items:center;font-family:var(--ff);-w
     <!-- Steps -->
     <div class="steps" data-component="Steps">
       <div class="step active">
-        <div class="step-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <div class="step-dot">1</div>
+        <div class="step-info">
+          <span class="step-text">创建课表</span>
+          <span class="step-desc">学期与时间设置</span>
         </div>
-        <span class="step-text">创建课表</span>
       </div>
+      <div class="step-connector"></div>
       <div class="step">
-        <div class="step-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M12 8v8M8 12h8"/></svg>
+        <div class="step-dot">2</div>
+        <div class="step-info">
+          <span class="step-text">添加课程</span>
+          <span class="step-desc">录入课程信息</span>
         </div>
-        <span class="step-text">添加课程</span>
       </div>
     </div>
 

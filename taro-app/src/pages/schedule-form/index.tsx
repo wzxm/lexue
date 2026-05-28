@@ -1,4 +1,4 @@
-import { View, Text, Picker, Button, PageContainer } from "@tarojs/components";
+import { View, Text, Picker, Button, PageContainer, PageMeta, ScrollView } from "@tarojs/components";
 import { useState, useEffect, useCallback } from "react";
 import Taro from "@tarojs/taro";
 import { createSchedule, updateSchedule } from "../../api/schedule.api";
@@ -335,160 +335,153 @@ export default function ScheduleFormPage() {
     }
   };
 
-  // 渲染步骤指示器
   const renderSteps = () => (
     <View className="steps">
-      <View className={`step ${step === 1 ? "step--active" : "step--done"}`}>
-        <View className="step-icon">
-          <View className="step-icon-calendar">
-            <View className="calendar-top" />
-            <View className="calendar-body">
-              <View className="calendar-line" />
-              <View className="calendar-line" />
-            </View>
-          </View>
+      <View className={`step ${step === 1 ? 'step--active' : 'step--done'}`}>
+        <View className="step-dot">
+          <Text>1</Text>
         </View>
-        <Text className="step-label">创建课表</Text>
+        <View className="step-info">
+          <Text className="step-text">创建课表</Text>
+          <Text className="step-desc">学期与时间设置</Text>
+        </View>
       </View>
-      <View className={`step-line ${step === 2 ? "step-line--active" : ""}`} />
-      <View className={`step ${step === 2 ? "step--active" : "step--inactive"}`}>
-        <View className={`step-icon ${step !== 2 ? "step-icon--inactive" : ""}`}>
-          <View className="step-icon-doc">
-            <View className="doc-line" />
-            <View className="doc-line doc-line--short" />
-          </View>
+      <View className={`step-connector${step === 2 ? ' step-connector--active' : ''}`} />
+      <View className={`step ${step === 2 ? 'step--active' : 'step--inactive'}`}>
+        <View className="step-dot">
+          <Text>2</Text>
         </View>
-        <Text className={`step-label ${step !== 2 ? "step-label--inactive" : ""}`}>添加课程</Text>
+        <View className="step-info">
+          <Text className="step-text">添加课程</Text>
+          <Text className="step-desc">录入课程信息</Text>
+        </View>
       </View>
     </View>
   );
 
-  // 渲染时间段列表
   const renderPeriodSection = (
     emoji: string,
-    sessionClass: string,
     title: string,
     count: number,
     setCount: (fn: (v: number) => number) => void,
     min: number,
     max: number,
     periods: { index: number; startTime: string; endTime: string; label: string }[],
+    showSectionTitle = false,
   ) => (
-    <>
-      <View className="list-item">
-        <View className={`session-tag ${sessionClass}`}>
-          <Text>{emoji}</Text>
+    <View className="form-card">
+      {showSectionTitle && <Text className="form-section-title">设置时间</Text>}
+      <View className="period-header">
+        <View className="period-header-left">
+          <Text className="period-icon">{emoji}</Text>
+          <Text className="period-label">{title}</Text>
         </View>
-        <Text className="list-label">{title}</Text>
-        <View className="stepper">
-          <View className={`stepper-btn ${count <= min ? "stepper-btn--disabled" : ""}`} onClick={() => setCount((v) => clamp(v - 1, min, max))}>
-            <Text>－</Text>
+        <View className="counter">
+          <View
+            className={`counter-btn${count <= min ? ' counter-btn--disabled' : ''}`}
+            onClick={() => setCount(v => clamp(v - 1, min, max))}
+          >
+            <View className="counter-btn-icon counter-btn-icon--minus" />
           </View>
-          <Text className="stepper-val">{count}</Text>
-          <View className={`stepper-btn ${count >= max ? "stepper-btn--disabled" : ""}`} onClick={() => setCount((v) => clamp(v + 1, min, max))}>
-            <Text>＋</Text>
+          <Text className="counter-val">{count}</Text>
+          <View
+            className={`counter-btn${count >= max ? ' counter-btn--disabled' : ''}`}
+            onClick={() => setCount(v => clamp(v + 1, min, max))}
+          >
+            <View className="counter-btn-icon counter-btn-icon--plus" />
           </View>
         </View>
       </View>
-      {periods.map((p) => (
+      {periods.map(p => (
         <View key={p.index} className="period-row" onClick={() => openPeriodEditor(p)}>
-          <Text className="period-label">{p.label}</Text>
-          <Text className="period-time">
-            {p.startTime}-{p.endTime}
-          </Text>
-          <Text className="period-arrow">›</Text>
+          <Text className="period-name">{p.label}</Text>
+          <View className="period-time-wrap">
+            <Text className="period-time">{p.startTime}–{p.endTime}</Text>
+            <View className="period-arrow-icon" />
+          </View>
         </View>
       ))}
-    </>
+    </View>
   );
 
   return (
     <View className="sf-page">
+      <PageMeta pageStyle='overflow: hidden; height: 100vh;' />
       {renderSteps()}
 
       {step === 1 && (
-        <View className="sf-scroll-body">
-          {/* 选择学年 */}
-          <View className="section">
-            <Picker mode="selector" range={SEMESTER_LABELS} value={semesterIndex} onChange={(e) => setSemesterIndex(Number(e.detail.value))}>
-              <View className="list-item">
-                <Text className="list-label">选择学年</Text>
-                <View className="list-right">
-                  <Text className="list-value">{SEMESTER_LABELS[semesterIndex]}</Text>
-                  <Text className="list-arrow">›</Text>
+        <ScrollView scrollY enhanced showScrollbar={false} className="sf-scroll-body">
+          <View className="form-card">
+            <Text className="form-section-title">选择学年</Text>
+            <Picker mode="selector" range={SEMESTER_LABELS} value={semesterIndex} onChange={e => setSemesterIndex(Number(e.detail.value))}>
+              <View className="form-row">
+                <Text className="form-label">学期</Text>
+                <View className="form-value-wrap">
+                  <Text className="form-value form-value--filled">{SEMESTER_LABELS[semesterIndex]}</Text>
+                  <View className="form-arrow-icon" />
                 </View>
               </View>
             </Picker>
-            <Text className="section-hint">默认按当前日期推算学期</Text>
+            <Text className="form-subtext">默认按当前日期推算学期</Text>
           </View>
 
-          {/* 开学日期 */}
-          <View className="section">
+          <View className="form-card">
+            <Text className="form-section-title">日期与周数</Text>
             <Picker
               mode="date"
-              value={startDate || formatDate(new Date(), "YYYY-MM-DD")}
-              onChange={(e) => setStartDate(e.detail.value as string)}
+              value={startDate || formatDate(new Date(), 'YYYY-MM-DD')}
+              onChange={e => setStartDate(e.detail.value as string)}
             >
-              <View className="list-item">
-                <Text className="list-label">开学日期 <Text className="list-label-required">*</Text></Text>
-                <View className="list-right">
-                  <Text className={`list-value ${!startDate ? 'list-value--placeholder' : ''}`}>
+              <View className="form-row">
+                <Text className="form-label">
+                  开学日期<Text className="form-label-required">*</Text>
+                </Text>
+                <View className="form-value-wrap">
+                  <Text className={`form-value${startDate ? ' form-value--filled' : ''}`}>
                     {startDate || '用于计算当前周数'}
                   </Text>
-                  <Text className="list-arrow">›</Text>
+                  <View className="form-arrow-icon" />
                 </View>
               </View>
             </Picker>
-          </View>
-
-          {/* 本学期周数 */}
-          <View className="section">
             <Picker
               mode="selector"
               range={WEEK_LABELS}
               value={weekPickerIndex}
-              onChange={(e) => {
-                const idx = Number(e.detail.value);
-                setWeekPickerIndex(idx);
-                setTotalWeeks(WEEK_OPTIONS[idx]);
+              onChange={e => {
+                const idx = Number(e.detail.value)
+                setWeekPickerIndex(idx)
+                setTotalWeeks(WEEK_OPTIONS[idx])
               }}
+              className="form-picker"
             >
-              <View className="list-item">
-                <Text className="list-label">本学期周数</Text>
-                <View className="list-right">
-                  <Text className="list-value">{totalWeeks}</Text>
-                  <Text className="list-arrow">›</Text>
+              <View className="form-row">
+                <Text className="form-label">本学期周数</Text>
+                <View className="form-value-wrap">
+                  <Text className="form-value form-value--filled">{totalWeeks}</Text>
+                  <View className="form-arrow-icon" />
                 </View>
               </View>
             </Picker>
           </View>
 
-          {/* 归属学生 */}
-          <View className="section">
-            <View className="list-item" onClick={() => setShowStudentSheet(true)}>
-              <Text className="list-label">归属学生</Text>
-              <View className="list-right">
-                <Text className="list-value">{studentLabels[studentIndex] || "默认"}</Text>
-                <Text className="list-arrow">›</Text>
+          <View className="form-card">
+            <Text className="form-section-title">归属学生</Text>
+            <View className="form-row" onClick={() => setShowStudentSheet(true)}>
+              <Text className="form-label">学生</Text>
+              <View className="form-value-wrap">
+                <Text className="form-value form-value--filled">{studentLabels[studentIndex] || '默认'}</Text>
+                <View className="form-arrow-icon" />
               </View>
             </View>
           </View>
 
-          {/* 设置时间 */}
-          <Text className="section-title">设置时间</Text>
-          <View className="section">
-            {renderPeriodSection("☀️", "session-tag--morning", "上午课节数", morningCount, setMorningCount, 1, 6, morningPeriods)}
-          </View>
-          <View className="section">
-            {renderPeriodSection("🌤", "session-tag--afternoon", "下午课节数", afternoonCount, setAfternoonCount, 1, 6, afternoonPeriods)}
-          </View>
-          <View className="section">
-            {renderPeriodSection("🌙", "session-tag--evening", "晚上课节数", eveningCount, setEveningCount, 0, 4, eveningPeriods)}
-          </View>
+          {renderPeriodSection('☀️', '上午课节数', morningCount, setMorningCount, 1, 6, morningPeriods, true)}
+          {renderPeriodSection('🌤', '下午课节数', afternoonCount, setAfternoonCount, 1, 6, afternoonPeriods)}
+          {renderPeriodSection('🌙', '晚上课节数', eveningCount, setEveningCount, 0, 4, eveningPeriods)}
 
-          {/* 底部占位，防止被固定按钮遮挡 */}
-          {/* <View className="bottom-spacer" /> */}
-        </View>
+          <View className="bottom-spacer" />
+        </ScrollView>
       )}
 
       {step === 1 && (
@@ -560,8 +553,8 @@ export default function ScheduleFormPage() {
                 <View className="period-sheet-row">
                   <Text className="period-sheet-label">上课时间</Text>
                   <View className="period-sheet-right">
-                    <Text className="period-sheet-value">{editingStartTime || "08:00"}</Text>
-                    <Text className="list-arrow">›</Text>
+                    <Text className="period-sheet-value">{editingStartTime || '08:00'}</Text>
+                    <View className="form-arrow-icon" />
                   </View>
                 </View>
               </Picker>
@@ -569,8 +562,8 @@ export default function ScheduleFormPage() {
                 <View className="period-sheet-row">
                   <Text className="period-sheet-label">下课时间</Text>
                   <View className="period-sheet-right">
-                    <Text className="period-sheet-value">{editingEndTime || "08:40"}</Text>
-                    <Text className="list-arrow">›</Text>
+                    <Text className="period-sheet-value">{editingEndTime || '08:40'}</Text>
+                    <View className="form-arrow-icon" />
                   </View>
                 </View>
               </Picker>

@@ -1,365 +1,359 @@
-/* 新建课表页面 */
 .sf-page {
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   background: var(--color-bg);
-  padding-bottom: env(safe-area-inset-bottom);
 }
 
 /* ===== 步骤指示器 ===== */
 .steps {
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 40px 120px 32px;
-  // background: #FFFFFF;
+  padding: 36rpx 24rpx;
+  flex-shrink: 0;
 }
 
 .step {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 12px;
+  justify-content: center;
+  gap: 20rpx;
+  flex: 1;
+  min-width: 0;
 }
 
-.step-icon {
-  width: 64px;
-  height: 64px;
+.step-dot {
+  width: 60rpx;
+  height: 60rpx;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.step--done .step-icon {
-  background: var(--color-primary-subtle);
-}
-
-.step--active .step-icon {
-  background: var(--color-primary-subtle);
-}
-
-.step--inactive .step-icon {
-  background: var(--color-bg);
-}
-
-/* 日历图标 */
-.step-icon-calendar {
-  width: 28px;
-  height: 28px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.calendar-top {
-  width: 24px;
-  height: 6px;
-  background: var(--color-primary);
-  border-radius: 2px 2px 0 0;
-}
-
-.calendar-body {
-  width: 24px;
-  height: 18px;
-  border: 2px solid var(--color-primary);
-  border-top: none;
-  border-radius: 0 0 3px 3px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  gap: 3px;
-  padding: 3px;
-}
-
-.calendar-line {
-  width: 14px;
-  height: 2px;
-  background: var(--color-primary);
-  border-radius: 1px;
-}
-
-/* 文档图标 */
-.step-icon-doc {
-  width: 22px;
-  height: 26px;
-  border: 2px solid var(--color-primary);
-  border-radius: 3px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  gap: 4px;
-  padding: 4px;
-}
-
-.step--inactive .step-icon-doc {
-  border-color: var(--color-text-gray);
-}
-
-.doc-line {
-  width: 14px;
-  height: 2px;
-  background: var(--color-primary);
-  border-radius: 1px;
-}
-
-.doc-line--short {
-  width: 10px;
-}
-
-.step--inactive .doc-line {
-  background: var(--color-text-gray);
-}
-
-.step-label {
-  font-size: 24px;
-  color: var(--color-primary);
-}
-
-.step-label--inactive {
-  color: var(--color-text-gray);
-}
-
-.step-line {
-  flex: 1;
-  height: 3px;
-  background: linear-gradient(to right, var(--color-primary), var(--color-border));
-  margin: 0 20px;
-  margin-bottom: 32px;
-  border-radius: 2px;
-}
-
-.step-line--active {
-  background: linear-gradient(to right, var(--color-primary), var(--color-primary));
-}
-
-/* ===== 内容区域 ===== */
-.sf-scroll-body {
-}
-
-/* ===== 通用列表 ===== */
-.section {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  background: var(--color-card);
-  border-radius: 24px;
-  margin: 20px 24px 0;
-  overflow: hidden;
-  box-shadow: var(--shadow-card);
-}
-
-.section-title {
-  font-size: 26px;
-  color: var(--color-text-sub);
-  padding: 24px 32px 8px;
-  display: block;
-}
-
-.section-hint {
-  font-size: 24px;
-  color: var(--color-text-gray);
-  line-height: 1.5;
-  padding: 0 32px 28px;
-  margin-top: -6px;
-}
-
-.list-item {
-  display: flex;
-  align-items: center;
-  padding: 32px;
-  border-bottom: 0.431px solid var(--color-border-light);
-}
-
-.list-label {
-  flex: 1;
-  font-size: 30px;
-  color: var(--color-text-main);
-}
-
-.list-right {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.list-value {
-  font-size: 30px;
-  color: var(--color-text-sub);
-}
-
-.list-value--tag {
-  font-size: 26px;
-  color: var(--color-text-gray);
-}
-
-.list-value--placeholder {
-  color: var(--color-text-gray);
-}
-
-.list-label-required {
-  color: var(--color-danger);
-  margin-left: 4px;
-}
-
-.list-arrow {
-  font-size: 32px;
-  color: var(--color-text-gray);
-  line-height: 1;
-}
-
-.divider {
-  height: 1px;
-  background: var(--color-border);
-  margin: 0 32px;
-}
-
-/* ===== Stepper 控件 ===== */
-.stepper {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.stepper-btn {
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  border: 1px solid var(--color-border);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 32px;
-  color: var(--color-text-main);
-  background: var(--color-card);
-}
-
-.stepper-btn--disabled {
-  color: var(--color-text-gray);
-  border-color: var(--color-border-light);
-}
-
-.stepper-val {
-  font-size: 32px;
-  color: var(--color-text-main);
-  min-width: 48px;
-  text-align: center;
-  font-weight: 500;
-}
-
-/* ===== 时间段标签 ===== */
-.session-tag {
-  width: 52px;
-  height: 52px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 28px;
-  margin-right: 16px;
+  font-size: 26rpx;
+  font-weight: 700;
   flex-shrink: 0;
-}
 
-.session-tag--morning {
-  background: var(--color-primary-subtle);
-}
-
-.session-tag--afternoon {
-  background: #FFF8E1;
-}
-
-.session-tag--evening {
-  background: #EDE7F6;
-}
-
-/* ===== 课节时间行 ===== */
-.period-row {
-  display: flex;
-  align-items: center;
-  padding: 20px 32px 20px 52px;
-  background: var(--color-card);
-  border-bottom: 0.431px solid var(--color-border-light);
-
-  &:last-child {
-    border-bottom: none;
+  text {
+    color: inherit;
+    font-size: inherit;
+    font-weight: inherit;
+    line-height: 1;
   }
 }
 
-.period-label {
+.step--active .step-dot {
+  background: var(--color-primary);
+  color: #fff;
+  box-shadow: 0 4rpx 16rpx rgba(59, 130, 246, 0.3);
+}
+
+.step--done .step-dot {
+  background: var(--color-primary);
+  color: #fff;
+  box-shadow: 0 4rpx 16rpx rgba(59, 130, 246, 0.3);
+}
+
+.step--inactive .step-dot {
+  background: var(--color-card);
+  color: var(--color-text-gray);
+  border: 3rpx solid var(--color-border);
+  box-shadow: none;
+}
+
+.step-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2rpx;
+  min-width: 0;
+}
+
+.step-text {
+  font-size: 26rpx;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.step--active .step-text,
+.step--done .step-text {
+  color: var(--color-primary);
+}
+
+.step--inactive .step-text {
+  color: var(--color-text-gray);
+}
+
+.step-desc {
+  font-size: 20rpx;
+  color: var(--color-text-gray);
+  line-height: 1.3;
+}
+
+.step-connector {
+  width: 64rpx;
+  height: 3rpx;
+  border-radius: 2rpx;
+  background: linear-gradient(to right, var(--color-primary), var(--color-border));
+  flex-shrink: 0;
+  margin: 0 10rpx;
+  position: relative;
+  overflow: hidden;
+}
+
+.step-connector--active::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 50%;
+  border-radius: 2rpx;
+  background: var(--color-primary);
+  opacity: 0.5;
+}
+
+/* ===== 滚动内容 ===== */
+.sf-scroll-body {
+  flex: 1 1 0;
+  min-height: 0;
+  padding: 0 32rpx;
+  box-sizing: border-box;
+}
+
+.form-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--color-card);
+  border-radius: 40rpx;
+  margin-bottom: 28rpx;
+  overflow: hidden;
+  box-shadow: 0 2rpx 6rpx rgba(0, 0, 0, 0.06);
+}
+
+.form-section-title {
+  padding: 28rpx 32rpx 0;
+  font-size: 24rpx;
+  color: var(--color-text-gray);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+}
+
+.form-picker {
+  border-top: 1px solid var(--color-border-light);
+}
+
+.form-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28rpx 32rpx;
+  border-bottom: 1px solid var(--color-border-light);
+  box-sizing: border-box;
+}
+
+.form-row:last-child {
+  border-bottom: none;
+}
+
+.form-label {
+  font-size: 28rpx;
+  color: var(--color-text-main);
+  font-weight: 500;
+  flex-shrink: 0;
+  margin-right: 24rpx;
+}
+
+.form-label-required {
+  color: var(--color-danger);
+  margin-left: 4rpx;
+}
+
+.form-value-wrap {
   flex: 1;
-  font-size: 28px;
-  color: var(--color-text-sub);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12rpx;
+  min-width: 0;
+}
+
+.form-value {
+  font-size: 28rpx;
+  color: var(--color-text-gray);
+  font-weight: 500;
+  text-align: right;
+}
+
+.form-value--filled {
+  color: var(--color-text-main);
+}
+
+.form-arrow-icon {
+  width: 28rpx;
+  height: 28rpx;
+  flex-shrink: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238e8e93' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 18l6-6-6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+}
+
+.form-subtext {
+  padding: 12rpx 32rpx 28rpx;
+  font-size: 24rpx;
+  color: var(--color-text-gray);
+  line-height: 1.4;
+  border-top: 1px solid var(--color-border-light);
+}
+
+/* ===== 课节设置 ===== */
+.period-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28rpx 32rpx;
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.period-header-left {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.period-icon {
+  font-size: 32rpx;
+  line-height: 1;
+}
+
+.period-label {
+  font-size: 28rpx;
+  color: var(--color-text-main);
+  font-weight: 500;
+}
+
+.counter {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+}
+
+.counter-btn {
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 50%;
+  border: 3rpx solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  box-sizing: border-box;
+}
+
+.counter-btn--disabled {
+  opacity: 0.4;
+}
+
+.counter-btn-icon {
+  width: 28rpx;
+  height: 28rpx;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+}
+
+.counter-btn-icon--minus {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2345515e' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M5 12h14'/%3E%3C/svg%3E");
+}
+
+.counter-btn-icon--plus {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2345515e' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M12 5v14M5 12h14'/%3E%3C/svg%3E");
+}
+
+.counter-val {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: var(--color-text-main);
+  min-width: 40rpx;
+  text-align: center;
+}
+
+.period-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24rpx 32rpx 24rpx 88rpx;
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.period-row:last-child {
+  border-bottom: none;
+}
+
+.period-name {
+  font-size: 26rpx;
+  color: var(--color-text-main);
+  flex: 1;
+}
+
+.period-time-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
 }
 
 .period-time {
-  font-size: 28px;
-  color: var(--color-text-gray);
-  margin-right: 8px;
-}
-
-.period-arrow {
-  font-size: 32px;
+  font-size: 26rpx;
   color: var(--color-text-gray);
 }
 
-/* ===== 底部保存按钮 ===== */
+.period-arrow-icon {
+  width: 24rpx;
+  height: 24rpx;
+  flex-shrink: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238e8e93' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 18l6-6-6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+}
+
 .bottom-spacer {
-  height: 160px;
+  height: calc(40rpx + env(safe-area-inset-bottom));
 }
 
 .footer {
-  padding: 24px 40px;
-  padding-bottom: calc(24px + env(safe-area-inset-bottom));
+  flex-shrink: 0;
+  padding: 24rpx 32rpx calc(24rpx + env(safe-area-inset-bottom));
+  background: transparent;
   z-index: 100;
 }
 
 .save-btn {
   width: 100%;
-  height: 96px;
-  border-radius: 48px;
+  height: 96rpx;
+  border-radius: 28rpx;
   background: var(--color-dark-btn);
-  color: #FFFFFF;
-  font-size: 34px;
+  color: #ffffff;
+  font-size: 30rpx;
   font-weight: 600;
+  letter-spacing: 0.02em;
   border: none;
-  line-height: 96px;
-  box-shadow: none;
+  line-height: 96rpx;
+  box-shadow: 0 8rpx 28rpx rgba(24, 30, 37, 0.22);
 }
 
 .save-btn[loading='true'] {
   background: var(--color-dark-btn);
-  color: #FFFFFF;
+  color: #ffffff;
 }
 
 .save-btn::after {
   border: none;
 }
 
-/* ===== Step 2 添加课程方式 ===== */
-.step2-title {
-  display: block;
-  text-align: center;
-  font-size: 32px;
-  color: var(--color-text-main);
-  margin: 48px 0 24px;
-  font-weight: 600;
-}
-
-.step2-footer {
-  text-align: center;
-  margin-top: 80px;
-  padding-bottom: 60px;
-}
-
-.add-later-text {
-  font-size: 28px;
-  color: var(--color-text-gray);
-  padding: 20px;
-}
-
 /* ===== 归属学生选择弹窗 ===== */
 .student-sheet {
-  padding: 40px 32px calc(32px + env(safe-area-inset-bottom));
+  padding: 40rpx 32rpx calc(32rpx + env(safe-area-inset-bottom));
   box-sizing: border-box;
 }
 
@@ -368,11 +362,11 @@
   align-items: center;
   justify-content: center;
   position: relative;
-  margin-bottom: 48px;
+  margin-bottom: 48rpx;
 }
 
 .student-sheet-title {
-  font-size: 34px;
+  font-size: 34rpx;
   font-weight: 600;
   color: var(--color-text-main);
 }
@@ -380,28 +374,28 @@
 .student-sheet-close {
   position: absolute;
   right: 0;
-  font-size: 56px;
+  font-size: 56rpx;
   color: var(--color-text-gray);
   line-height: 1;
-  padding: 10px;
-  margin-right: -10px;
+  padding: 10rpx;
+  margin-right: -10rpx;
   font-weight: 300;
 }
 
 .student-sheet-list {
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  margin-bottom: 64px;
+  gap: 24rpx;
+  margin-bottom: 64rpx;
 }
 
 .student-sheet-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 36px 40px;
+  padding: 36rpx 40rpx;
   background: var(--color-card);
-  border-radius: 24px;
+  border-radius: 24rpx;
 }
 
 .student-sheet-item--active {
@@ -409,12 +403,12 @@
 }
 
 .student-sheet-name {
-  font-size: 32px;
+  font-size: 32rpx;
   color: var(--color-text-main);
 }
 
 .student-sheet-check {
-  font-size: 32px;
+  font-size: 32rpx;
   color: var(--color-primary);
   font-weight: bold;
 }
@@ -424,14 +418,14 @@
 }
 
 .student-sheet-manage {
-  font-size: 30px;
+  font-size: 30rpx;
   color: var(--color-primary);
-  padding: 20px 60px;
+  padding: 20rpx 60rpx;
 }
 
 /* ===== 课节时间编辑弹窗 ===== */
 .period-sheet {
-  padding: 40px 32px calc(32px + env(safe-area-inset-bottom));
+  padding: 40rpx 32rpx calc(32rpx + env(safe-area-inset-bottom));
   box-sizing: border-box;
 }
 
@@ -440,11 +434,11 @@
   align-items: center;
   justify-content: center;
   position: relative;
-  margin-bottom: 32px;
+  margin-bottom: 32rpx;
 }
 
 .period-sheet-title {
-  font-size: 34px;
+  font-size: 34rpx;
   font-weight: 600;
   color: var(--color-text-main);
 }
@@ -452,60 +446,62 @@
 .period-sheet-close {
   position: absolute;
   right: 0;
-  font-size: 56px;
+  font-size: 56rpx;
   color: var(--color-text-gray);
   line-height: 1;
-  padding: 10px;
-  margin-right: -10px;
+  padding: 10rpx;
+  margin-right: -10rpx;
   font-weight: 300;
 }
 
 .period-sheet-card {
   background: var(--color-card);
-  border-radius: 24px;
+  border-radius: 40rpx;
   overflow: hidden;
-  box-shadow: var(--shadow-card);
+  box-shadow: 0 2rpx 6rpx rgba(0, 0, 0, 0.06);
 }
 
 .period-sheet-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 32px;
-  border-bottom: 0.431px solid var(--color-border-light);
+  padding: 28rpx 32rpx;
+  border-bottom: 1px solid var(--color-border-light);
 }
 
-.period-sheet-card :last-child .period-sheet-row {
+.period-sheet-row:last-child {
   border-bottom: none;
 }
 
 .period-sheet-label {
-  font-size: 30px;
+  font-size: 28rpx;
   color: var(--color-text-main);
+  font-weight: 500;
 }
 
 .period-sheet-right {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 12rpx;
 }
 
 .period-sheet-value {
-  font-size: 30px;
+  font-size: 28rpx;
   color: var(--color-text-sub);
 }
 
 .period-sheet-confirm {
-  margin-top: 32px;
+  margin-top: 32rpx;
   width: 100%;
-  height: 88px;
-  border-radius: 44px;
-  background: var(--color-primary);
-  color: #FFFFFF;
-  font-size: 32px;
+  height: 96rpx;
+  border-radius: 28rpx;
+  background: var(--color-dark-btn);
+  color: #ffffff;
+  font-size: 30rpx;
   font-weight: 600;
   border: none;
-  line-height: 88px;
+  line-height: 96rpx;
+  box-shadow: 0 8rpx 28rpx rgba(24, 30, 37, 0.22);
 }
 
 .period-sheet-confirm::after {
