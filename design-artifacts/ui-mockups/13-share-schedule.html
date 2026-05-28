@@ -1,108 +1,408 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>13 分享课表 - 乐学课表</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box;}
-:root{--c-brand:#3b82f6;--c-brand-deep:#1456f0;--c-brand-hover:#2563eb;--c-brand-light:#bfdbfe;--c-brand-subtle:#eff6ff;--bg:#f5f6f8;--surface:#ffffff;--surface-muted:#f9fafb;--fg:#1a1a2e;--fg-2:#45515e;--fg-3:#8e8e93;--border:#e5e7eb;--border-light:#f2f3f5;--danger:#ef4444;--success:#16a34a;--warn:#f59e0b;--dark-btn:#181e25;--shadow-sm:0 1px 3px rgba(0,0,0,.06);--shadow-md:0 4px 12px rgba(0,0,0,.06);--r-sm:8px;--r-md:14px;--r-lg:20px;--r-xl:24px;--r-pill:999px;--ff:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif;--ff-mono:ui-monospace,'SF Mono',Menlo,monospace;}
-body{background:#e8eaed;display:grid;place-items:center;min-height:100vh;font-family:var(--ff);}
-.phone{width:375px;height:812px;background:var(--bg);border-radius:44px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.18);display:flex;flex-direction:column;position:relative;}
-.status-bar{height:50px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 6px;background:var(--surface);flex-shrink:0;}
-.status-bar .time{font-size:15px;font-weight:600;color:var(--fg);}
-.status-bar .icons{display:flex;gap:5px;align-items:center;}
-.status-bar .icons svg{width:16px;height:16px;}
-.nav-bar{height:48px;display:flex;align-items:center;padding:0 16px;background:var(--surface);border-bottom:1px solid var(--border-light);flex-shrink:0;}
-.nav-bar .back{width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
-.nav-bar .back svg{width:20px;height:20px;color:var(--fg);}
-.nav-bar .title{flex:1;text-align:center;font-size:16px;font-weight:600;color:var(--fg);margin-right:32px;}
-.content{flex:1;overflow-y:auto;padding:16px 20px;}
-.instruction{font-size:14px;color:var(--fg-2);margin-bottom:16px;padding:0 2px;}
-.schedule-card{background:var(--surface);border-radius:var(--r-md);box-shadow:var(--shadow-sm);padding:16px;margin-bottom:12px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:box-shadow .2s;}
-.schedule-card:active{box-shadow:var(--shadow-md);}
-.card-icon{width:44px;height:44px;border-radius:12px;background:var(--c-brand-subtle);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.card-icon svg{width:22px;height:22px;color:var(--c-brand);}
-.card-body{flex:1;min-width:0;}
-.card-name{font-size:15px;font-weight:600;color:var(--fg);margin-bottom:4px;}
-.card-meta{font-size:12px;color:var(--fg-3);display:flex;align-items:center;gap:6px;}
-.card-meta .dot{width:3px;height:3px;border-radius:50%;background:var(--fg-3);opacity:.5;}
-.badge{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:500;padding:2px 8px;border-radius:var(--r-pill);}
-.badge-success{background:#dcfce7;color:var(--success);}
-.card-action{flex-shrink:0;width:36px;height:36px;border-radius:10px;background:var(--surface-muted);display:flex;align-items:center;justify-content:center;}
-.card-action svg{width:18px;height:18px;color:var(--fg-3);}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="canvas:aspect-ratio" content="375:812">
+  <title>分享课表 - 清新自然</title>
+  <style>
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --brand: #3b82f6;
+      --brand-deep: #1456f0;
+      --brand-hover: #2563eb;
+      --brand-light: #bfdbfe;
+      --brand-subtle: #eff6ff;
+      --bg: #f5f8fd;
+      --bg-end: #fafcff;
+      --surface: #ffffff;
+      --surface-muted: #f9fbff;
+      --text-dark: #1a1a2e;
+      --text-secondary: #45515e;
+      --text-tertiary: #8e8e93;
+      --border: #dbe5f0;
+      --border-light: #edf2f9;
+      --warn: #e8a838;
+      --success: #22c55e;
+      --danger: #ef6b6b;
+      --shadow-sm: 0 1px 4px rgba(59,130,246,.06);
+      --shadow-md: 0 4px 16px rgba(59,130,246,.08);
+      --radius-sm: 10px;
+      --radius-md: 16px;
+      --radius-lg: 22px;
+      --radius-xl: 28px;
+      --radius-pill: 999px;
+      --phone-bg: #e2e8f0;
+      --phone-shadow: 0 8px 40px rgba(59,130,246,.12), 0 0 0 1px rgba(59,130,246,.06);
+      --warn-bg: #fefce8;
+      --warn-text: #78713c;
+      --icon-dark: #1a1a2e;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: var(--phone-bg);
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      padding: 20px 0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .phone {
+      width: 375px;
+      min-height: 812px;
+      background: var(--bg);
+      border-radius: 40px;
+      overflow: hidden;
+      box-shadow: var(--phone-shadow);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    /* Status Bar */
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 28px 10px;
+      background: var(--surface);
+      position: relative;
+      z-index: 2;
+    }
+
+    .status-time {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-dark);
+      letter-spacing: .02em;
+    }
+
+    .status-icons {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--icon-dark);
+    }
+
+    .status-icons svg {
+      display: block;
+    }
+
+    /* Nav Bar */
+    .nav-bar {
+      display: flex;
+      align-items: center;
+      padding: 10px 18px 12px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border-light);
+      position: relative;
+      z-index: 2;
+    }
+
+    .nav-back {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: background .2s;
+      flex-shrink: 0;
+      color: var(--icon-dark);
+    }
+
+    .nav-back:hover {
+      background: var(--brand-subtle);
+    }
+
+    .nav-back svg {
+      display: block;
+    }
+
+    .nav-title {
+      flex: 1;
+      text-align: center;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-dark);
+      margin-right: 32px;
+    }
+
+    /* Content */
+    .content {
+      padding: 18px;
+      flex: 1;
+      background: linear-gradient(180deg, var(--bg) 0%, var(--bg-end) 100%);
+    }
+
+    /* Tip Card */
+    .tip-card {
+      background: var(--surface-muted);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-md);
+      padding: 16px 18px;
+      margin-bottom: 18px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .tip-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .tip-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 12.5px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    .tip-bullet {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--brand-light);
+      flex-shrink: 0;
+      margin-top: 7px;
+    }
+
+    .tip-warn {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      background: var(--warn-bg);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      font-size: 12.5px;
+      color: var(--warn-text);
+      line-height: 1.6;
+    }
+
+    .tip-warn-icon {
+      flex-shrink: 0;
+      margin-top: 1px;
+      color: var(--warn-text);
+    }
+
+    /* Group Header */
+    .group-header {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--brand);
+      letter-spacing: .03em;
+      margin-bottom: 12px;
+      padding-left: 2px;
+    }
+
+    /* Share Card */
+    .share-card {
+      background: var(--surface);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-light);
+      border-top: 3px solid var(--brand-light);
+      padding: 16px 18px;
+      margin-bottom: 12px;
+      box-shadow: var(--shadow-md);
+    }
+
+    .share-card-title {
+      font-size: 14.5px;
+      font-weight: 600;
+      color: var(--text-dark);
+      margin-bottom: 12px;
+    }
+
+    .share-divider {
+      height: 1px;
+      background: var(--border-light);
+      margin-bottom: 14px;
+    }
+
+    .code-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .code-label {
+      font-size: 12.5px;
+      color: var(--text-tertiary);
+      flex-shrink: 0;
+    }
+
+    .code-value {
+      font-family: "SF Mono", "Fira Code", "Cascadia Code", "JetBrains Mono", Menlo, monospace;
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--brand-deep);
+      letter-spacing: .08em;
+      flex: 1;
+    }
+
+    .code-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .btn-icon {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-sm);
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      transition: background .2s;
+      color: var(--brand);
+    }
+
+    .btn-icon:hover {
+      background: var(--brand-subtle);
+    }
+
+    .btn-icon svg {
+      display: block;
+    }
+
+    .btn-copy {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--brand);
+      background: var(--brand-subtle);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-pill);
+      padding: 5px 14px;
+      cursor: pointer;
+      transition: all .2s;
+      white-space: nowrap;
+    }
+
+    .btn-copy:hover {
+      background: var(--brand-light);
+      border-color: var(--brand-light);
+    }
+  </style>
 </head>
 <body>
-<main class="phone" data-component="Share Schedule">
-  <!-- Status Bar -->
-  <div class="status-bar">
-    <span class="time">9:41</span>
-    <div class="icons">
-      <svg viewBox="0 0 18 18" fill="currentColor"><rect x="1" y="10" width="3" height="6" rx="1" fill="#1a1a2e"/><rect x="5.5" y="7" width="3" height="9" rx="1" fill="#1a1a2e"/><rect x="10" y="4" width="3" height="12" rx="1" fill="#1a1a2e"/><rect x="14.5" y="1" width="3" height="15" rx="1" fill="#1a1a2e"/></svg>
-      <svg viewBox="0 0 18 18" fill="none"><path d="M9 4C6 4 3.5 5.2 1.5 7.2L3 8.7C4.6 7.1 6.7 6 9 6s4.4 1.1 6 2.7l1.5-1.5C14.5 5.2 12 4 9 4z" fill="#1a1a2e"/><path d="M9 8C7 8 5.2 8.8 4 10.1L5.5 11.6C6.3 10.8 7.6 10 9 10s2.7.8 3.5 1.6L14 10.1C12.8 8.8 11 8 9 8z" fill="#1a1a2e"/><circle cx="9" cy="14" r="2" fill="#1a1a2e"/></svg>
-      <svg viewBox="0 0 28 14" fill="none"><rect x=".5" y=".5" width="23" height="13" rx="3" stroke="#1a1a2e" stroke-opacity=".35"/><rect x="2" y="2" width="18" height="10" rx="1.5" fill="#1a1a2e"/><path d="M25 5v4a2.5 2.5 0 000-4z" fill="#1a1a2e" opacity=".4"/></svg>
-    </div>
-  </div>
-  <!-- Nav Bar -->
-  <div class="nav-bar">
-    <div class="back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg></div>
-    <div class="title">分享课表</div>
-  </div>
-  <!-- Content -->
-  <div class="content">
-    <p class="instruction">选择要分享给家人的课表</p>
+  <main class="phone" data-component="Share Schedule - Fresh">
 
-    <div class="schedule-card">
-      <div class="card-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-      </div>
-      <div class="card-body">
-        <div class="card-name">小明 · 2025春季学期</div>
-        <div class="card-meta">
-          <span>7门课程</span>
-          <span class="badge badge-success">已分享</span>
-        </div>
-      </div>
-      <div class="card-action">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>
+    <!-- Status Bar -->
+    <div class="status-bar">
+      <span class="status-time">12:16</span>
+      <div class="status-icons">
+        <svg width="17" height="11" viewBox="0 0 17 11" fill="none">
+          <rect x="0" y="7" width="3" height="4" rx="0.8" fill="currentColor"/>
+          <rect x="4.5" y="5" width="3" height="6" rx="0.8" fill="currentColor"/>
+          <rect x="9" y="2.5" width="3" height="8.5" rx="0.8" fill="currentColor"/>
+          <rect x="13.5" y="0" width="3" height="11" rx="0.8" fill="currentColor"/>
+        </svg>
+        <svg width="16" height="11" viewBox="0 0 16 11" fill="none">
+          <path d="M8 2.5C10.6 2.5 12.9 3.6 14.5 5.4L15.6 4.3C13.7 2.2 11 0.9 8 0.9C5 0.9 2.3 2.2 0.4 4.3L1.5 5.4C3.1 3.6 5.4 2.5 8 2.5Z" fill="currentColor"/>
+          <path d="M8 5.8C9.7 5.8 11.2 6.5 12.3 7.6L13.4 6.5C12 5.1 10.1 4.2 8 4.2C5.9 4.2 4 5.1 2.6 6.5L3.7 7.6C4.8 6.5 6.3 5.8 8 5.8Z" fill="currentColor"/>
+          <circle cx="8" cy="9.8" r="1.2" fill="currentColor"/>
+        </svg>
+        <svg width="25" height="12" viewBox="0 0 25 12" fill="none">
+          <rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="currentColor" stroke-opacity="0.3"/>
+          <rect x="22.5" y="3.5" width="2" height="5" rx="1" fill="currentColor" fill-opacity="0.3"/>
+          <rect x="2" y="2" width="15" height="8" rx="1.5" fill="currentColor"/>
+        </svg>
       </div>
     </div>
 
-    <div class="schedule-card">
-      <div class="card-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+    <!-- Nav Bar -->
+    <div class="nav-bar">
+      <div class="nav-back">
+        <svg width="12" height="20" viewBox="0 0 12 20" fill="none">
+          <path d="M10.5 1.5L2 10L10.5 18.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
       </div>
-      <div class="card-body">
-        <div class="card-name">小明 · 2024秋季学期</div>
-        <div class="card-meta">
-          <span>6门课程</span>
-          <span class="dot"></span>
-          <span>已归档</span>
-        </div>
-      </div>
-      <div class="card-action">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>
-      </div>
+      <span class="nav-title">分享课表</span>
     </div>
 
-    <div class="schedule-card">
-      <div class="card-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-      </div>
-      <div class="card-body">
-        <div class="card-name">小红 · 2025春季学期</div>
-        <div class="card-meta">
-          <span>8门课程</span>
-          <span class="badge badge-success">已分享</span>
+    <!-- Content -->
+    <div class="content">
+
+      <!-- Tip Card -->
+      <div class="tip-card">
+        <ul class="tip-list">
+          <li class="tip-item">
+            <span class="tip-bullet"></span>
+            <span>仅能分享自己创建的课表，每个课表有独立口令。</span>
+          </li>
+          <li class="tip-item">
+            <span class="tip-bullet"></span>
+            <span>分享后，任何人获得口令均可复制课表。</span>
+          </li>
+        </ul>
+        <div class="tip-warn">
+          <svg class="tip-warn-icon" width="15" height="15" viewBox="0 0 15 15" fill="none">
+            <path d="M7.5 1L14.43 13H0.57L7.5 1Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+            <line x1="7.5" y1="5.5" x2="7.5" y2="9" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+            <circle cx="7.5" cy="11" r="0.6" fill="currentColor"/>
+          </svg>
+          <span>复制课表不会复制学生任何信息、不会复制老师电话。</span>
         </div>
       </div>
-      <div class="card-action">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>
+
+      <!-- Group Header -->
+      <div class="group-header">默认学生</div>
+
+      <!-- Share Card 1 -->
+      <div class="share-card">
+        <div class="share-card-title">2025~2026 下学期课表</div>
+        <div class="share-divider"></div>
+        <div class="code-row">
+          <span class="code-label">口令:</span>
+          <span class="code-value">KH6W GDNZ</span>
+          <div class="code-actions">
+            <button class="btn-icon" aria-label="刷新口令">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+              </svg>
+            </button>
+            <button class="btn-copy">复制</button>
+          </div>
+        </div>
       </div>
+
+      <!-- Share Card 2 -->
+      <div class="share-card">
+        <div class="share-card-title">2025~2026 上学期课表</div>
+        <div class="share-divider"></div>
+        <div class="code-row">
+          <span class="code-label">口令:</span>
+          <span class="code-value">BMRQ CRQM</span>
+          <div class="code-actions">
+            <button class="btn-icon" aria-label="刷新口令">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+              </svg>
+            </button>
+            <button class="btn-copy">复制</button>
+          </div>
+        </div>
+      </div>
+
     </div>
-  </div>
-</main>
+
+  </main>
 </body>
-
 </html>
