@@ -27,7 +27,7 @@ export default defineAppConfig({
     borderStyle: 'white',
     list: [
       { pagePath: 'pages/schedule/index', text: '课表' },
-      { pagePath: 'pages/tools/index', text: '工具' },
+      // { pagePath: 'pages/tools/index', text: '工具' },
       { pagePath: 'pages/settings/index', text: '设置' },
     ],
   },
@@ -38,6 +38,5 @@ export default defineAppConfig({
     navigationBarTitleText: '智鑫课表',
     navigationBarTextStyle: 'black',
   },
-  navigateToMiniProgramAppIdList: ['wxe186f230ce102b30'],
   cloud: true,
 })

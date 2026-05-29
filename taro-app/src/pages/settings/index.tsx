@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { View, Text, PageContainer, Image, Button } from '@tarojs/components'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { View } from '@tarojs/components'
 import Taro, { useDidHide, useDidShow, useShareAppMessage, useUnload } from '@tarojs/taro'
 import { tabState } from '../../utils/tabState'
 import { ROUTES } from '../../constants/routes'
@@ -12,44 +12,34 @@ import {
   isCloudFileId,
   resolveCloudAvatarUrl,
 } from '../../utils/avatar'
-import bannerImg from '../../assets/banner.png'
+import AccountMenuSheet from './components/AccountMenuSheet'
 import ContactModal from './components/ContactModal'
 import EditProfileModal from './components/EditProfileModal'
+import SettingsContent from './components/SettingsContent'
+import SettingsHeader from './components/SettingsHeader'
+import { type MenuRow } from './settingsMenu'
 import './index.scss'
 
-type MenuKey = 'notify' | 'family' | 'scheduleTab' | 'studentManage' | 'student' | 'shareSchedule' | 'feedback' | 'recommend'
+const CONTACT_TEXT = '📮email：up91@foxmail.com\n✉️微信号：atgoing'
 
-interface MenuRow {
-  key: MenuKey
-  label: string
-  icon: string
-}
+function useNavLayout() {
+  return useMemo(() => {
+    const windowInfo = Taro.getWindowInfo()
+    const menuButtonInfo = Taro.getMenuButtonBoundingClientRect()
+    const statusBarHeight = windowInfo.statusBarHeight || 0
+    const navBarHeight = (menuButtonInfo.top - statusBarHeight) * 2 + menuButtonInfo.height
 
-const menuRows: MenuRow[] = [
-  // { key: 'notify', label: '通知提醒', icon: '\ue759' },
-  { key: 'family', label: '家人管理', icon: '\ue600' },
-  { key: 'scheduleTab', label: '课表管理', icon: '\ue696' },
-  { key: 'studentManage', label: '学生管理', icon: '\ue706' },
-  // { key: 'student', label: '展示管理', icon: '\ue706' },
-  { key: 'shareSchedule', label: '分享课表', icon: '\ue729' },
-  { key: 'feedback', label: '联系我们', icon: '\ue759' },
-  // { key: 'recommend', label: '推荐小程序', icon: '\ue729' },
-]
-
-function menuSuffix(row: MenuRow, summary: SettingsSummary | null): string {
-  if (!summary) return ''
-  switch (row.key) {
-    case 'notify':
-      return summary.notifyAnyEnabled ? '开' : '关'
-    case 'family':
-      return `${summary.familyMemberCount}位`
-    case 'scheduleTab':
-      return `${summary.scheduleCount}张`
-    case 'studentManage':
-      return `${summary.studentCount}位`
-    default:
-      return ''
-  }
+    return {
+      navBarStyle: {
+        paddingTop: `${menuButtonInfo.top}px`,
+        paddingRight: `${windowInfo.windowWidth - menuButtonInfo.left}px`,
+      },
+      spacerStyle: {
+        flexShrink: 0,
+        height: `${statusBarHeight + navBarHeight}px`,
+      },
+    }
+  }, [])
 }
 
 export default function SettingsPage() {
@@ -60,13 +50,14 @@ export default function SettingsPage() {
   const [settingsSummary, setSettingsSummary] = useState<SettingsSummary | null>(null)
   const [contactVisible, setContactVisible] = useState(false)
   const [avatarSrc, setAvatarSrc] = useState(defaultAvatar)
+  const { navBarStyle, spacerStyle } = useNavLayout()
 
   useShareAppMessage(() => ({
     title: '智鑫课表：课程管理、家庭共享、上课提醒',
     path: ROUTES.SCHEDULE,
   }))
 
-  const loadSettingsSummary = async () => {
+  const loadSettingsSummary = useCallback(async () => {
     if (!isLoggedIn) {
       setSettingsSummary(null)
       return
@@ -77,11 +68,11 @@ export default function SettingsPage() {
     } catch {
       setSettingsSummary(null)
     }
-  }
+  }, [isLoggedIn])
 
   useDidShow(() => {
     tabState.setVisible(true)
-    tabState.setSelected(2)
+    tabState.setSelected(1)
     loadSettingsSummary()
   })
 
@@ -93,40 +84,35 @@ export default function SettingsPage() {
     tabState.setVisible(true)
   })
 
-  const windowInfo = Taro.getWindowInfo()
-  const menuButtonInfo = Taro.getMenuButtonBoundingClientRect()
-
-  const statusBarHeight = windowInfo.statusBarHeight || 0
-  const navBarHeight = (menuButtonInfo.top - statusBarHeight) * 2 + menuButtonInfo.height
-
-  const goLogin = () => {
+  const goLogin = useCallback(() => {
     Taro.navigateTo({ url: ROUTES.LOGIN })
-  }
+  }, [])
 
-  const handleUserClick = () => {
+  const handleUserClick = useCallback(() => {
     if (isLoggedIn) {
       tabState.setVisible(false)
       setActiveSheet('menu')
     }
-  }
+  }, [isLoggedIn])
 
-  const closeSheet = () => {
+  const closeSheet = useCallback(() => {
     setActiveSheet('none')
     tabState.setVisible(true)
-  }
+  }, [])
 
-  const openRenameSheet = () => {
+  const openRenameSheet = useCallback(() => {
     setActiveSheet('rename')
-  }
+  }, [])
 
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     logout()
-    closeSheet()
-  }
+    setActiveSheet('none')
+    tabState.setVisible(true)
+  }, [logout])
 
-  const onMenu = (row: MenuRow) => {
+  const onMenu = useCallback((row: MenuRow) => {
     if (!isLoggedIn) {
-      goLogin()
+      Taro.navigateTo({ url: ROUTES.LOGIN })
       return
     }
     switch (row.key) {
@@ -157,7 +143,7 @@ export default function SettingsPage() {
       default:
         break
     }
-  }
+  }, [isLoggedIn])
 
   useEffect(() => {
     const raw = userInfo?.avatarUrl
@@ -182,165 +168,50 @@ export default function SettingsPage() {
   }, [userInfo?.avatarUrl])
 
   const openIdTip = userInfo?.openId ? `id:${userInfo.openId.slice(0, 6)}*** ▾` : '点击管理账号 ▾'
-  const contactText = '📮email：up91@foxmail.com\n✉️微信号：atgoing'
+  const nickname = userInfo?.nickname || '微信昵称限6字...'
 
-  const closeContactModal = () => setContactVisible(false)
+  const closeContactModal = useCallback(() => setContactVisible(false), [])
 
-  const handleCopyContact = async () => {
+  const handleCopyContact = useCallback(async () => {
     try {
-      await Taro.setClipboardData({ data: contactText })
+      await Taro.setClipboardData({ data: CONTACT_TEXT })
       Taro.showToast({ title: '联系方式已复制', icon: 'success' })
-      closeContactModal()
+      setContactVisible(false)
     } catch {
       Taro.showToast({ title: '复制失败，请稍后再试', icon: 'none' })
     }
-  }
+  }, [])
 
-  const handleGuestBannerClick = () => {
+  const handleGuestBannerClick = useCallback(() => {
     const { appId, path } = SETTINGS_AD_BANNER_MINI_PROGRAM
-    Taro.navigateToMiniProgram({
-      appId,
-      path,
-      fail: () => {
-        // Taro.showToast({ title: '跳转失败，请稍后再试', icon: 'none' })
-      },
-    })
-  }
+    Taro.navigateToMiniProgram({ appId, path, fail: () => {} })
+  }, [])
 
   return (
     <View className={`settings-page ${!isLoggedIn ? 'settings-page--guest' : ''}`}>
-      {/* 自定义导航栏背景 */}
-      <View className='custom-nav-bg' />
+      <SettingsHeader
+        isLoggedIn={isLoggedIn}
+        avatarSrc={avatarSrc}
+        nickname={nickname}
+        openIdTip={openIdTip}
+        navBarStyle={navBarStyle}
+        spacerStyle={spacerStyle}
+        onGoLogin={goLogin}
+        onUserClick={handleUserClick}
+      />
 
-      {/* 自定义导航栏内容 */}
-      <View
-        className='custom-nav-bar'
-        style={{
-          paddingTop: `${menuButtonInfo.top}px`,
-          paddingRight: `${windowInfo.windowWidth - menuButtonInfo.left}px`
-        }}
-      >
-        <View className='nav-title-wrap'>
-          {!isLoggedIn ? (
-            <View className='user-info-nav' onClick={goLogin}>
-              <View className='guest-avatar-small'>
-                <Image className='guest-avatar-small-img' src={defaultAvatar} mode='aspectFill' />
-              </View>
-              <View className='user-text'>
-                <Text className='name'>登录注册</Text>
-                <Text className='school'>等你来用～</Text>
-              </View>
-            </View>
-          ) : (
-            <View className='user-info-nav' onClick={handleUserClick}>
-              <Image className='avatar-img' src={avatarSrc} mode='aspectFill' />
-              <View className='user-text'>
-                <View className='name-row'>
-                  <Text className='name'>{userInfo?.nickname || '微信昵称限6字...'}</Text>
-                </View>
-                <Text className='school'>{openIdTip}</Text>
-              </View>
-            </View>
-          )}
-        </View>
-      </View>
+      <SettingsContent
+        settingsSummary={settingsSummary}
+        onMenu={onMenu}
+        onGuestBannerClick={handleGuestBannerClick}
+      />
 
-      <View style={{ flexShrink: 0, height: `${statusBarHeight + navBarHeight}px` }} />
-      <View className='content'>
-        <View className='guest-top'>
-          <View
-            className='guest-banner'
-            hoverClass='guest-banner--pressed'
-            onClick={handleGuestBannerClick}
-          >
-            <Image className='guest-banner-img' src={bannerImg} mode='widthFix' />
-          </View>
-        </View>
-
-        <View className='menu-list'>
-        <View className='menu-list-group'>
-          {menuRows.slice(0, 4).map((row) => {
-            const suffix = menuSuffix(row, settingsSummary)
-            return (
-            <View key={row.key} className='menu-item' onClick={() => onMenu(row)}>
-              <View className='menu-item-left'>
-                <View className='menu-icon-wrap'>
-                  <Text className='iconfont menu-icon'>{row.icon}</Text>
-                </View>
-                <Text className='menu-label'>{row.label}</Text>
-              </View>
-              <View className='menu-item-right'>
-                {suffix ? <Text className='menu-suffix'>{suffix}</Text> : null}
-                <Text className='menu-arrow'>›</Text>
-              </View>
-            </View>
-            )
-          })}
-        </View>
-
-        <View className='menu-list-group'>
-          {menuRows.slice(4).map((row) => {
-            const suffix = menuSuffix(row, settingsSummary)
-            const isShareRow = row.key === 'shareSchedule'
-            return (
-            <View key={row.key} className='menu-item-wrap'>
-              {isShareRow ? (
-                <Button className='menu-item menu-item--share-btn' openType='share'>
-                  <View className='menu-item-left'>
-                    <View className='menu-icon-wrap'>
-                      <Text className='iconfont menu-icon'>{row.icon}</Text>
-                    </View>
-                    <Text className='menu-label'>{row.label}</Text>
-                  </View>
-                  <View className='menu-item-right'>
-                    {suffix ? <Text className='menu-suffix'>{suffix}</Text> : null}
-                    <Text className='menu-arrow'>›</Text>
-                  </View>
-                </Button>
-              ) : (
-                <View className='menu-item' onClick={() => onMenu(row)}>
-                  <View className='menu-item-left'>
-                    <View className='menu-icon-wrap'>
-                      <Text className='iconfont menu-icon'>{row.icon}</Text>
-                    </View>
-                    <Text className='menu-label'>{row.label}</Text>
-                  </View>
-                  <View className='menu-item-right'>
-                    {suffix ? <Text className='menu-suffix'>{suffix}</Text> : null}
-                    <Text className='menu-arrow'>›</Text>
-                  </View>
-                </View>
-              )}
-            </View>
-            )
-          })}
-        </View>
-      </View>
-
-      <View className='version-area'>
-        {/* <Text className='version-text'>智鑫课表 v1.0.0</Text> */}
-        <Text className='version-text'>v0.1.0 内测版本，如有疑问请联系我们</Text>
-      </View>
-      </View>
-
-      {/* 退出登录弹窗 */}
-      {activeSheet === 'menu' ? (
-        <PageContainer show position='bottom' round zIndex={1000} onClickOverlay={closeSheet}>
-          <View className='logout-sheet-content'>
-            <View className='logout-btn' onClick={openRenameSheet}>
-              <Text className='iconfont logout-icon'>&#xe729;</Text>
-              <Text className='logout-text'>修改资料</Text>
-            </View>
-            <View className='logout-btn' onClick={handleLogout}>
-              <Text className='iconfont logout-icon'>&#xe759;</Text>
-              <Text className='logout-text'>退出登录</Text>
-            </View>
-            <View className='logout-cancel' onClick={closeSheet}>
-              取消
-            </View>
-          </View>
-        </PageContainer>
-      ) : null}
+      <AccountMenuSheet
+        visible={activeSheet === 'menu'}
+        onClose={closeSheet}
+        onEditProfile={openRenameSheet}
+        onLogout={handleLogout}
+      />
 
       <EditProfileModal visible={activeSheet === 'rename'} onClose={closeSheet} />
 
