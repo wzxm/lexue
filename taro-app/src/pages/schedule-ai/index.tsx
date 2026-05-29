@@ -12,14 +12,9 @@ import { DEFAULT_COURSE_COLOR, COURSE_COLORS } from '../../constants/colors'
 import { getCurrentWeekOffset, getWeekDates, formatDate } from '../../utils/date'
 import { chooseMediaSource } from '../../utils/media'
 import ScheduleGrid from '../schedule/components/ScheduleGrid'
-import { mockRecognizeScheduleImageResult } from './mockRecognizeResult'
 import type { Course, Schedule } from '../../types/index'
 import '../schedule/index.scss'
 import './index.scss'
-
-declare const AI_PREVIEW_MOCK: string | undefined
-
-const useMockPreview = typeof AI_PREVIEW_MOCK !== 'undefined' && AI_PREVIEW_MOCK === 'true'
 
 function buildAllWeeks(totalWeeks: number): number[] {
   return Array.from({ length: totalWeeks }, (_, i) => i + 1)
@@ -195,9 +190,7 @@ export default function ScheduleAiPage() {
     setRecognizing(true)
     try {
       Taro.showLoading({ title: 'AI识别中', mask: true })
-      const result = useMockPreview
-        ? mockRecognizeScheduleImageResult
-        : await recognizeScheduleImage({
+      const result = await recognizeScheduleImage({
           scheduleId,
           fileId: targetFileId,
           mimeType,
@@ -233,14 +226,6 @@ export default function ScheduleAiPage() {
       Taro.hideLoading()
       setRecognizing(false)
     }
-  }
-
-  const handleMockPreview = async () => {
-    if (!scheduleId) {
-      Taro.showToast({ title: '课表ID缺失', icon: 'none' })
-      return
-    }
-    await handleRecognize('mock-file-id')
   }
 
   const handleConfirmImport = async () => {
@@ -283,11 +268,6 @@ export default function ScheduleAiPage() {
           <Button className='primary-btn' onClick={handlePickImage} disabled={loading || recognizing}>
             {loading || recognizing ? '处理中...' : '拍照 / 相册识别课表'}
           </Button>
-          {useMockPreview ? (
-            <Button className='ghost-btn mock-btn' onClick={handleMockPreview} disabled={loading || recognizing}>
-              使用 mock 数据预览
-            </Button>
-          ) : null}
           <Text className='tip'>支持相册图片和现场拍照。建议选择清晰、正向、包含完整星期和节次的课表图。</Text>
         </View>
       )}

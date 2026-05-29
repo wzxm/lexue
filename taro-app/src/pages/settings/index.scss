@@ -178,11 +178,10 @@
 }
 
 .guest-banner {
-  // margin: 0 0 24px;
-  height: 140px;
+  width: 100%;
   border-radius: 20px;
   overflow: hidden;
-  position: relative;
+  line-height: 0;
   box-shadow: rgba(44, 30, 116, 0.08) 0px 4px 12px;
 }
 
@@ -192,7 +191,6 @@
 
 .guest-banner-img {
   width: 100%;
-  height: 100%;
   display: block;
 }
 

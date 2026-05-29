@@ -202,7 +202,7 @@ export default function SettingsPage() {
       appId,
       path,
       fail: () => {
-        Taro.showToast({ title: '跳转失败，请稍后再试', icon: 'none' })
+        // Taro.showToast({ title: '跳转失败，请稍后再试', icon: 'none' })
       },
     })
   }
@@ -253,7 +253,7 @@ export default function SettingsPage() {
             hoverClass='guest-banner--pressed'
             onClick={handleGuestBannerClick}
           >
-            <Image className='guest-banner-img' src={bannerImg} mode='aspectFill' />
+            <Image className='guest-banner-img' src={bannerImg} mode='widthFix' />
           </View>
         </View>
 
