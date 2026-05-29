@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { memo, useEffect, useState } from 'react'
 import { View, Text, Image, Input, Button } from '@tarojs/components'
 import Taro from '@tarojs/taro'
 import { useAuthStore } from '../../../store/auth.store'
@@ -12,9 +12,11 @@ interface EditProfileModalProps {
   onClose: () => void
 }
 
-export default function EditProfileModal({ visible, onClose }: EditProfileModalProps) {
+function EditProfileModal({ visible, onClose }: EditProfileModalProps) {
   const userInfo = useAuthStore(s => s.userInfo)
   const setUserInfo = useAuthStore(s => s.setUserInfo)
+  const [rendered, setRendered] = useState(false)
+  const [active, setActive] = useState(false)
   const [draftNickname, setDraftNickname] = useState('')
   const [draftAvatarUrl, setDraftAvatarUrl] = useState(defaultAvatar)
   const [saving, setSaving] = useState(false)
@@ -23,15 +25,18 @@ export default function EditProfileModal({ visible, onClose }: EditProfileModalP
 
   useEffect(() => {
     if (!visible) {
+      setActive(false)
       setNicknameFocus(false)
       return
     }
+
+    setRendered(true)
     setDraftNickname(userInfo?.nickname || '')
     setDraftAvatarUrl(getDisplayAvatarUrl(userInfo?.avatarUrl, defaultAvatar))
     setNicknameFocus(false)
-  }, [visible])
-
-  if (!visible) return null
+    const timer = setTimeout(() => setActive(true), 20)
+    return () => clearTimeout(timer)
+  }, [visible, userInfo?.nickname, userInfo?.avatarUrl])
 
   const handleSyncNickname = () => {
     setNicknameFocus(true)
@@ -96,10 +101,16 @@ export default function EditProfileModal({ visible, onClose }: EditProfileModalP
     }
   }
 
+  if (!rendered) return null
+
   return (
-    <View className='edit-profile-layer'>
-      <View className='edit-profile-overlay' onClick={onClose} />
-      <View className='edit-profile-modal'>
+    <View className={`edit-profile-layer ${active ? 'edit-profile-layer--active' : ''}`}>
+      <View
+        className='edit-profile-overlay'
+        catchMove={active}
+        onClick={active ? onClose : undefined}
+      />
+      <View className={`edit-profile-modal ${active ? 'edit-profile-modal--active' : ''}`}>
         <View className='edit-profile-modal-header'>
           <Text className='edit-profile-modal-title'>修改资料</Text>
         </View>
@@ -108,7 +119,7 @@ export default function EditProfileModal({ visible, onClose }: EditProfileModalP
             className='edit-profile-avatar-btn'
             openType='chooseAvatar'
             loading={updatingAvatar}
-            disabled={updatingAvatar}
+            disabled={updatingAvatar || !active}
             onChooseAvatar={handleChooseAvatar}
           >
             <View className='edit-profile-avatar-wrap'>
@@ -125,7 +136,6 @@ export default function EditProfileModal({ visible, onClose }: EditProfileModalP
             <View className='edit-profile-form-label'>
               <Text className='edit-profile-form-label-text'>昵称</Text>
               <View className='edit-profile-sync-btn' onClick={handleSyncNickname}>
-                {/* <Text className='iconfont edit-profile-sync-icon'>&#xe729;</Text> */}
                 <Text className='edit-profile-sync-text'>同步微信昵称</Text>
               </View>
             </View>
@@ -134,7 +144,7 @@ export default function EditProfileModal({ visible, onClose }: EditProfileModalP
                 className='edit-profile-input'
                 type='nickname'
                 maxlength={20}
-                focus={nicknameFocus}
+                focus={active && nicknameFocus}
                 value={draftNickname}
                 placeholder='请输入新名称'
                 onInput={(e) => setDraftNickname(e.detail.value)}
@@ -155,3 +165,5 @@ export default function EditProfileModal({ visible, onClose }: EditProfileModalP
     </View>
   )
 }
+
+export default memo(EditProfileModal)

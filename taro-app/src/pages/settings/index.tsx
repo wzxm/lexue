@@ -7,6 +7,7 @@ import { SETTINGS_AD_BANNER_MINI_PROGRAM } from '../../constants/external-mini-p
 import { useAuthStore } from '../../store/auth.store'
 import { getSettingsSummary, type SettingsSummary } from '../../api/auth.api'
 import defaultAvatar from '../../assets/default-avatar.png'
+import shareCover from '../../assets/share.png'
 import {
   getDisplayAvatarUrl,
   isCloudFileId,
@@ -53,8 +54,9 @@ export default function SettingsPage() {
   const { navBarStyle, spacerStyle } = useNavLayout()
 
   useShareAppMessage(() => ({
-    title: '智鑫课表：课程管理、家庭共享、上课提醒',
+    title: 'AI一键导入，告别纸质课表',
     path: ROUTES.SCHEDULE,
+    imageUrl: shareCover,
   }))
 
   const loadSettingsSummary = useCallback(async () => {
@@ -130,9 +132,6 @@ export default function SettingsPage() {
         break
       case 'student':
         Taro.navigateTo({ url: ROUTES.DISPLAY_SETTINGS })
-        break
-      case 'shareSchedule':
-        Taro.showToast({ title: '点击按钮分享给好友', icon: 'none' })
         break
       case 'feedback':
         setContactVisible(true)

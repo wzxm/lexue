@@ -1,13 +1,23 @@
 .contact-modal-mask {
   position: fixed;
   inset: 0;
-  z-index: 2000;
+  z-index: -1;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0 56px;
   box-sizing: border-box;
+  background: var(--color-overlay, rgba(22, 22, 22, 0));
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease, background-color 0.25s ease;
+}
+
+.contact-modal-mask--active {
+  z-index: 2000;
   background: var(--color-overlay, rgba(22, 22, 22, 0.4));
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .contact-modal-card {
@@ -16,6 +26,14 @@
   border-radius: 24px;
   overflow: hidden;
   box-shadow: 0 12px 48px rgba(17, 24, 39, 0.18);
+  transform: scale(0.95);
+  opacity: 0;
+  transition: transform 0.25s ease, opacity 0.25s ease;
+}
+
+.contact-modal-card--active {
+  transform: scale(1);
+  opacity: 1;
 }
 
 .contact-modal-body {
