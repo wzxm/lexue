@@ -275,7 +275,7 @@ export default function ScheduleAiPage() {
       <View className='hero'>
         <Text className='eyebrow'>AI识别</Text>
         <Text className='title'>拍照识别课程表</Text>
-        <Text className='desc'>先拍照上传，AI 会把图片里的课程自动整理成可导入的课程列表。</Text>
+        <Text className='desc'>上传照片，AI自动整理可导入的课程。</Text>
       </View>
 
       {step === 'pick' && (

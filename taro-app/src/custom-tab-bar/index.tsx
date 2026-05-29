@@ -6,7 +6,7 @@ import './index.scss'
 
 const LIST = [
   { pagePath: '/pages/schedule/index', text: '课表', icon: '\ue696' },
-  { pagePath: '/pages/tools/index', text: '工具', icon: '\ue6ad' },
+  // { pagePath: '/pages/tools/index', text: '工具', icon: '\ue6ad' },
   { pagePath: '/pages/settings/index', text: '设置', icon: '\ue657' },
 ]
 

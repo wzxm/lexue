@@ -1,11 +1,18 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { View, Text, PageContainer, Image, Button } from '@tarojs/components'
 import Taro, { useDidHide, useDidShow, useShareAppMessage, useUnload } from '@tarojs/taro'
 import { tabState } from '../../utils/tabState'
 import { ROUTES } from '../../constants/routes'
+import { SETTINGS_AD_BANNER_MINI_PROGRAM } from '../../constants/external-mini-programs'
 import { useAuthStore } from '../../store/auth.store'
 import { getSettingsSummary, type SettingsSummary } from '../../api/auth.api'
 import defaultAvatar from '../../assets/default-avatar.png'
+import {
+  getDisplayAvatarUrl,
+  isCloudFileId,
+  resolveCloudAvatarUrl,
+} from '../../utils/avatar'
+import bannerImg from '../../assets/banner.png'
 import ContactModal from './components/ContactModal'
 import EditProfileModal from './components/EditProfileModal'
 import './index.scss'
@@ -19,7 +26,7 @@ interface MenuRow {
 }
 
 const menuRows: MenuRow[] = [
-  { key: 'notify', label: '通知提醒', icon: '\ue759' },
+  // { key: 'notify', label: '通知提醒', icon: '\ue759' },
   { key: 'family', label: '家人管理', icon: '\ue600' },
   { key: 'scheduleTab', label: '课表管理', icon: '\ue696' },
   { key: 'studentManage', label: '学生管理', icon: '\ue706' },
@@ -52,6 +59,7 @@ export default function SettingsPage() {
   const [activeSheet, setActiveSheet] = useState<'none' | 'menu' | 'rename'>('none')
   const [settingsSummary, setSettingsSummary] = useState<SettingsSummary | null>(null)
   const [contactVisible, setContactVisible] = useState(false)
+  const [avatarSrc, setAvatarSrc] = useState(defaultAvatar)
 
   useShareAppMessage(() => ({
     title: '智鑫课表：课程管理、家庭共享、上课提醒',
@@ -151,7 +159,28 @@ export default function SettingsPage() {
     }
   }
 
-  const avatarUrl = userInfo?.avatarUrl || defaultAvatar
+  useEffect(() => {
+    const raw = userInfo?.avatarUrl
+    const syncSrc = getDisplayAvatarUrl(raw, defaultAvatar)
+    if (!isCloudFileId(syncSrc)) {
+      setAvatarSrc(syncSrc)
+      return
+    }
+
+    let cancelled = false
+    void resolveCloudAvatarUrl(syncSrc)
+      .then((url) => {
+        if (!cancelled) setAvatarSrc(url)
+      })
+      .catch(() => {
+        if (!cancelled) setAvatarSrc(defaultAvatar)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [userInfo?.avatarUrl])
+
   const openIdTip = userInfo?.openId ? `id:${userInfo.openId.slice(0, 6)}*** ▾` : '点击管理账号 ▾'
   const contactText = '📮email：up91@foxmail.com\n✉️微信号：atgoing'
 
@@ -165,6 +194,17 @@ export default function SettingsPage() {
     } catch {
       Taro.showToast({ title: '复制失败，请稍后再试', icon: 'none' })
     }
+  }
+
+  const handleGuestBannerClick = () => {
+    const { appId, path } = SETTINGS_AD_BANNER_MINI_PROGRAM
+    Taro.navigateToMiniProgram({
+      appId,
+      path,
+      fail: () => {
+        Taro.showToast({ title: '跳转失败，请稍后再试', icon: 'none' })
+      },
+    })
   }
 
   return (
@@ -193,7 +233,7 @@ export default function SettingsPage() {
             </View>
           ) : (
             <View className='user-info-nav' onClick={handleUserClick}>
-              <Image className='avatar-img' src={avatarUrl} mode='aspectFill' />
+              <Image className='avatar-img' src={avatarSrc} mode='aspectFill' />
               <View className='user-text'>
                 <View className='name-row'>
                   <Text className='name'>{userInfo?.nickname || '微信昵称限6字...'}</Text>
@@ -208,10 +248,12 @@ export default function SettingsPage() {
       <View style={{ flexShrink: 0, height: `${statusBarHeight + navBarHeight}px` }} />
       <View className='content'>
         <View className='guest-top'>
-          <View className='guest-banner'>
-            <Text className='iconfont guest-banner-icon'>{'\ue759'}</Text>
-            <Text className='guest-banner-title'>广告banner 占位示意</Text>
-            <Text className='guest-banner-text'>示意图</Text>
+          <View
+            className='guest-banner'
+            hoverClass='guest-banner--pressed'
+            onClick={handleGuestBannerClick}
+          >
+            <Image className='guest-banner-img' src={bannerImg} mode='aspectFill' />
           </View>
         </View>
 
@@ -276,7 +318,8 @@ export default function SettingsPage() {
       </View>
 
       <View className='version-area'>
-        <Text className='version-text'>智鑫课表 v1.0.0</Text>
+        {/* <Text className='version-text'>智鑫课表 v1.0.0</Text> */}
+        <Text className='version-text'>v0.1.0 内测版本，如有疑问请联系我们</Text>
       </View>
       </View>
 

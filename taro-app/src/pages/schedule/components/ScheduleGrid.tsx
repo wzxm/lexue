@@ -95,8 +95,8 @@ export default function ScheduleGrid({
   }, [weekNum])
 
   const availableWeeks = useMemo(
-    () => Array.from({ length: totalWeeks - currentWeekByDate + 1 }, (_, i) => currentWeekByDate + i),
-    [currentWeekByDate, totalWeeks]
+    () => Array.from({ length: totalWeeks }, (_, i) => i + 1),
+    [totalWeeks]
   )
 
   const handleSelectWeek = (week: number) => {

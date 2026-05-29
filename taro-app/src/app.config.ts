@@ -38,5 +38,6 @@ export default defineAppConfig({
     navigationBarTitleText: '智鑫课表',
     navigationBarTextStyle: 'black',
   },
+  navigateToMiniProgramAppIdList: ['wxe186f230ce102b30'],
   cloud: true,
 })

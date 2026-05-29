@@ -119,12 +119,19 @@ export default function SchedulePage () {
     Taro.navigateTo({ url: ROUTES.LOGIN })
   }
 
-  const openDrawer = () => {
+  const openDrawer = async () => {
     if (!isLoggedIn) {
       goLogin()
       return
     }
     setShowDrawer(true)
+    // 打开抽屉时静默刷新全量课表列表（含共享），确保展示最新数据
+    try {
+      const freshSchedules = await listSchedules()
+      setSchedules(freshSchedules)
+    } catch (_) {
+      // 静默失败不影响抽屉展示
+    }
   }
 
   const closeDrawer = () => {
@@ -614,7 +621,7 @@ export default function SchedulePage () {
           const diffWeeks = Math.floor((todayDate.getTime() - start.getTime()) / (1000 * 60 * 60 * 24 * 7))
           currentWeekByDate = Math.max(1, Math.min(diffWeeks + 1, totalWeeks))
         }
-        const availableWeeks = Array.from({ length: totalWeeks - currentWeekByDate + 1 }, (_, i) => currentWeekByDate + i)
+        const availableWeeks = Array.from({ length: totalWeeks }, (_, i) => i + 1)
         return (
           <>
             <View className='week-picker-overlay' onClick={handleCancelDayWeek} />

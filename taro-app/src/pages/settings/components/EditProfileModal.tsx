@@ -4,6 +4,7 @@ import Taro from '@tarojs/taro'
 import { useAuthStore } from '../../../store/auth.store'
 import { updateProfile } from '../../../api/auth.api'
 import defaultAvatar from '../../../assets/default-avatar.png'
+import { getDisplayAvatarUrl } from '../../../utils/avatar'
 import './EditProfileModal.scss'
 
 interface EditProfileModalProps {
@@ -26,7 +27,7 @@ export default function EditProfileModal({ visible, onClose }: EditProfileModalP
       return
     }
     setDraftNickname(userInfo?.nickname || '')
-    setDraftAvatarUrl(userInfo?.avatarUrl || defaultAvatar)
+    setDraftAvatarUrl(getDisplayAvatarUrl(userInfo?.avatarUrl, defaultAvatar))
     setNicknameFocus(false)
   }, [visible])
 
@@ -44,7 +45,7 @@ export default function EditProfileModal({ visible, onClose }: EditProfileModalP
       return
     }
 
-    const previousAvatarUrl = userInfo?.avatarUrl || defaultAvatar
+    const previousAvatarUrl = getDisplayAvatarUrl(userInfo?.avatarUrl, defaultAvatar)
     setUpdatingAvatar(true)
     setDraftAvatarUrl(tempPath)
 

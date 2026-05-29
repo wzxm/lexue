@@ -99,7 +99,7 @@ export default function LoginPage() {
             <Text className='iconfont logo-icon-inner'>{'\ue696'}</Text>
           </View>
           <Text className='app-name'>智鑫课表</Text>
-          <Text className='app-slogan'>让每个家庭的课表管理更轻松</Text>
+          {/* <Text className='app-slogan'>让每个家庭的课表管理更轻松</Text> */}
 
           <View className='features'>
             {FEATURES.map(item => (
@@ -158,7 +158,7 @@ export default function LoginPage() {
           )}
         </View>
 
-        <Text className='bottom-text'>无需注册账号，基于微信安全登录</Text>
+        {/* <Text className='bottom-text'>无需注册账号，基于微信安全登录</Text> */}
       </View>
     </View>
   )

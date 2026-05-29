@@ -6,6 +6,7 @@ import {
   saveUserInfo, loadUserInfo, clearUserInfo,
   saveLoginFlag, loadLoginFlag, clearLoginFlag,
 } from '../utils/storage'
+import { isEphemeralAvatarUrl } from '../utils/avatar'
 
 interface AuthState {
   userInfo: UserInfo | null
@@ -27,8 +28,13 @@ function isInvalidSessionError(err: unknown): boolean {
   )
 }
 
+function sanitizeUserInfo(info: UserInfo | null): UserInfo | null {
+  if (!info || !isEphemeralAvatarUrl(info.avatarUrl)) return info
+  return { ...info, avatarUrl: '' }
+}
+
 function getCachedAuth() {
-  const cachedUserInfo = loadUserInfo()
+  const cachedUserInfo = sanitizeUserInfo(loadUserInfo())
   const cachedOpenId = loadOpenId()
   const cachedLoginFlag = loadLoginFlag()
   return {
@@ -44,12 +50,13 @@ export const useAuthStore = create<AuthState>((set) => ({
   isLoggedIn: cached.isLoggedIn,
 
   setUserInfo: (info) => {
-    if (info.openId) {
-      saveOpenId(info.openId)
+    const safeInfo = sanitizeUserInfo(info) || info
+    if (safeInfo.openId) {
+      saveOpenId(safeInfo.openId)
     }
-    saveUserInfo(info)
+    saveUserInfo(safeInfo)
     saveLoginFlag(true)
-    set({ userInfo: info, isLoggedIn: true })
+    set({ userInfo: safeInfo, isLoggedIn: true })
   },
 
   hydrate: () => {
@@ -62,7 +69,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     if (!state.isLoggedIn) return
 
     try {
-      const profile = await getProfile()
+      const rawProfile = await getProfile()
+      const profile = sanitizeUserInfo(rawProfile) || rawProfile
       set({ userInfo: profile, isLoggedIn: true })
       if (profile.openId) saveOpenId(profile.openId)
       saveUserInfo(profile)

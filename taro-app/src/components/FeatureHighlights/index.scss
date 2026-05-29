@@ -14,15 +14,14 @@
 }
 
 .feature-highlights-grid {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 24px;
   width: 100%;
   margin-bottom: 64px;
 }
 
 .feature-highlights-item {
-  width: calc(50% - 12px);
   background: #ffffff;
   border-radius: 24px;
   padding: 40px 24px;
