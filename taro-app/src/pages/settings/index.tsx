@@ -1,12 +1,13 @@
 import { useState } from 'react'
-import { View, Text, PageContainer, Image, Input, Button } from '@tarojs/components'
+import { View, Text, PageContainer, Image, Button } from '@tarojs/components'
 import Taro, { useDidHide, useDidShow, useShareAppMessage, useUnload } from '@tarojs/taro'
 import { tabState } from '../../utils/tabState'
 import { ROUTES } from '../../constants/routes'
 import { useAuthStore } from '../../store/auth.store'
-import { getSettingsSummary, type SettingsSummary, updateProfile } from '../../api/auth.api'
+import { getSettingsSummary, type SettingsSummary } from '../../api/auth.api'
 import defaultAvatar from '../../assets/default-avatar.png'
 import ContactModal from './components/ContactModal'
+import EditProfileModal from './components/EditProfileModal'
 import './index.scss'
 
 type MenuKey = 'notify' | 'family' | 'scheduleTab' | 'studentManage' | 'student' | 'shareSchedule' | 'feedback' | 'recommend'
@@ -47,12 +48,8 @@ function menuSuffix(row: MenuRow, summary: SettingsSummary | null): string {
 export default function SettingsPage() {
   const isLoggedIn = useAuthStore(s => s.isLoggedIn)
   const userInfo = useAuthStore(s => s.userInfo)
-  const setUserInfo = useAuthStore(s => s.setUserInfo)
   const logout = useAuthStore(s => s.logout)
   const [activeSheet, setActiveSheet] = useState<'none' | 'menu' | 'rename'>('none')
-  const [renaming, setRenaming] = useState(false)
-  const [updatingAvatar, setUpdatingAvatar] = useState(false)
-  const [draftNickname, setDraftNickname] = useState('')
   const [settingsSummary, setSettingsSummary] = useState<SettingsSummary | null>(null)
   const [contactVisible, setContactVisible] = useState(false)
 
@@ -111,56 +108,12 @@ export default function SettingsPage() {
   }
 
   const openRenameSheet = () => {
-    setDraftNickname(userInfo?.nickname || '')
     setActiveSheet('rename')
   }
 
   const handleLogout = () => {
     logout()
     closeSheet()
-  }
-
-  const handleRename = async () => {
-    if (renaming) return
-    const nickname = draftNickname.trim()
-    if (!nickname) {
-      Taro.showToast({ title: '名称不能为空', icon: 'none' })
-      return
-    }
-    if (nickname.length > 20) {
-      Taro.showToast({ title: '名称最多20个字', icon: 'none' })
-      return
-    }
-    setRenaming(true)
-    try {
-      const profile = await updateProfile({ nickname })
-      setUserInfo(profile)
-      Taro.showToast({ title: '名称已更新', icon: 'success' })
-      closeSheet()
-    } catch (err: any) {
-      Taro.showToast({ title: err?.message || '修改失败', icon: 'none' })
-    } finally {
-      setRenaming(false)
-    }
-  }
-
-  const handleChooseAvatar = async (e: any) => {
-    if (updatingAvatar) return
-    const avatarUrl = e?.detail?.avatarUrl || ''
-    if (!avatarUrl) {
-      Taro.showToast({ title: '未获取到头像', icon: 'none' })
-      return
-    }
-    setUpdatingAvatar(true)
-    try {
-      const profile = await updateProfile({ avatarUrl })
-      setUserInfo(profile)
-      Taro.showToast({ title: '头像已更新', icon: 'success' })
-    } catch (err: any) {
-      Taro.showToast({ title: err?.message || '头像更新失败', icon: 'none' })
-    } finally {
-      setUpdatingAvatar(false)
-    }
   }
 
   const onMenu = (row: MenuRow) => {
@@ -328,14 +281,8 @@ export default function SettingsPage() {
       </View>
 
       {/* 退出登录弹窗 */}
-      <PageContainer
-        show={activeSheet !== 'none'}
-        position='bottom'
-        round
-        zIndex={1000}
-        onClickOverlay={closeSheet}
-      >
-        {activeSheet === 'menu' ? (
+      {activeSheet === 'menu' ? (
+        <PageContainer show position='bottom' round zIndex={1000} onClickOverlay={closeSheet}>
           <View className='logout-sheet-content'>
             <View className='logout-btn' onClick={openRenameSheet}>
               <Text className='iconfont logout-icon'>&#xe729;</Text>
@@ -349,38 +296,10 @@ export default function SettingsPage() {
               取消
             </View>
           </View>
-        ) : (
-          <View className='rename-sheet-content'>
-            <Text className='rename-title'>修改资料</Text>
-            <View className='rename-avatar-row'>
-              <Image className='rename-avatar-img' src={avatarUrl} mode='aspectFill' />
-              <Button
-                className='rename-avatar-btn'
-                openType='chooseAvatar'
-                loading={updatingAvatar}
-                onChooseAvatar={handleChooseAvatar}
-              >
-                {updatingAvatar ? '同步中...' : '同步微信头像'}
-              </Button>
-            </View>
-            <Input
-              className='rename-input'
-              maxlength={20}
-              value={draftNickname}
-              placeholder='请输入新名称'
-              onInput={(e) => setDraftNickname(e.detail.value)}
-            />
-            <View className='rename-actions'>
-              <View className='rename-cancel' onClick={closeSheet}>
-                取消
-              </View>
-              <View className='rename-confirm' onClick={handleRename}>
-                {renaming ? '保存中...' : '保存'}
-              </View>
-            </View>
-          </View>
-        )}
-      </PageContainer>
+        </PageContainer>
+      ) : null}
+
+      <EditProfileModal visible={activeSheet === 'rename'} onClose={closeSheet} />
 
       <ContactModal visible={contactVisible} onClose={closeContactModal} onCopy={handleCopyContact} />
     </View>
