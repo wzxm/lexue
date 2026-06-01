@@ -8,7 +8,7 @@ interface Props {
   /** true = redirectTo（替换页面栈），false = navigateTo（默认） */
   useRedirect?: boolean;
   onAddLater?: () => void;
-  onAiRecognize?: () => void;
+  onAiRecognize: () => void;
   /** 点击添加方式时触发（用于关闭弹窗等） */
   onSelectMethod?: () => void;
   /** 隐藏顶部标题（作为弹窗内容时使用） */
@@ -25,10 +25,6 @@ export default function EmptySchedule({ scheduleId, useRedirect, onAddLater, onA
 
   const handleAiRecognize = () => {
     onSelectMethod?.()
-    if (!onAiRecognize) {
-      Taro.showToast({ title: '功能开发中', icon: 'none' })
-      return
-    }
     onAiRecognize()
   }
 

@@ -4,6 +4,7 @@ import Taro from "@tarojs/taro";
 import { createSchedule, updateSchedule } from "../../api/schedule.api";
 import { useStudentStore } from "../../store/student.store";
 import { useScheduleStore } from "../../store/schedule.store";
+import { ROUTES } from "../../constants/routes";
 import EmptySchedule from "../schedule/components/EmptySchedule";
 import { getSemesterOptions, getCurrentSemester, formatDate } from "../../utils/date";
 import type { Schedule, Period, PeriodIndex } from "../../types/index";
@@ -166,6 +167,17 @@ export default function ScheduleFormPage() {
     afternoon_count: afternoonCount,
     evening_count: eveningCount,
   });
+
+  const handleAiRecognize = () => {
+    const sid = currentScheduleId || currentSchedule?.id
+    if (!sid) {
+      Taro.showToast({ title: '请先创建课表', icon: 'none' })
+      return
+    }
+    Taro.navigateTo({
+      url: `${ROUTES.SCHEDULE_AI}?scheduleId=${encodeURIComponent(sid)}`
+    })
+  }
 
   const openPeriodEditor = (period: { index: number; label: string; startTime: string; endTime: string }) => {
     periodSheetRef.current?.open(period);
@@ -481,6 +493,7 @@ export default function ScheduleFormPage() {
         <EmptySchedule
           scheduleId={currentScheduleId ?? undefined}
           useRedirect
+          onAiRecognize={handleAiRecognize}
           onAddLater={() => Taro.navigateBack()}
         />
       )}
