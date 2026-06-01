@@ -9,7 +9,7 @@ export default function EmptyState({ onAddCourse }: Props) {
   return (
     <View className='empty-content'>
       <FeatureHighlights />
-      <Button className='create-btn' onClick={onAddCourse}>创建课表 (约耗时1分钟)</Button>
+      <Button className='create-btn' onClick={onAddCourse}>创建课表</Button>
     </View>
   )
 }
