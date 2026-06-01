@@ -14,6 +14,11 @@ const FEATURES = [
   { icon: '\ue603', label: 'AI 识别' },
 ] as const
 
+const USER_AGREEMENT_PDF =
+  'cloud://test-d7gxuxk5a8418c629.7465-test-d7gxuxk5a8418c629-1437432577/prototype/《用户协议》.pdf'
+const PRIVACY_POLICY_PDF =
+  'cloud://test-d7gxuxk5a8418c629.7465-test-d7gxuxk5a8418c629-1437432577/prototype/《隐私政策》.pdf'
+
 export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [agreed, setAgreed] = useState(false)
@@ -54,6 +59,21 @@ export default function LoginPage() {
     if (agreed) return true
     Taro.showToast({ title: '请先阅读并同意协议', icon: 'none' })
     return false
+  }
+
+  const openPdfDocument = async (fileID: string, title: string) => {
+    Taro.showLoading({ title: '打开中...' })
+    try {
+      const { tempFilePath } = await Taro.cloud.downloadFile({ fileID })
+      await Taro.openDocument({
+        filePath: tempFilePath,
+        fileType: 'pdf',
+      })
+    } catch (err: any) {
+      Taro.showToast({ title: err?.message || `${title}打开失败`, icon: 'none' })
+    } finally {
+      Taro.hideLoading()
+    }
   }
 
   const onWechatLogin = async () => {
@@ -120,9 +140,25 @@ export default function LoginPage() {
             </View>
             <Text className='agreement-text'>
               我已阅读并同意
-              <Text className='agreement-link'>《用户协议》</Text>
+              <Text
+                className='agreement-link'
+                onClick={(e) => {
+                  e.stopPropagation()
+                  void openPdfDocument(USER_AGREEMENT_PDF, '用户协议')
+                }}
+              >
+                《用户协议》
+              </Text>
               和
-              <Text className='agreement-link'>《隐私政策》</Text>
+              <Text
+                className='agreement-link'
+                onClick={(e) => {
+                  e.stopPropagation()
+                  void openPdfDocument(PRIVACY_POLICY_PDF, '隐私政策')
+                }}
+              >
+                《隐私政策》
+              </Text>
             </Text>
           </View>
 
@@ -136,7 +172,7 @@ export default function LoginPage() {
             >
               {!loading ? (
                 <View className='login-btn-content'>
-                  <View className='login-btn-icon login-btn-icon--phone' />
+                  <Text className='iconfont login-btn-icon login-btn-icon--phone'>{'\ue642'}</Text>
                   <Text className='login-btn-text'>手机号快捷登录</Text>
                 </View>
               ) : null}
