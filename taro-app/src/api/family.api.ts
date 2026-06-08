@@ -6,6 +6,7 @@ export interface MemberInfo {
   openid: string;
   permission: 'owner' | FamilyPermission;
   is_owner: boolean;
+  relation_type?: 'outgoing' | 'incoming';
   nickname: string;
   avatar_url: string;
   join_time?: number;

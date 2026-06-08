@@ -67,9 +67,13 @@ export default function FamilyManagePage() {
     if (!selectedMember) return
     try {
       Taro.showLoading({ title: '处理中...', mask: true })
-      await familyApi.removeMember(selectedMember.openid)
+      if (selectedMember.relation_type === 'incoming' || selectedMember.is_owner) {
+        await familyApi.leave(selectedMember.openid)
+      } else {
+        await familyApi.removeMember(selectedMember.openid)
+      }
       Taro.hideLoading()
-      Taro.showToast({ title: '已取消共享' })
+      Taro.showToast({ title: selectedMember.relation_type === 'incoming' || selectedMember.is_owner ? '已退出共享' : '已取消共享' })
       closeManageSheet()
       await loadFamilyData()
     } catch (err: any) {
@@ -84,12 +88,12 @@ export default function FamilyManagePage() {
     <View className='family-page'>
       <View className='family-tip'>
         <Text className='family-tip-text'>
-          邀请家人后，对方将加入你的家长列表，并可查看、编辑你名下的全部学生、课表和课程。
+          邀请家人后，对方将加入你的家长列表；别人共享给你的家人也会显示在这里。
         </Text>
       </View>
 
       <View className='family-count'>
-        <Text className='family-count-text'>已共享给 {members.length} 位家人</Text>
+        <Text className='family-count-text'>已关联 {members.length} 位家人</Text>
       </View>
 
       {loading ? (
@@ -133,7 +137,11 @@ export default function FamilyManagePage() {
                 )}
                 <View className='member-detail'>
                   <Text className='member-nickname'>{member.nickname || '微信用户'}</Text>
-                  <Text className='member-desc'>可查看并编辑全部共享信息</Text>
+                  <Text className='member-desc'>
+                    {member.relation_type === 'incoming' || member.is_owner
+                      ? '对方已共享课表给你'
+                      : '可查看并编辑你的共享信息'}
+                  </Text>
                 </View>
               </View>
               <Text className='member-arrow'>›</Text>
@@ -162,13 +170,19 @@ export default function FamilyManagePage() {
             <View className='edit-sheet-close' onClick={closeManageSheet}>×</View>
           </View>
           <View className='edit-sheet-subtitle'>
-            「{selectedMember?.nickname || '该成员'}」当前可查看并编辑你的全部共享信息。
+            {selectedMember?.relation_type === 'incoming' || selectedMember?.is_owner
+              ? `「${selectedMember?.nickname || '该成员'}」当前已共享课表给你。`
+              : `「${selectedMember?.nickname || '该成员'}」当前可查看并编辑你的全部共享信息。`}
           </View>
           <View className='invite-share-tip'>
-            取消共享后，对方将立即失去对你的学生、课表和课程的访问权限。
+            {selectedMember?.relation_type === 'incoming' || selectedMember?.is_owner
+              ? '退出共享后，你将失去对方共享课表的访问权限。'
+              : '取消共享后，对方将立即失去对你的学生、课表和课程的访问权限。'}
           </View>
           <View className='edit-remove-btn' onClick={handleRemoveMember}>
-            <Text className='edit-remove-text'>取消共享</Text>
+            <Text className='edit-remove-text'>
+              {selectedMember?.relation_type === 'incoming' || selectedMember?.is_owner ? '退出共享' : '取消共享'}
+            </Text>
           </View>
         </View>
       </PageContainer>

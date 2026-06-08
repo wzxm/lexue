@@ -316,19 +316,23 @@ async function getSettingsSummary(openid) {
   });
   const studentCount = visibleStudentIds.size;
 
-  const familyRelations = await db.getList('families', { owner_openid: openid });
-  let familyMemberCount = familyRelations.length;
-  if (familyMemberCount === 0) {
-    const invited = new Set();
-    for (const sch of allSchedules) {
-      for (const m of sch.shared_with || []) {
-        if (m && m.openid) {
-          invited.add(m.openid);
-        }
-      }
+  const outgoingFamilyRelations = await db.getList('families', { owner_openid: openid });
+  const relatedFamilyOpenids = new Set();
+  outgoingFamilyRelations.forEach((relation) => {
+    if (relation.member_openid) relatedFamilyOpenids.add(relation.member_openid);
+  });
+  incomingFamilyRelations.forEach((relation) => {
+    if (relation.owner_openid) relatedFamilyOpenids.add(relation.owner_openid);
+  });
+  sharedSchedules.forEach((schedule) => {
+    if (schedule.owner_openid) relatedFamilyOpenids.add(schedule.owner_openid);
+  });
+  ownSchedules.forEach((schedule) => {
+    for (const member of schedule.shared_with || []) {
+      if (member && member.openid) relatedFamilyOpenids.add(member.openid);
     }
-    familyMemberCount = invited.size;
-  }
+  });
+  const familyMemberCount = relatedFamilyOpenids.size;
 
   const settings = user.settings || {};
   const studentSettings = settings.student_settings || {};

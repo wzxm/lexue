@@ -22,24 +22,54 @@ const FN = 'family';
 async function listMembers(openid) {
   logger.info(FN, 'listMembers', { openid });
 
-  const relations = await listFamilyRelations(openid);
-  const memberOpenids = relations.map((item) => item.member_openid);
   const _ = db.getCommand();
-  const users = memberOpenids.length > 0
-    ? await db.getList('users', { openid: _.in(memberOpenids) })
+  const outgoingRelations = await listFamilyRelations(openid);
+  const incomingRelations = await db.getList('families', { member_openid: openid });
+  const incomingSharedSchedules = await db.getList('schedules', {
+    shared_with: _.elemMatch({ openid }),
+    owner_openid: _.neq(openid),
+  });
+
+  const outgoingMemberOpenids = outgoingRelations.map((item) => item.member_openid).filter(Boolean);
+  const incomingOwnerOpenids = Array.from(new Set([
+    ...incomingRelations.map((item) => item.owner_openid).filter(Boolean),
+    ...incomingSharedSchedules.map((schedule) => schedule.owner_openid).filter(Boolean),
+  ]));
+  const allOpenids = Array.from(new Set([...outgoingMemberOpenids, ...incomingOwnerOpenids]));
+  const users = allOpenids.length > 0
+    ? await db.getList('users', { openid: _.in(allOpenids) })
     : [];
   const userMap = {};
   users.forEach((user) => { userMap[user.openid] = user; });
 
-  const members = relations.map((item) => ({
+  const members = outgoingRelations.map((item) => ({
     openid: item.member_openid,
     permission: 'edit',
     is_owner: false,
+    relation_type: 'outgoing',
     join_time: item.createTime,
     nickname: userMap[item.member_openid]?.nickname || item.member_nickname || '',
     avatar_url: userMap[item.member_openid]?.avatar_url || item.member_avatar || '',
   }));
 
+  const outgoingSet = new Set(outgoingMemberOpenids);
+  const incomingMembers = incomingOwnerOpenids
+    .filter((ownerOpenid) => !outgoingSet.has(ownerOpenid))
+    .map((ownerOpenid) => {
+      const relation = incomingRelations.find((item) => item.owner_openid === ownerOpenid);
+      const schedule = incomingSharedSchedules.find((item) => item.owner_openid === ownerOpenid);
+      return {
+        openid: ownerOpenid,
+        permission: 'owner',
+        is_owner: true,
+        relation_type: 'incoming',
+        join_time: relation?.createTime || schedule?.createTime,
+        nickname: userMap[ownerOpenid]?.nickname || '',
+        avatar_url: userMap[ownerOpenid]?.avatar_url || '',
+      };
+    });
+
+  members.push(...incomingMembers);
   return success(members);
 }
 
@@ -72,8 +102,13 @@ async function leave(openid, payload) {
     return fail(ERRORS.PARAM_ERROR, '不能退出自己的家庭关系');
   }
 
+  const _ = db.getCommand();
+  const sharedSchedule = await db.findOne('schedules', {
+    owner_openid: payload.ownerOpenid,
+    shared_with: _.elemMatch({ openid }),
+  });
   const removed = await removeFamilyRelation(payload.ownerOpenid, openid);
-  if (!removed) {
+  if (!removed && !sharedSchedule) {
     return fail(ERRORS.NOT_FOUND, '未找到对应的家庭关系');
   }
 
