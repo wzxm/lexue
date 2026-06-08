@@ -107,43 +107,6 @@ page {
   flex: 0 1 auto;
 }
 
-.color-picker-row {
-  align-items: flex-start;
-}
-
-.color-picker {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16rpx;
-  width: 100%;
-}
-
-.color-dot {
-  width: 56rpx;
-  height: 56rpx;
-  border-radius: 50%;
-  border: 4rpx solid transparent;
-  box-sizing: border-box;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform 0.15s ease;
-}
-
-.color-dot--selected {
-  transform: scale(1.08);
-  box-shadow: 0 0 0 3rpx #fff, 0 0 0 5rpx rgba(0, 0, 0, 0.12);
-}
-
-.color-dot-check {
-  font-size: 26rpx;
-  font-weight: 700;
-  color: #fff;
-  line-height: 1;
-  text-shadow: 0 2rpx 4rpx rgba(0, 0, 0, 0.25);
-}
-
 .form-arrow-icon {
   width: 28rpx;
   height: 28rpx;

@@ -10,7 +10,7 @@ import CourseNameSheet from './components/CourseNameSheet'
 import PeriodGridSheet, { type SlotSelection } from './components/PeriodGridSheet'
 import WeekPickerSheet from './components/WeekPickerSheet'
 import type { GradeLevel } from '../../constants/course-presets'
-import { COURSE_COLORS, DEFAULT_COURSE_COLOR, isCourseColorHex } from '../../constants/colors'
+import { DEFAULT_COURSE_COLOR } from '../../constants/colors'
 import './index.scss'
 
 const WEEKDAY_SHORT = ['一', '二', '三', '四', '五', '六', '日']
@@ -89,7 +89,6 @@ export default function CourseFormPage() {
   const [name, setName] = useState('')
   const [teacher, setTeacher] = useState('')
   const [contact, setContact] = useState('')
-  const [courseColor, setCourseColor] = useState(DEFAULT_COURSE_COLOR)
   const [sections, setSections] = useState<Section[]>(() => {
     if (routeWeekday && routePeriod) {
       return [{
@@ -151,7 +150,6 @@ export default function CourseFormPage() {
       setName(course.name)
       setTeacher(course.teacher || '')
       setContact(course.contact || '')
-      setCourseColor(isCourseColorHex(course.color) ? course.color!.toLowerCase() : DEFAULT_COURSE_COLOR)
       setSections([{
         day_of_week: course.day_of_week,
         slot: course.slot,
@@ -305,7 +303,7 @@ export default function CourseFormPage() {
           slot: firstSection.slot as PeriodIndex,
           teacher: teacher.trim(),
           room: firstSection.room.trim(),
-          color: courseColor,
+          color: DEFAULT_COURSE_COLOR,
           weeks: normalizeWeeks(firstSection.weeks),
           remark: '',
           contact: contact.trim(),
@@ -322,7 +320,7 @@ export default function CourseFormPage() {
             slot: s.slot as PeriodIndex,
             teacher: teacher.trim(),
             room: s.room.trim(),
-            color: courseColor,
+            color: DEFAULT_COURSE_COLOR,
             weeks: normalizeWeeks(s.weeks),
             remark: '',
             contact: contact.trim(),
@@ -339,7 +337,7 @@ export default function CourseFormPage() {
             slot: s.slot as PeriodIndex,
             teacher: teacher.trim(),
             room: s.room.trim(),
-            color: courseColor,
+            color: DEFAULT_COURSE_COLOR,
             weeks: normalizeWeeks(s.weeks),
             remark: '',
             contact: contact.trim(),
@@ -390,25 +388,6 @@ export default function CourseFormPage() {
               maxlength={40}
               onInput={e => setContact(e.detail.value)}
             />
-          </View>
-        </View>
-
-        {/* 课程颜色 */}
-        <View className='form-card'>
-          <Text className='form-section-title'>课程颜色</Text>
-          <View className='form-row color-picker-row'>
-            <View className='color-picker'>
-              {COURSE_COLORS.map(c => (
-                <View
-                  key={c.hex}
-                  className={`color-dot${courseColor === c.hex ? ' color-dot--selected' : ''}`}
-                  style={{ backgroundColor: c.hex }}
-                  onClick={() => setCourseColor(c.hex)}
-                >
-                  {courseColor === c.hex && <Text className='color-dot-check'>✓</Text>}
-                </View>
-              ))}
-            </View>
           </View>
         </View>
 

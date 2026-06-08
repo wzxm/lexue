@@ -1,7 +1,6 @@
 import { View, Text } from '@tarojs/components'
 import { useState, useMemo, useEffect, Fragment, type CSSProperties } from 'react'
 import type { Course, ScheduleGrid as ScheduleGridType, Period } from '../../../types/index'
-import { DEFAULT_COURSE_COLOR, isCourseColorHex } from '../../../constants/colors'
 import { tabState } from '../../../utils/tabState'
 import './ScheduleGrid.scss'
 
@@ -26,6 +25,8 @@ interface Props {
 }
 
 const WEEKDAY_LABELS = ['一', '二', '三', '四', '五', '六', '日']
+const TODAY_COURSE_COLOR = '#3b82f6'
+const NORMAL_COURSE_COLOR = '#22c55e'
 
 function getDayNumber(dateStr?: string): string {
   if (!dateStr) return ''
@@ -33,8 +34,8 @@ function getDayNumber(dateStr?: string): string {
   return Number.isNaN(day) ? '' : String(day)
 }
 
-function resolveCourseChip(course: Course): { className: string; style?: CSSProperties } {
-  const color = isCourseColorHex(course.color) ? course.color! : DEFAULT_COURSE_COLOR
+function resolveCourseChip(isTodayCol: boolean): { className: string; style?: CSSProperties } {
+  const color = isTodayCol ? TODAY_COURSE_COLOR : NORMAL_COURSE_COLOR
   return {
     className: 'course-chip',
     style: {
@@ -157,8 +158,8 @@ export default function ScheduleGrid({
                   </View>
                   {visibleDayIndices.map((dIdx) => {
                     const course = grid[pIdx]?.[dIdx] || null
-                    const chip = course ? resolveCourseChip(course) : null
                     const isTodayCol = highlightToday && weekDates[dIdx] === today
+                    const chip = course ? resolveCourseChip(isTodayCol) : null
                     return (
                       <View key={dIdx} className={`course-cell${isTodayCol ? ' course-cell--today' : ''}`}>
                         {course ? (
