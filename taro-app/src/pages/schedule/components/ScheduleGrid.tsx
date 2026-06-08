@@ -152,7 +152,8 @@ export default function ScheduleGrid({
                 <Fragment key={period.index}>
                   <View className='time-slot'>
                     <Text className='period-index'>{period.index}</Text>
-                    <Text className='period-start'>{period.startTime}</Text>
+                    <Text className='period-time'>{period.startTime}</Text>
+                    <Text className='period-time period-time--end'>{period.endTime}</Text>
                   </View>
                   {visibleDayIndices.map((dIdx) => {
                     const course = grid[pIdx]?.[dIdx] || null

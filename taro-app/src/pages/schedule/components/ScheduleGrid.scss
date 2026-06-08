@@ -122,11 +122,15 @@
   line-height: 1.2;
 }
 
-.period-start {
+.period-time {
   font-size: 16px;
   color: #8e8e93;
   margin-top: 4px;
   line-height: 1.2;
+}
+
+.period-time--end {
+  margin-top: 2px;
 }
 
 .course-cell {

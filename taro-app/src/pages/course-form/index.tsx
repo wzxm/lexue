@@ -295,27 +295,26 @@ export default function CourseFormPage() {
         weeks.length > 0 ? weeks : buildAllWeeks(totalWeeks)
 
       if (mode === 'edit' && routeCourseId) {
-        const s = sections[0]
+        const [firstSection, ...extraSections] = normalizedSections
         const existing = currentSchedule?.courses.find(
           c => resolveCourseId(c) === String(routeCourseId)
         )
         const base: Partial<Course> = {
           name: name.trim(),
-          day_of_week: s.day_of_week as WeekDay,
-          slot: s.slot as PeriodIndex,
+          day_of_week: firstSection.day_of_week as WeekDay,
+          slot: firstSection.slot as PeriodIndex,
           teacher: teacher.trim(),
-          room: s.room.trim(),
+          room: firstSection.room.trim(),
           color: courseColor,
-          weeks: normalizeWeeks(s.weeks),
+          weeks: normalizeWeeks(firstSection.weeks),
           remark: '',
-          ...(contact.trim() ? { contact: contact.trim() } : {}),
+          contact: contact.trim(),
         }
         await updateCourse(routeCourseId, base)
         if (existing) {
           updateCourseInStore({ ...existing, ...base } as Course)
         }
-      } else {
-        for (const s of sections) {
+        for (const s of extraSections) {
           const payload: Omit<Course, 'id'> = {
             schedule_id: scheduleId,
             name: name.trim(),
@@ -326,7 +325,24 @@ export default function CourseFormPage() {
             color: courseColor,
             weeks: normalizeWeeks(s.weeks),
             remark: '',
-            ...(contact.trim() ? { contact: contact.trim() } : {}),
+            contact: contact.trim(),
+          }
+          const created = await createCourse(payload)
+          addCourseToStore(created)
+        }
+      } else {
+        for (const s of normalizedSections) {
+          const payload: Omit<Course, 'id'> = {
+            schedule_id: scheduleId,
+            name: name.trim(),
+            day_of_week: s.day_of_week as WeekDay,
+            slot: s.slot as PeriodIndex,
+            teacher: teacher.trim(),
+            room: s.room.trim(),
+            color: courseColor,
+            weeks: normalizeWeeks(s.weeks),
+            remark: '',
+            contact: contact.trim(),
           }
           const created = await createCourse(payload)
           addCourseToStore(created)

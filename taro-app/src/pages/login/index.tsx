@@ -10,7 +10,6 @@ import './index.scss'
 const FEATURES = [
   { icon: '\ue600', label: '家庭共享' },
   { icon: '\ue696', label: '多孩课表' },
-  { icon: '\ue759', label: '上课提醒' },
   { icon: '\ue603', label: 'AI 识别' },
 ] as const
 

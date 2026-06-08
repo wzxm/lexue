@@ -198,16 +198,18 @@ function getWeekdayFromText(text) {
 }
 
 function getSlotFromText(text) {
-  const raw = String(text || '').replace(/\s/g, '');
+  const raw = String(text || '')
+    .replace(/\s/g, '')
+    .replace(/[|｜:：,，.。·\-—–~～_＿]/g, '');
   const match = raw.match(/^(?:第)?([一二两三四五六七八九十\d]{1,3})(?:节|课)?$/);
   return match ? parseChineseNumber(match[1]) : null;
 }
 
 function isIgnoredOcrText(text) {
-  const raw = String(text || '').replace(/\s/g, '');
+  const raw = String(text || '').replace(/\s/g, '').replace(/[|｜:：,，.。·\-—–~～_＿]/g, '');
   if (!raw) return true;
   if (getWeekdayFromText(raw) || getSlotFromText(raw)) return true;
-  return /^(课程表|课表|时间|节次|上午|下午|晚上|午休|课间|放学|早餐|午餐|晚餐|升旗|眼保健操|备注|日期)$/.test(raw)
+  return /^(课程表|课表|时间|节次|上午|下午|晚上|午休|午餐午休|课间|放学|早餐|午餐|晚餐|户外活动|课外活动|大课间|升旗|眼保健操|备注|日期)$/.test(raw)
     || /^\d{1,2}[:：]\d{2}/.test(raw)
     || /^\d{4}[-/.年]/.test(raw);
 }
@@ -310,6 +312,33 @@ function parseCoursesFromOcrBlocks(ocrBlocks, schedule) {
   }) : null;
 }
 
+function hasSameCourseSlot(courses, candidate) {
+  return courses.some(course => (
+    Number(course.day_of_week) === Number(candidate.day_of_week) &&
+    Number(course.slot) === Number(candidate.slot)
+  ));
+}
+
+function mergeOcrHeuristicCourses(result, fallback) {
+  if (!result || result.code !== 0 || !result.data || !fallback || fallback.code !== 0 || !fallback.data) {
+    return result;
+  }
+
+  const courses = Array.isArray(result.data.courses) ? result.data.courses : [];
+  const fallbackCourses = Array.isArray(fallback.data.courses) ? fallback.data.courses : [];
+  const supplemental = fallbackCourses.filter(course => !hasSameCourseSlot(courses, course));
+
+  if (supplemental.length === 0) return result;
+
+  result.data.courses = [...courses, ...supplemental];
+  result.data.warnings = [
+    ...(result.data.warnings || []),
+    `已根据 OCR 坐标补齐 ${supplemental.length} 个可能漏识别的课节，请重点核对。`,
+  ];
+  result.data.ocrHeuristicSupplemental = supplemental.length;
+  return result;
+}
+
 function isOcrUsable(blocks) {
   const text = getOcrText(blocks).replace(/\s/g, '');
   return blocks.length >= OCR_MIN_TEXT_BLOCKS && text.length >= OCR_MIN_TEXT_CHARS;
@@ -332,6 +361,8 @@ function buildOcrPrompt(schedule, ocrBlocks) {
     '把课程表OCR块转成JSON。只输出JSON。',
     '{"courses":[{"name":"","day_of_week":1,"slot":1,"teacher":"","room":"","contact":"","remark":"","color":"#3b82f6","weeks":[1]}],"warnings":[]}',
     `规则: 星期一到日=1-7; 节次slot=1-${maxSlot}; 空白/午休/课间/放学/早餐/眼保健操/升旗/标题/日期/学校名不要输出。`,
+    '若OCR把一整行合并成一个文本块，请按表头列顺序把该行中第1个课程归到周一，第2个归到周二，依次类推；不要漏掉最左侧星期列。',
+    '“户外活动”“课外活动”“大课间”“午餐-午休”这类跨整行内容不是单日课程，不要输出。',
     `未写周次时 weeks=[1..${totalWeeks}]; 单周/双周/1-10周按实际展开; 不确定不要编造, 写warnings。`,
     'OCR格式: 序号|x,y,w,h|文本',
     blockLines || '(无)',
@@ -637,7 +668,8 @@ async function recognizeScheduleImage(openid, payload) {
     if (result && result.code === 0 && result.data) {
       result.data.warnings = [...(ocrResult.warnings || []), ...(result.data.warnings || [])];
       result.data.ocrProvider = 'tencent';
-      return result;
+      const fallback = parseCoursesFromOcrBlocks(ocrResult.blocks, schedule);
+      return mergeOcrHeuristicCourses(result, fallback);
     }
     logger.error(FN, 'recognizeScheduleImage:cloudbaseAiOcr:failed', { code: result && result.code });
     const fallback = parseCoursesFromOcrBlocks(ocrResult.blocks, schedule);
