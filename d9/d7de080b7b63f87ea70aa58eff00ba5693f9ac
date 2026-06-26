@@ -1,0 +1,120 @@
+rules/ui-design/rule.md
+  s_dcd8b1455edf3c::t_1816ebd4d02838 8-13
+  s_dcd8b1455edf3c::t_22b58ea5ba152a 14-16
+rules/cloud-functions/rule.md
+  s_dcd8b1455edf3c::t_4789031e1b2ca7 16-18
+  s_dcd8b1455edf3c::t_a0bd3e6336839e 8-15
+rules/no-sql-wx-mp-sdk/rule.md
+  s_dcd8b1455edf3c::t_943eff6c6f2a2a 8,10,12,14-15
+  s_dcd8b1455edf3c::t_c32df439edf9ce 9,11,13,16-18
+rules/miniprogram-development/rule.md
+  s_dcd8b1455edf3c::t_a804ca6a8d4408 16-18
+  s_dcd8b1455edf3c::t_800a162fde74b3 8-15
+.gitignore
+  s_72c69e10d760ff::t_fc2d7888e16069 22
+cloudfunctions/ai/index.js
+  s_40b97a89127a0f::t_bdc7bf1de19679 798-856,923,934,936,941,985
+  s_40b97a89127a0f::t_13aad466cd56a4 274-295,315,329,333
+  s_40b97a89127a0f::t_b0020ab0ed21d5 335,1059-1066
+  s_40b97a89127a0f::t_7554e9c463e479 1037-1047
+  s_40b97a89127a0f::t_e91ea0d6c6d89e 1074
+  s_40b97a89127a0f::t_f95265ad52e7b0 220-222,225
+  s_40b97a89127a0f::t_55e578d4f5d5bd 23
+  s_40b97a89127a0f::t_51cf1bf9dd77f5 527-542
+  s_40b97a89127a0f::t_d5d903f28bf470 104-109
+  s_40b97a89127a0f::t_40529f36f95a7a 445-447
+  s_40b97a89127a0f::t_b57f5358c86baf 552
+  s_40b97a89127a0f::t_d6d591e804dfc4 298-314,316-328,330
+  s_40b97a89127a0f::t_2ef0a4ffac9cdd 585
+  s_40b97a89127a0f::t_c1adc5feb600bd 268,271,336,339,440,443,598-599,602-616,620-625,627-628,630,640,642-643,655-661,921,1048
+  s_a82f8a05dc3d38::t_2dda34c7703437 22
+  s_40b97a89127a0f::t_ca5511aadc907e 331,928,945,954-957,960-970,982-984,994,996
+  s_a82f8a05dc3d38::t_cdde4bce9c5da9 29
+  s_40b97a89127a0f::t_9ad97e5e2579ae 1002-1003,1006,1013
+  s_40b97a89127a0f::t_9f5fd9e8b21508 1095-1097
+  s_40b97a89127a0f::t_e40a5087dac6dd 600-601,617-619,626,629,631-639,641,644-654
+  s_40b97a89127a0f::t_6c17967602c3bc 3-4
+  s_a82f8a05dc3d38::t_9202bde25aee09 449-451,455-482,486
+  h_1811824342b47a 11,796,857-881,883-920,929,971-981
+  s_40b97a89127a0f::t_320152f7f301fb 224,226
+  s_40b97a89127a0f::t_f9174f1769927c 223
+  s_40b97a89127a0f::t_1011852119ae54 227-229
+  s_40b97a89127a0f::t_f8562c21e5a1d1 269-270
+  s_40b97a89127a0f::t_dd944efabb6ef0 272-273
+  s_40b97a89127a0f::t_1c0004093764f0 296-297
+  s_40b97a89127a0f::t_ce0d11f1e236cb 332
+  s_40b97a89127a0f::t_de3b33d450fdcd 334
+  s_40b97a89127a0f::t_c5fb09f63ceaad 337-338
+  s_40b97a89127a0f::t_ac4bcf43194384 340
+  s_40b97a89127a0f::t_40233ab9d3232e 441-442
+  s_40b97a89127a0f::t_c19c9ce20b310d 444
+  s_a82f8a05dc3d38::t_7d08be1cc9aa69 452-454
+  s_a82f8a05dc3d38::t_124711631cd9e3 487-488
+  s_40b97a89127a0f::t_8e0c239e8a6e00 922
+  s_40b97a89127a0f::t_a179f212f6aa07 924-927
+  s_40b97a89127a0f::t_7cb714c586dc4f 1049
+rules/ai-model-cloudbase/rule.md
+  s_40b97a89127a0f::t_ab96b90e3228ec 7,11,15,17,20-22,24,27,30,32-39,42,44,47-50,53,55-56
+  s_a82f8a05dc3d38::t_4b7493602f5ff5 3,9,19
+  s_a82f8a05dc3d38::t_1fe324978920f0 31
+  s_40b97a89127a0f::t_5d6318c639d8ea 57
+taro-app/src/pages/schedule/index.tsx
+  s_5d783fb44ebdc2::t_de8178808455c5 223-226,230-231
+rules/ai-model-nodejs/rule.md
+  s_a82f8a05dc3d38::t_18f9dbb0304ef7 3
+  s_40b97a89127a0f::t_d596a3824a0750 4,8,10,14,16-17,20,22,25-26,28-30,32,35,38,40-47,50,54,57-60,65,67-69,73-77
+  s_a82f8a05dc3d38::t_beda8595ca2a17 27,39
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.3",
+  "base_commit_sha": "d9d7de080b7b63f87ea70aa58eff00ba5693f9ac",
+  "prompts": {},
+  "humans": {
+    "h_1811824342b47a": {
+      "author": "王哲 <wangzhe@mogulinker.com>"
+    }
+  },
+  "sessions": {
+    "s_40b97a89127a0f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "fc0ebae6-8c78-45d2-a70a-43b70a16da39",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "王哲 <wangzhe@mogulinker.com>"
+    },
+    "s_5d783fb44ebdc2": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "367acfc7-cd41-4abb-8ee9-3c436cba2d22",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "王哲 <wangzhe@mogulinker.com>"
+    },
+    "s_72c69e10d760ff": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "28a581f3-5cdf-4db1-8616-f98367660b36",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "王哲 <wangzhe@mogulinker.com>"
+    },
+    "s_a82f8a05dc3d38": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "23c50161-6478-4988-9d87-4030bda0d5f5",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "王哲 <wangzhe@mogulinker.com>"
+    },
+    "s_dcd8b1455edf3c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c0ba9006-814d-474c-9d1b-9c9d72622d43",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "王哲 <wangzhe@mogulinker.com>"
+    }
+  }
+}
