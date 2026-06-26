@@ -5,6 +5,15 @@ version: 2.17.1
 alwaysApply: false
 ---
 
+## ⚠️ 项目覆盖：智鑫课表 UI 约定
+
+- 样式：Tailwind CSS + Sass（`.scss`），`pxtransform` 自动 px→rpx，不直接写 `rpx`
+- 图标：**禁用 FontAwesome/Heroicons 等 web 图标库**（微信不支持），用 iconfont 或内联 SVG
+- 组件：Taro 内置组件（`View`/`Text`/`Image`/`ScrollView`），不用 HTML 标签；`Image` 需显式指定宽高
+- 审美：受众是学生家长，风格偏**柔和/有秩序感**，避免强对比或混乱的视觉设计
+
+---
+
 ## Standalone Install Note
 
 If this environment only installed the current skill, start from the CloudBase main entry and use the published `cloudbase/references/...` paths for sibling skills.

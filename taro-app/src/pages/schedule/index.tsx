@@ -220,10 +220,15 @@ export default function SchedulePage () {
         useScheduleStore.getState()
 
       // Tab 间切换优先复用现有数据，避免每次回到课表页都串行重拉。
+      // 但如果 currentSchedule 已不在列表中（被删除），也需要重新加载。
+      const currentStillExists = cachedCurrentSchedule
+        ? cachedSchedules.some(s => s.id === cachedCurrentSchedule.id)
+        : false
       if (
         cachedStudents.length === 0 ||
         cachedSchedules.length === 0 ||
-        !cachedCurrentSchedule
+        !cachedCurrentSchedule ||
+        !currentStillExists
       ) {
         void loadData()
       }

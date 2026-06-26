@@ -5,6 +5,17 @@ version: 2.17.1
 alwaysApply: false
 ---
 
+## ⚠️ 项目覆盖：智鑫课表云函数约定
+
+- 云环境 ID：`test-d7gxuxk5a8418c629`，包管理用 **npm**（根目录）
+- 现有函数：`auth` | `schedule` | `course` | `student` | `family` | `share` | `notify` | `reminder` | `ai`
+- 路由模式：所有函数用 `exports.main(event, context)`，`event` 含 `{ action, payload }`，新功能加 action，不加新函数
+- 响应格式：`{ code: 0, message, data }` 成功 / `{ code: 4xxxx|50000, message, data: null }` 失败
+- OPENID：只从 `cloud.getWXContext().OPENID` 取，禁止从 `event.payload` 传
+- 前端调用：只走 `src/api/cloud.ts` 的 `cloud.call<T>()`，不直接调 `Taro.cloud.callFunction`
+
+---
+
 ## Standalone Install Note
 
 If this environment only installed the current skill, start from the CloudBase main entry and use the published `cloudbase/references/...` paths for sibling skills.

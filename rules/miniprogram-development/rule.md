@@ -5,6 +5,17 @@ version: 2.17.2
 alwaysApply: false
 ---
 
+## ⚠️ 项目覆盖：智鑫课表使用 Taro 4.x，非原生小程序
+
+- 框架：Taro 4.x + React + TypeScript，写 `.tsx`，不写 WXML / Page() / Component()
+- 包管理：`taro-app/` 内用 **pnpm**
+- 样式：Tailwind CSS + Sass，`pxtransform` 自动 px→rpx
+- 新增页面：必须同时注册到 `src/app.config.ts` 和 `src/constants/routes.ts`
+- 导航：`Taro.navigateTo({ url: ROUTES.xxx })`，不硬编码路径
+- 云函数调用：统一用 `src/api/cloud.ts` 的 `cloud.call<T>()`，不直接调 `Taro.cloud.callFunction`
+
+---
+
 ## Standalone Install Note
 
 If this environment only installed the current skill, start from the CloudBase main entry and use the published `cloudbase/references/...` paths for sibling skills.

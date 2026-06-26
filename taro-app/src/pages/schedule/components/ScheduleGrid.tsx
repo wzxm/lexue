@@ -20,8 +20,12 @@ interface Props {
   interactive?: boolean;
   /** 是否允许切换周数，默认 true */
   allowWeekPicker?: boolean;
-  /** 是否高亮今天所在列，默认 true */
+  /** 是否高亮今天所在的列，默认 true */
   highlightToday?: boolean;
+  /** 自定义课程点击回调（替代默认 onTapCourse） */
+  onCourseClick?: (course: Course, index: number) => void;
+  /** 是否为 remark 含 [待确认] 的课程添加特殊样式 */
+  highlightUncertain?: boolean;
 }
 
 const WEEKDAY_LABELS = ['一', '二', '三', '四', '五', '六', '日']
@@ -61,6 +65,8 @@ export default function ScheduleGrid({
   interactive = true,
   allowWeekPicker = true,
   highlightToday = true,
+  onCourseClick,
+  highlightUncertain = false,
 }: Props) {
   const visibleDayIndices = hideWeekend ? [0, 1, 2, 3, 4] : [0, 1, 2, 3, 4, 5, 6]
   const [showWeekPicker, setShowWeekPicker] = useState(false)
@@ -159,16 +165,24 @@ export default function ScheduleGrid({
                   {visibleDayIndices.map((dIdx) => {
                     const course = grid[pIdx]?.[dIdx] || null
                     const isTodayCol = highlightToday && weekDates[dIdx] === today
+                    const isUncertain = highlightUncertain && course?.remark?.includes('[待确认]')
                     const chip = course ? resolveCourseChip(isTodayCol) : null
                     return (
                       <View key={dIdx} className={`course-cell${isTodayCol ? ' course-cell--today' : ''}`}>
                         {course ? (
                           <View
-                            className={chip?.className}
+                            className={`${chip?.className || ''}${isUncertain ? ' course-chip--uncertain' : ''}`}
                             style={chip?.style}
-                            onClick={interactive ? () => onTapCourse(course) : undefined}
+                            onClick={interactive ? () => {
+                              if (onCourseClick) {
+                                const idx = parseInt(course.id.replace('preview-', ''), 10)
+                                onCourseClick(course, isNaN(idx) ? 0 : idx)
+                              } else {
+                                onTapCourse(course)
+                              }
+                            } : undefined}
                           >
-                            <Text className='course-chip-name'>{course.name}</Text>
+                            <Text className='course-chip-name'>{isUncertain ? `⚠️${course.name}` : course.name}</Text>
                             {course.room ? (
                               <Text className='course-chip-room'>{course.room}</Text>
                             ) : null}

@@ -5,6 +5,17 @@ version: 2.17.1
 alwaysApply: false
 ---
 
+## ⚠️ 项目覆盖：智鑫课表前端不直接访问数据库
+
+前端永远不调用 `wx.cloud.database()`，所有数据操作走云函数。
+
+数据流：`cloud.call('funcName', { action, payload })` → 云函数 → `shared/db.js` → 返回结果
+
+- 写新功能：在对应云函数加 action，再写 `*.api.ts` 函数
+- 本 skill 仅在写**云函数侧** DB 代码时参考
+
+---
+
 ## Standalone Install Note
 
 If this environment only installed the current skill, start from the CloudBase main entry and use the published `cloudbase/references/...` paths for sibling skills.

@@ -1,253 +1,77 @@
 ---
 name: ai-model-nodejs
-description: Use this skill when developing Node.js backend services or CloudBase cloud functions (Express/Koa/NestJS, serverless, backend APIs) that need AI capabilities. Features text generation (generateText), streaming (streamText), AND image generation (generateImage) via @cloudbase/node-sdk ≥3.16.0. Built-in models include Hunyuan (hunyuan-2.0-instruct-20251111 recommended), DeepSeek (deepseek-v3.2 recommended), and hunyuan-image for images. This is the ONLY SDK that supports image generation. NOT for browser/Web apps (use ai-model-web) or WeChat Mini Program (use ai-model-wechat).
-version: 2.17.1
+description: 智鑫课表 Node.js 云函数 AI 调用规范 - CloudBase AI SDK (hy3-preview) + 腾讯云 OCR
+version: 2.18.0
 alwaysApply: false
 ---
 
-## Standalone Install Note
+## 适用场景
 
-If this environment only installed the current skill, start from the CloudBase main entry and use the published `cloudbase/references/...` paths for sibling skills.
-
-- CloudBase main entry: `https://cnb.cool/tencent/cloud/cloudbase/cloudbase-skills/-/git/raw/main/skills/cloudbase/SKILL.md`
-- Current skill raw source: `https://cnb.cool/tencent/cloud/cloudbase/cloudbase-skills/-/git/raw/main/skills/cloudbase/references/ai-model-nodejs/SKILL.md`
-
-Keep local `references/...` paths for files that ship with the current skill directory. When this file points to a sibling skill such as `auth-tool` or `web-development`, use the standalone fallback URL shown next to that reference.
-
-## When to use this skill
-
-Use this skill for **calling AI models in Node.js backend or CloudBase cloud functions** using `@cloudbase/node-sdk`.
-
-**Use it when you need to:**
-
-- Integrate AI text generation in backend services
-- Generate images with Hunyuan Image model
-- Call AI models from CloudBase cloud functions
-- Server-side AI processing
-
-**Do NOT use for:**
-
-- Browser/Web apps → use `ai-model-web` skill
-- WeChat Mini Program → use `ai-model-wechat` skill
-- HTTP API integration → use `http-api` skill
+云函数中调用 AI 模型进行课表图片识别、文本结构化解析。
 
 ---
 
-## Available Providers and Models
+## 架构概览
 
-CloudBase provides these built-in providers and models:
-
-| Provider | Models | Recommended |
-|----------|--------|-------------|
-| `hunyuan-exp` | `hunyuan-turbos-latest`, `hunyuan-t1-latest`, `hunyuan-2.0-thinking-20251109`, `hunyuan-2.0-instruct-20251111` | ✅ `hunyuan-2.0-instruct-20251111` |
-| `deepseek` | `deepseek-r1-0528`, `deepseek-v3-0324`, `deepseek-v3.2` | ✅ `deepseek-v3.2` |
-
----
-
-## Installation
-
-```bash
-npm install @cloudbase/node-sdk
+```
+图片 → [CloudBase AI 多模态直调] → [腾讯云 OCR + CloudBase AI 文本解析] → [OCR 启发式兜底]
 ```
 
-⚠️ **AI feature requires version 3.16.0 or above.** Check with `npm list @cloudbase/node-sdk`.
+主文件：`cloudfunctions/ai/index.js`
 
----
-
-## Initialization
-
-### In Cloud Functions
+## CloudBase AI SDK 调用
 
 ```js
-const tcb = require('@cloudbase/node-sdk');
-const app = tcb.init({ env: '<YOUR_ENV_ID>' });
-
-exports.main = async (event, context) => {
-  const ai = app.ai();
-  // Use AI features
-};
-```
-
-### Cloud Function Configuration for AI Models
-
-⚠️ **Important:** When creating cloud functions that use AI models (especially `generateImage()` and large language model generation), set a longer timeout as these operations can be slow.
-
-**Using MCP Tool `manageFunctions(action="createFunction")`:**
-
-Legacy compatibility: if an older prompt still says `createFunction`, keep the same payload shape but execute it through `manageFunctions(action="createFunction")`.
-
-Set the `timeout` parameter in the `func` object:
-
-- **Parameter**: `func.timeout` (number)
-- **Unit**: seconds
-- **Range**: 1 - 900
-- **Default**: 20 seconds (usually too short for AI operations)
-
-**Recommended timeout values:**
-- **Text generation (`generateText`)**: 60-120 seconds
-- **Streaming (`streamText`)**: 60-120 seconds  
-- **Image generation (`generateImage`)**: 300-900 seconds (recommended: 900s)
-- **Combined operations**: 900 seconds (maximum allowed)
-
-### In Regular Node.js Server
-
-```js
-const tcb = require('@cloudbase/node-sdk');
-const app = tcb.init({
-  env: '<YOUR_ENV_ID>',
-  secretId: '<YOUR_SECRET_ID>',
-  secretKey: '<YOUR_SECRET_KEY>'
-});
-
-const ai = app.ai();
-```
-
----
-
-## generateText() - Non-streaming
-
-```js
-const model = ai.createModel("hunyuan-exp");
-
+const model = tcbApp.ai().createModel('cloudbase');
 const result = await model.generateText({
-  model: "hunyuan-2.0-instruct-20251111",  // Recommended model
-  messages: [{ role: "user", content: "你好，请你介绍一下李白" }],
-});
+  model: 'hy3-preview',
+  messages: [{ role: 'user', content: 'prompt' }],
+  temperature: 0.1,
+}, { timeout: 50000 });
 
-console.log(result.text);           // Generated text string
-console.log(result.usage);          // { prompt_tokens, completion_tokens, total_tokens }
-console.log(result.messages);       // Full message history
-console.log(result.rawResponses);   // Raw model responses
+const text = result?.text || result?.choices?.[0]?.message?.content || '';
 ```
 
----
-
-## Error Handling Pattern
+### 多模态请求
 
 ```js
-const model = ai.createModel("deepseek");
+await model.generateText({
+  model: 'hy3-preview',
+  messages: [{
+    role: 'user',
+    content: [
+      { type: 'image_url', image_url: { url: 'data:image/jpeg;base64,xxx' } },
+      { type: 'text', text: 'prompt' },
+    ],
+  }],
+}, { timeout: 50000 });
+```
 
-try {
-  const result = await model.generateText({
-    model: "deepseek-v3.2",
-    messages: [{ role: "user", content: "Summarize today's deployment logs" }],
-  });
+⚠️ `image_url` 必须是嵌套对象 `{ url: "data:..." }`。
 
-  console.log(result.text);
-} catch (error) {
-  console.error("AI request failed", error);
-}
+---
+
+## 环境变量
+
+```
+CLOUDBASE_AI_TIMEOUT_MS=50000      # 超时（默认 50s，范围 5-120s）
+CLOUDBASE_VISION_ENABLED=false     # true 启用多模态直调
+TENCENT_SECRET_ID=xxx              # 腾讯云 OCR
+TENCENT_SECRET_KEY=xxx             # 腾讯云 OCR
 ```
 
 ---
 
-## streamText() - Streaming
+## 三级容错策略
 
-```js
-const model = ai.createModel("hunyuan-exp");
-
-const res = await model.streamText({
-  model: "hunyuan-2.0-instruct-20251111",  // Recommended model
-  messages: [{ role: "user", content: "你好，请你介绍一下李白" }],
-});
-
-// Option 1: Iterate text stream (recommended)
-for await (let text of res.textStream) {
-  console.log(text);  // Incremental text chunks
-}
-
-// Option 2: Iterate data stream for full response data
-for await (let data of res.dataStream) {
-  console.log(data);  // Full response chunk with metadata
-}
-
-// Option 3: Get final results
-const messages = await res.messages;  // Full message history
-const usage = await res.usage;        // Token usage
-```
+1. **CloudBase AI 多模态直调**（`CLOUDBASE_VISION_ENABLED=true` 时）
+2. **腾讯云 OCR + CloudBase AI 文本解析**（主路径）
+3. **OCR 启发式坐标解析兜底**（纯本地算法）
 
 ---
 
-## generateImage() - Image Generation
+## 注意事项
 
-⚠️ **Image generation is only available in Node SDK**, not in JS SDK (Web) or WeChat Mini Program.
-
-```js
-const imageModel = ai.createImageModel("hunyuan-image");
-
-const res = await imageModel.generateImage({
-  model: "hunyuan-image",
-  prompt: "一只可爱的猫咪在草地上玩耍",
-  size: "1024x1024",
-  version: "v1.9",
-});
-
-console.log(res.data[0].url);           // Image URL (valid 24 hours)
-console.log(res.data[0].revised_prompt);// Revised prompt if revise=true
-```
-
-### Image Generation Parameters
-
-```ts
-interface HunyuanGenerateImageInput {
-  model: "hunyuan-image";      // Required
-  prompt: string;                       // Required: image description
-  version?: "v1.8.1" | "v1.9";         // Default: "v1.8.1"
-  size?: string;                        // Default: "1024x1024"
-  negative_prompt?: string;             // v1.9 only
-  style?: string;                       // v1.9 only
-  revise?: boolean;                     // Default: true
-  n?: number;                           // Default: 1
-  footnote?: string;                    // Watermark, max 16 chars
-  seed?: number;                        // Range: [1, 4294967295]
-}
-
-interface HunyuanGenerateImageOutput {
-  id: string;
-  created: number;
-  data: Array<{
-    url: string;                        // Image URL (24h valid)
-    revised_prompt?: string;
-  }>;
-}
-```
-
----
-
-## Type Definitions
-
-```ts
-interface BaseChatModelInput {
-  model: string;                        // Required: model name
-  messages: Array<ChatModelMessage>;    // Required: message array
-  temperature?: number;                 // Optional: sampling temperature
-  topP?: number;                        // Optional: nucleus sampling
-}
-
-type ChatModelMessage =
-  | { role: "user"; content: string }
-  | { role: "system"; content: string }
-  | { role: "assistant"; content: string };
-
-interface GenerateTextResult {
-  text: string;                         // Generated text
-  messages: Array<ChatModelMessage>;    // Full message history
-  usage: Usage;                         // Token usage
-  rawResponses: Array<unknown>;         // Raw model responses
-  error?: unknown;                      // Error if any
-}
-
-interface StreamTextResult {
-  textStream: AsyncIterable<string>;    // Incremental text stream
-  dataStream: AsyncIterable<DataChunk>; // Full data stream
-  messages: Promise<ChatModelMessage[]>;// Final message history
-  usage: Promise<Usage>;                // Final token usage
-  error?: unknown;                      // Error if any
-}
-
-interface Usage {
-  prompt_tokens: number;
-  completion_tokens: number;
-  total_tokens: number;
-}
-```
+- 不使用 DeepSeek 官方 API，无需 API Key
+- 图片大小限制 8MB，建议前端压缩后上传
+- 超时默认 50s，可通过 `CLOUDBASE_AI_TIMEOUT_MS` 调整（范围 5-120s）

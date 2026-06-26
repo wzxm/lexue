@@ -19,3 +19,4 @@ qrcode.jpg
 
 # Qoder 工作树
 .qoder/
+.env.local

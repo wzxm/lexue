@@ -252,3 +252,10 @@
   color: #0097a7;
   border-left-color: #26c6da;
 }
+
+/* 待确认课程高亮：虚线边框 + 淡橙背景 */
+.course-chip--uncertain {
+  border: 2px dashed #f59e0b !important;
+  border-left: 4px dashed #f59e0b !important;
+  background: rgba(245, 158, 11, 0.08);
+}

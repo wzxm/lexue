@@ -12,6 +12,7 @@ import { DEFAULT_COURSE_COLOR, COURSE_COLORS } from '../../constants/colors'
 import { getCurrentWeekOffset, getWeekDates, formatDate } from '../../utils/date'
 import { chooseMediaSource } from '../../utils/media'
 import ScheduleGrid from '../schedule/components/ScheduleGrid'
+import CourseEditModal from './components/CourseEditModal'
 import type { Course, Schedule } from '../../types/index'
 import '../schedule/index.scss'
 import './index.scss'
@@ -48,6 +49,12 @@ export default function ScheduleAiPage() {
   const [previewImageVisible, setPreviewImageVisible] = useState(false)
   const [previewWeekOffset, setPreviewWeekOffset] = useState(0)
   const [step, setStep] = useState<'pick' | 'preview'>('pick')
+  const [editingCourse, setEditingCourse] = useState<{course: Omit<Course, 'id'>, index: number} | null>(null)
+
+  const uncertainCount = useMemo(
+    () => draftCourses.filter(c => c.remark?.includes('[待确认]')).length,
+    [draftCourses]
+  )
 
   const schedule = useMemo(() => {
     if (currentSchedule?.id === scheduleId) return currentSchedule
@@ -294,7 +301,15 @@ export default function ScheduleAiPage() {
                   第 {previewWeekOffset + 1} 周 · {normalizedDraftCourses.length} 条
                 </Text>
               </View>
-              <Text className='preview-hint'>课表预览仅用于查看识别结果，不支持编辑操作</Text>
+              {uncertainCount > 0 ? (
+                <Text className='preview-hint preview-hint--warn'>
+                  共识别 {normalizedDraftCourses.length} 门课程，其中 {uncertainCount} 门待确认，建议点击检查
+                </Text>
+              ) : (
+                <Text className='preview-hint'>
+                  共识别 {normalizedDraftCourses.length} 门课程
+                </Text>
+              )}
             </View>
             {previewSchedule ? (
               <ScheduleGrid
@@ -308,10 +323,15 @@ export default function ScheduleAiPage() {
                 setWeekOffset={setPreviewWeekOffset}
                 onTapCourse={() => {}}
                 onTapEmpty={() => {}}
-                interactive={false}
+                interactive
                 allowWeekPicker
                 highlightToday={false}
                 hideWeekend={hideWeekend}
+                highlightUncertain
+                onCourseClick={(_course, index) => {
+                  const c = draftCourses[index]
+                  if (c) setEditingCourse({ course: c, index })
+                }}
               />
             ) : (
               <Text className='tip'>当前课表信息未加载完成，稍后再试。</Text>
@@ -327,6 +347,7 @@ export default function ScheduleAiPage() {
             </View>
           )}
 
+          <Text className='edit-tip'>点击课程可编辑或删除</Text>
 
           <View className='footer'>
             <Button className='ghost-btn' onClick={() => setStep('pick')}>重新选择</Button>
@@ -334,6 +355,24 @@ export default function ScheduleAiPage() {
               确认导入
             </Button>
           </View>
+
+          <CourseEditModal
+            visible={!!editingCourse}
+            course={editingCourse?.course || null}
+            courseIndex={editingCourse?.index ?? -1}
+            periods={schedule?.periods?.length || 8}
+            onSave={(index, updated) => {
+              const newCourses = [...draftCourses]
+              newCourses[index] = updated
+              setDraftCourses(newCourses)
+              setEditingCourse(null)
+            }}
+            onDelete={(index) => {
+              setDraftCourses(draftCourses.filter((_, i) => i !== index))
+              setEditingCourse(null)
+            }}
+            onClose={() => setEditingCourse(null)}
+          />
 
           {previewImageVisible && (
             <View className='image-modal' onClick={() => setPreviewImageVisible(false)}>
