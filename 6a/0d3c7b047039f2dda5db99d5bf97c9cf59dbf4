@@ -1,0 +1,31 @@
+taro-app/src/pages/schedule-ai/index.tsx
+  s_f88b54da8e5c2d::t_16d18a32e0310d 47-48,229-230,308,310,314,345,348-350
+cloudfunctions/ai/index.js
+  s_f88b54da8e5c2d::t_75bf9cc95855a0 1462
+  s_f88b54da8e5c2d::t_ed2bd86e518aa6 24-25
+  s_f88b54da8e5c2d::t_1a1a8a43b9813e 1163,1166,1173,1298,1301
+  s_f88b54da8e5c2d::t_6fad42d04459f5 853-891
+  s_f88b54da8e5c2d::t_6c9d45588fee5d 529-836
+  s_f88b54da8e5c2d::t_fe1f702c39166c 1307,1358-1359
+  s_f88b54da8e5c2d::t_c5f47da3efc3d2 1371-1400,1404,1412,1419,1422,1424,1426-1427,1429-1435,1443,1463-1491,1493-1494,1496-1511,1513-1528,1530,1533-1548,1550-1562
+taro-app/src/api/ai.api.ts
+  s_f88b54da8e5c2d::t_16d18a32e0310d 2,10-27,30,33-35
+taro-app/src/pages/schedule-ai/index.scss
+  s_f88b54da8e5c2d::t_074292b4fbeed6 316-320
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.5",
+  "base_commit_sha": "6a0d3c7b047039f2dda5db99d5bf97c9cf59dbf4",
+  "prompts": {},
+  "sessions": {
+    "s_f88b54da8e5c2d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f17c6-627b-7210-af14-06ce9b7660b4",
+        "model": "gpt-5.5"
+      },
+      "human_author": "王哲 <wangzhe@mogulinker.com>"
+    }
+  }
+}
