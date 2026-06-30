@@ -44,6 +44,8 @@ export default function ScheduleAiPage() {
   const [loading, setLoading] = useState(false)
   const [recognizing, setRecognizing] = useState(false)
   const [warnings, setWarnings] = useState<string[]>([])
+  const [aiConfidence, setAiConfidence] = useState<'high' | 'medium' | 'low' | ''>('')
+  const [reviewItems, setReviewItems] = useState<string[]>([])
   const [draftCourses, setDraftCourses] = useState<Omit<Course, 'id'>[]>([])
   const [previewFilePath, setPreviewFilePath] = useState('')
   const [previewImageVisible, setPreviewImageVisible] = useState(false)
@@ -224,6 +226,8 @@ export default function ScheduleAiPage() {
         .filter(course => course.name && course.day_of_week >= 1 && course.day_of_week <= 7 && course.slot >= 1 && course.slot <= Math.max(1, schedulePeriods || 12))
 
       setWarnings(result.warnings || [])
+      setAiConfidence(result.confidence || '')
+      setReviewItems((result.reviewItems || []).map(item => item.message).filter(Boolean))
       setDraftCourses(normalized)
       setPreviewImageVisible(false)
       setStep('preview')
@@ -301,13 +305,13 @@ export default function ScheduleAiPage() {
                   第 {previewWeekOffset + 1} 周 · {normalizedDraftCourses.length} 条
                 </Text>
               </View>
-              {uncertainCount > 0 ? (
+              {uncertainCount > 0 || aiConfidence === 'low' || reviewItems.length > 0 ? (
                 <Text className='preview-hint preview-hint--warn'>
-                  共识别 {normalizedDraftCourses.length} 门课程，其中 {uncertainCount} 门待确认，建议点击检查
+                  共识别 {normalizedDraftCourses.length} 门课程{uncertainCount > 0 ? `，其中 ${uncertainCount} 门待确认` : ''}{aiConfidence === 'low' ? '，整体置信度较低' : ''}，建议点击检查
                 </Text>
               ) : (
                 <Text className='preview-hint'>
-                  共识别 {normalizedDraftCourses.length} 门课程
+                  共识别 {normalizedDraftCourses.length} 门课程{aiConfidence === 'high' ? '，识别置信度较高' : ''}
                 </Text>
               )}
             </View>
@@ -338,9 +342,12 @@ export default function ScheduleAiPage() {
             )}
           </View>
 
-          {warnings.length > 0 && (
+          {(warnings.length > 0 || reviewItems.length > 0) && (
             <View className='card warning-card'>
               <Text className='section-title'>识别提示</Text>
+              {reviewItems.map((item, index) => (
+                <Text key={`review-${item}-${index}`} className='warning-line warning-line--review'>{item}</Text>
+              ))}
               {warnings.map((warning, index) => (
                 <Text key={`${warning}-${index}`} className='warning-line'>{warning}</Text>
               ))}
