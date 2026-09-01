@@ -368,6 +368,7 @@ export default function ScheduleAiPage() {
             course={editingCourse?.course || null}
             courseIndex={editingCourse?.index ?? -1}
             periods={schedule?.periods?.length || 8}
+            totalWeeks={totalWeeks}
             onSave={(index, updated) => {
               const newCourses = [...draftCourses]
               newCourses[index] = updated

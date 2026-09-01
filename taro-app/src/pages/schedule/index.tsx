@@ -16,6 +16,11 @@ import { deleteCourse } from '../../api/course.api'
 import { getWeekDates, getCurrentWeekOffset, formatDate } from '../../utils/date'
 import { ROUTES } from '../../constants/routes'
 import { resolveCourseId } from '../../utils/courseId'
+import {
+  buildOffWeekSlotKeys,
+  findCoursesAtSlot,
+  formatWeeksSummary,
+} from '../../utils/weeks'
 import { groupSchedulesByStudent } from '../../utils/groupSchedulesByStudent'
 import ScheduleSwitchDrawer from '../../components/ScheduleSwitchDrawer'
 import { DEFAULT_PERIODS } from '../../constants/periods'
@@ -50,7 +55,7 @@ export default function SchedulePage () {
   const [weekDates, setWeekDates] = useState<string[]>([])
   const [weekNum, setWeekNum] = useState(1)
   const [showCourseModal, setShowCourseModal] = useState(false)
-  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null)
+  const [selectedSlotCourses, setSelectedSlotCourses] = useState<Course[]>([])
   const [showDrawer, setShowDrawer] = useState(false)
   const [showAddCourseSheet, setShowAddCourseSheet] = useState(false)
   const [selectedDayIndex, setSelectedDayIndex] = useState(0)
@@ -68,6 +73,7 @@ export default function SchedulePage () {
   }, [showCourseModal])
 
   const periods = currentSchedule?.periods || DEFAULT_PERIODS
+  const totalWeeks = currentSchedule?.total_weeks || currentSchedule?.totalWeeks || 20
   const today = formatDate(new Date(), 'YYYY-MM-DD')
   const hideWeekend = userInfo?.settings?.hide_weekend ?? false
 
@@ -296,57 +302,127 @@ export default function SchedulePage () {
     }
   }
 
-  /** 空课表页面点击添加课程 */
+  const offWeekSlotKeys = useMemo(() => {
+    if (!currentSchedule?.courses) return new Set<string>()
+    return buildOffWeekSlotKeys(currentSchedule.courses, weekNum)
+  }, [currentSchedule, weekNum])
+
+  const navigateToEditCourse = (course: Course) => {
+    if (!currentSchedule) return
+    const cid = resolveCourseId(course)
+    if (!cid) {
+      Taro.showToast({ title: '课程数据异常', icon: 'none' })
+      return
+    }
+    Taro.navigateTo({
+      url: `${ROUTES.COURSE_FORM}?mode=edit&courseId=${encodeURIComponent(cid)}&scheduleId=${encodeURIComponent(currentSchedule.id)}`,
+    })
+  }
+
+  const navigateToEditAtSlot = (weekday: number, period: number) => {
+    if (!currentSchedule) return
+    Taro.navigateTo({
+      url: `${ROUTES.COURSE_FORM}?mode=edit&weekday=${weekday}&period=${period}&scheduleId=${currentSchedule.id}`,
+    })
+  }
+
+  const openSlotCoursesModal = (weekday: number, period: number) => {
+    const slotCourses = findCoursesAtSlot(
+      currentSchedule?.courses || [],
+      weekday,
+      period,
+      weekNum,
+      2,
+    )
+    if (slotCourses.length === 0) return
+    setSelectedSlotCourses(slotCourses)
+    setShowCourseModal(true)
+  }
+
+  /** 空格子点击：有其他周课程则弹详情，完全无课则进入编辑页（预填节数） */
   const onTapEmpty = (weekday: number, period: number) => {
     if (!currentSchedule) {
       Taro.showToast({ title: '请先创建课表', icon: 'none' })
       return
     }
-    Taro.navigateTo({
-      url: `${ROUTES.COURSE_FORM}?mode=add&weekday=${weekday}&period=${period}&scheduleId=${currentSchedule.id}`
-    })
+
+    const slotCourses = findCoursesAtSlot(
+      currentSchedule.courses || [],
+      weekday,
+      period,
+      weekNum,
+      2,
+    )
+
+    if (slotCourses.length > 0) {
+      openSlotCoursesModal(weekday, period)
+      return
+    }
+
+    navigateToEditAtSlot(weekday, period)
   }
 
-  /** 课程点击 */
+  /** 课程点击：先弹详情（含同格子的单/双周课节），点修改再进入编辑页 */
   const onTapCourse = (course: Course) => {
-    setSelectedCourse(course)
-    setShowCourseModal(true)
+    openSlotCoursesModal(course.day_of_week, course.slot)
   }
 
   /** 编辑课程 */
   const onEditCourse = () => {
-    if (!selectedCourse) return
-    const cid = resolveCourseId(selectedCourse)
+    const primary = selectedSlotCourses[0]
+    if (!primary) return
+    setShowCourseModal(false)
+    navigateToEditCourse(primary)
+  }
+
+  const deleteCourseById = async (course: Course) => {
+    const cid = resolveCourseId(course)
     if (!cid) {
       Taro.showToast({ title: '课程数据异常', icon: 'none' })
       return
     }
-    setShowCourseModal(false)
-    const sid = currentSchedule?.id || selectedCourse.schedule_id
-    Taro.navigateTo({
-      url: `${ROUTES.COURSE_FORM}?mode=edit&courseId=${encodeURIComponent(cid)}&scheduleId=${encodeURIComponent(sid)}`
-    })
+    await deleteCourse(cid)
+    removeCourseFromStore(cid)
+    Taro.showToast({ title: '已删除' })
   }
 
   /** 删除课程 */
   const onDeleteCourse = async () => {
-    if (!selectedCourse) return
+    if (selectedSlotCourses.length === 0) return
+
+    if (selectedSlotCourses.length > 1) {
+      const itemList = selectedSlotCourses.map(c => {
+        const weeksLabel = formatWeeksSummary(c.weeks || [], totalWeeks)
+        return `删除「${c.name}」（${weeksLabel}）`
+      })
+      try {
+        const { tapIndex } = await Taro.showActionSheet({ itemList })
+        const target = selectedSlotCourses[tapIndex]
+        if (!target) return
+        const { confirm } = await Taro.showModal({
+          title: '删除课程',
+          content: `确认删除「${target.name}」？`,
+        })
+        if (!confirm) return
+        await deleteCourseById(target)
+        setShowCourseModal(false)
+        setSelectedSlotCourses([])
+      } catch {
+        // 用户取消
+      }
+      return
+    }
+
+    const target = selectedSlotCourses[0]
     const { confirm } = await Taro.showModal({
       title: '删除课程',
-      content: `确认删除「${selectedCourse.name}」？`
+      content: `确认删除「${target.name}」？`,
     })
     if (!confirm) return
     try {
-      const cid = resolveCourseId(selectedCourse)
-      if (!cid) {
-        Taro.showToast({ title: '课程数据异常', icon: 'none' })
-        return
-      }
-      await deleteCourse(cid)
-      removeCourseFromStore(cid)
+      await deleteCourseById(target)
       setShowCourseModal(false)
-      setSelectedCourse(null)
-      Taro.showToast({ title: '已删除' })
+      setSelectedSlotCourses([])
     } catch (err: any) {
       Taro.showToast({ title: err.message, icon: 'none' })
     }
@@ -547,13 +623,12 @@ export default function SchedulePage () {
           today={today}
           periods={periods}
           grid={grid}
-          totalWeeks={
-            currentSchedule?.total_weeks || currentSchedule?.totalWeeks || 20
-          }
+          totalWeeks={totalWeeks}
           startDate={currentSchedule?.start_date || currentSchedule?.startDate}
           setWeekOffset={setWeekOffset}
           onTapCourse={onTapCourse}
           onTapEmpty={onTapEmpty}
+          offWeekSlotKeys={offWeekSlotKeys}
           hideWeekend={hideWeekend}
         />
       )}
@@ -561,9 +636,10 @@ export default function SchedulePage () {
       {/* 课程详情 Modal */}
       {showCourseModal && (
         <CourseModal
-          selectedCourse={selectedCourse}
+          courses={selectedSlotCourses}
           showCourseModal={showCourseModal}
           setShowCourseModal={setShowCourseModal}
+          totalWeeks={totalWeeks}
           onEditCourse={onEditCourse}
           onDeleteCourse={onDeleteCourse}
         />

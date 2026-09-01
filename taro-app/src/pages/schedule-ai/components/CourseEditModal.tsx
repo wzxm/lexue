@@ -1,5 +1,6 @@
 import { View, Text, Input, Picker } from '@tarojs/components'
 import { useState, useEffect, useMemo } from 'react'
+import WeekPickerSheet from '../../course-form/components/WeekPickerSheet'
 import type { Course, WeekDay, PeriodIndex } from '../../../types/index'
 import './CourseEditModal.scss'
 
@@ -7,7 +8,8 @@ interface CourseEditModalProps {
   visible: boolean
   course: Omit<Course, 'id'> | null
   courseIndex: number
-  periods: number  // 最大节次数
+  periods: number
+  totalWeeks: number
   onSave: (index: number, updated: Omit<Course, 'id'>) => void
   onDelete: (index: number) => void
   onClose: () => void
@@ -15,11 +17,26 @@ interface CourseEditModalProps {
 
 const WEEKDAY_OPTIONS = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
 
+function buildAllWeeks(totalWeeks: number): number[] {
+  return Array.from({ length: totalWeeks }, (_, i) => i + 1)
+}
+
+function formatWeeksSummary(weeks: number[], totalWeeks: number): string {
+  if (weeks.length === 0 || weeks.length === totalWeeks) return '每周'
+  const allOdd = buildAllWeeks(totalWeeks).filter(w => w % 2 === 1)
+  const allEven = buildAllWeeks(totalWeeks).filter(w => w % 2 === 0)
+  if (weeks.length === allOdd.length && allOdd.every(w => weeks.includes(w))) return '单周'
+  if (weeks.length === allEven.length && allEven.every(w => weeks.includes(w))) return '双周'
+  if (weeks.length <= 5) return `第${weeks.join('、')}周`
+  return `${weeks.length}周`
+}
+
 export default function CourseEditModal({
   visible,
   course,
   courseIndex,
   periods,
+  totalWeeks,
   onSave,
   onDelete,
   onClose,
@@ -29,11 +46,15 @@ export default function CourseEditModal({
   const [slot, setSlot] = useState(1)
   const [teacher, setTeacher] = useState('')
   const [room, setRoom] = useState('')
+  const [weeks, setWeeks] = useState<number[]>([])
+  const [weekPickerVisible, setWeekPickerVisible] = useState(false)
 
+  const allWeeks = useMemo(() => buildAllWeeks(totalWeeks), [totalWeeks])
   const periodRange = useMemo(
     () => Array.from({ length: periods }, (_, i) => `第${i + 1}节`),
     [periods]
   )
+  const weeksSummary = useMemo(() => formatWeeksSummary(weeks, totalWeeks), [weeks, totalWeeks])
 
   useEffect(() => {
     if (!course) return
@@ -42,7 +63,12 @@ export default function CourseEditModal({
     setSlot(course.slot || 1)
     setTeacher(course.teacher || '')
     setRoom(course.room || '')
-  }, [course])
+    const initialWeeks = Array.isArray(course.weeks) && course.weeks.length > 0
+      ? [...course.weeks].sort((a, b) => a - b)
+      : allWeeks
+    setWeeks(initialWeeks)
+    setWeekPickerVisible(false)
+  }, [course, allWeeks])
 
   if (!visible || !course) return null
 
@@ -50,6 +76,7 @@ export default function CourseEditModal({
 
   const handleSave = () => {
     if (!canSave) return
+    const normalizedWeeks = weeks.length > 0 ? weeks : allWeeks
     const updated: Omit<Course, 'id'> = {
       ...course,
       name: name.trim(),
@@ -57,6 +84,7 @@ export default function CourseEditModal({
       slot: slot as PeriodIndex,
       teacher: teacher.trim(),
       room: room.trim(),
+      weeks: normalizedWeeks,
       remark: (course.remark || '').replace('[待确认]', '').trim(),
     }
     onSave(courseIndex, updated)
@@ -70,7 +98,6 @@ export default function CourseEditModal({
     <View className='course-edit-modal' onClick={onClose}>
       <View className='course-edit-modal__mask' />
       <View className='course-edit-modal__panel' onClick={(e) => e.stopPropagation()}>
-        {/* 顶部把手 */}
         <View className='course-edit-modal__handle'>
           <View className='course-edit-modal__handle-bar' />
         </View>
@@ -80,7 +107,6 @@ export default function CourseEditModal({
         </View>
 
         <View className='course-edit-modal__body'>
-          {/* 课程名 */}
           <View className='course-edit-field'>
             <Text className='course-edit-field__label'>课程名 *</Text>
             <Input
@@ -91,7 +117,6 @@ export default function CourseEditModal({
             />
           </View>
 
-          {/* 星期 */}
           <View className='course-edit-field'>
             <Text className='course-edit-field__label'>星期</Text>
             <Picker
@@ -107,7 +132,6 @@ export default function CourseEditModal({
             </Picker>
           </View>
 
-          {/* 节次 */}
           <View className='course-edit-field'>
             <Text className='course-edit-field__label'>节次</Text>
             <Picker
@@ -123,7 +147,14 @@ export default function CourseEditModal({
             </Picker>
           </View>
 
-          {/* 教师 */}
+          <View className='course-edit-field'>
+            <Text className='course-edit-field__label'>周次</Text>
+            <View className='course-edit-field__picker' onClick={() => setWeekPickerVisible(true)}>
+              <Text className='course-edit-field__picker-text'>{weeksSummary}</Text>
+              <Text className='course-edit-field__picker-arrow'>▾</Text>
+            </View>
+          </View>
+
           <View className='course-edit-field'>
             <Text className='course-edit-field__label'>教师</Text>
             <Input
@@ -134,7 +165,6 @@ export default function CourseEditModal({
             />
           </View>
 
-          {/* 教室 */}
           <View className='course-edit-field'>
             <Text className='course-edit-field__label'>教室</Text>
             <Input
@@ -161,6 +191,18 @@ export default function CourseEditModal({
           </View>
         </View>
       </View>
+
+      <WeekPickerSheet
+        show={weekPickerVisible}
+        totalWeeks={totalWeeks}
+        selectedWeeks={weeks}
+        zIndex={2100}
+        onCancel={() => setWeekPickerVisible(false)}
+        onConfirm={(selected) => {
+          setWeeks(selected.length > 0 ? selected : allWeeks)
+          setWeekPickerVisible(false)
+        }}
+      />
     </View>
   )
 }

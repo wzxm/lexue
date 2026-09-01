@@ -149,6 +149,22 @@
   min-height: 100px;
 }
 
+.empty-cell--offweek {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f9fafb;
+  border: 1px dashed #d1d5db;
+  border-radius: 12px;
+  box-sizing: border-box;
+}
+
+.empty-cell-hint {
+  font-size: 20px;
+  color: #9ca3af;
+  font-weight: 500;
+}
+
 .course-chip {
   flex: 1;
   min-width: 0;

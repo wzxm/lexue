@@ -8,6 +8,7 @@ interface WeekPickerSheetProps {
   show: boolean
   totalWeeks: number
   selectedWeeks: number[]
+  zIndex?: number
   onCancel: () => void
   onConfirm: (weeks: number[]) => void
   onAfterLeave?: () => void
@@ -29,6 +30,7 @@ export default function WeekPickerSheet({
   show,
   totalWeeks,
   selectedWeeks,
+  zIndex = 1000,
   onCancel,
   onConfirm,
   onAfterLeave,
@@ -68,7 +70,7 @@ export default function WeekPickerSheet({
       show={show}
       position='bottom'
       round
-      zIndex={1000}
+      zIndex={zIndex}
       onClickOverlay={onCancel}
       onAfterLeave={onAfterLeave ?? onCancel}
     >

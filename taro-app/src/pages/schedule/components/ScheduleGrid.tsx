@@ -15,6 +15,8 @@ interface Props {
   setWeekOffset: (offset: number) => void;
   onTapCourse: (course: Course) => void;
   onTapEmpty: (weekday: number, period: number) => void;
+  /** 当前周为空、但其他周次有课的 slot，key=`${day_of_week}-${slot}` */
+  offWeekSlotKeys?: Set<string>;
   hideWeekend?: boolean;
   /** 是否允许点击课程/空格子，预览场景可关闭 */
   interactive?: boolean;
@@ -61,6 +63,7 @@ export default function ScheduleGrid({
   setWeekOffset,
   onTapCourse,
   onTapEmpty,
+  offWeekSlotKeys,
   hideWeekend = false,
   interactive = true,
   allowWeekPicker = true,
@@ -167,6 +170,8 @@ export default function ScheduleGrid({
                     const isTodayCol = highlightToday && weekDates[dIdx] === today
                     const isUncertain = highlightUncertain && course?.remark?.includes('[待确认]')
                     const chip = course ? resolveCourseChip(isTodayCol) : null
+                    const slotKey = `${dIdx + 1}-${period.index}`
+                    const hasOffWeekCourse = !course && offWeekSlotKeys?.has(slotKey)
                     return (
                       <View key={dIdx} className={`course-cell${isTodayCol ? ' course-cell--today' : ''}`}>
                         {course ? (
@@ -189,9 +194,13 @@ export default function ScheduleGrid({
                           </View>
                         ) : (
                           <View
-                            className='empty-cell'
-                            onClick={interactive ? () => onTapEmpty(dIdx + 1, pIdx + 1) : undefined}
-                          />
+                            className={`empty-cell${hasOffWeekCourse ? ' empty-cell--offweek' : ''}`}
+                            onClick={interactive ? () => onTapEmpty(dIdx + 1, period.index) : undefined}
+                          >
+                            {hasOffWeekCourse && (
+                              <Text className='empty-cell-hint'>其他周有课</Text>
+                            )}
+                          </View>
                         )}
                       </View>
                     )

@@ -78,7 +78,9 @@ export default function PeriodGridSheet({
           <Text className='pg-sheet__tip-main'>
             {singleSelect ? '点击格子选择上课时间' : '点击课表格子，添加更多课节'}
           </Text>
-          {!singleSelect && (
+          {singleSelect ? (
+            <Text className='pg-sheet__tip-sub'>单双周可选择同一节次</Text>
+          ) : (
             <Text className='pg-sheet__tip-sub'>(若区分单双周，稍后可单独设置)</Text>
           )}
         </View>
