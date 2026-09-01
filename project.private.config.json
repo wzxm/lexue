@@ -22,11 +22,25 @@
     "miniprogram": {
       "list": [
         {
+          "name": "pages/ai-kid-plan/poster/index",
+          "pathName": "pages/ai-kid-plan/poster/index",
+          "query": "day=3&title=AI%2520%25E8%25AF%25B4%25E7%259A%2584%25E4%25B8%2580%25E5%25AE%259A%25E5%25AF%25B9%25E5%2590%2597%25EF%25BC%259F&done=1&total=5",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "pages/ai-kid-plan/index",
+          "pathName": "pages/ai-kid-plan/index",
+          "query": "",
+          "launchMode": "default",
+          "scene": null
+        },
+        {
           "name": "pages/invite-accept/index",
           "pathName": "pages/invite-accept/index",
           "query": "",
-          "scene": null,
-          "launchMode": "default"
+          "launchMode": "default",
+          "scene": null
         }
       ]
     }

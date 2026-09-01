@@ -18,4 +18,7 @@ export const ROUTES = {
   TOOLS: '/pages/tools/index',
   SCHEDULE_MANAGE: '/pages/schedule-manage/index',
   INVITE_ACCEPT: '/pages/invite-accept/index',
+  AI_KID_PLAN: '/pages/ai-kid-plan/index',
+  AI_KID_PLAN_COURSE: '/pages/ai-kid-plan/course/index',
+  AI_KID_PLAN_POSTER: '/pages/ai-kid-plan/poster/index',
 } as const;

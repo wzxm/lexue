@@ -1,0 +1,250 @@
+/* 详情页：温暖 + 简洁 + 轻儿童 + 亲子陪伴（对齐原版 ai-kid-plan） */
+
+.ai-course-page {
+  padding: 48px 40px 80px;
+  min-height: 100vh;
+  background: #faf6ef;
+  box-sizing: border-box;
+  color: #2e2822;
+}
+
+/* ── 标题区 ── */
+.course-head {
+  padding: 0 8px 36px;
+}
+.course-title {
+  display: block;
+  font-size: 52px;
+  font-weight: 800;
+  color: #2e2822;
+  line-height: 1.3;
+  letter-spacing: 2px;
+}
+
+/* ── 视频区域 ── */
+.video-wrap {
+  border-radius: 28px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(92, 70, 40, 0.08);
+  background: #1a1613;
+}
+.course-video {
+  width: 100%;
+  height: 400px;
+  display: block;
+}
+
+/* ── 白色信息面板 ── */
+.course-panel {
+  margin-top: 32px;
+  background: #fff;
+  border-radius: 32px;
+  padding: 36px 36px 40px;
+  box-shadow: 0 4px 16px rgba(92, 70, 40, 0.06);
+  box-sizing: border-box;
+}
+.panel-label {
+  display: block;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #2e2822;
+  margin-bottom: 20px;
+}
+
+/* 重点笔记：AI 小伙伴头像 + 标题 */
+.bot-avatar {
+  flex-shrink: 0;
+  width: 88px;
+  height: 88px;
+  animation: bot-breathe 3.6s ease-in-out infinite;
+}
+@keyframes bot-breathe {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+.remember-top {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 22px;
+}
+.remember-top .panel-label {
+  margin-bottom: 0;
+  letter-spacing: 1px;
+}
+.remember-text {
+  display: block;
+  font-size: 32px;
+  font-weight: 600;
+  color: #2e2822;
+  line-height: 1.8;
+}
+
+/* ── 亲子任务 ── */
+.task-item {
+  padding: 22px 0;
+  border-top: 1px solid #f3ecdf;
+}
+.task-item:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+.task-main {
+  display: flex;
+  align-items: flex-start;
+}
+.task-verb {
+  flex-shrink: 0;
+  margin-right: 16px;
+  padding: 2px 16px;
+  border-radius: 12px;
+  background: #faefe6;
+  color: #c25330;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.7;
+}
+.task-text {
+  flex: 1;
+  font-size: 30px;
+  color: #3b332a;
+  line-height: 1.75;
+}
+
+/* 今天请孩子说一句 */
+.say-line {
+  margin-top: 28px;
+  padding: 26px 28px;
+  background: #f7f1e4;
+  border-radius: 20px;
+  box-sizing: border-box;
+}
+.say-label {
+  display: block;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 4px;
+  color: #b5502c;
+  margin-bottom: 10px;
+}
+.say-text {
+  display: block;
+  font-size: 32px;
+  font-weight: 600;
+  color: #2e2822;
+  line-height: 1.6;
+}
+
+/* ── 滑动完成 ── */
+.slide-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 44px;
+}
+.slide-track {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  height: 108px;
+  border-radius: 54px;
+  background: #f1e8d8;
+  overflow: hidden;
+  transition: background-color 0.3s ease;
+}
+.slide-track.is-done {
+  background: #3e9670;
+}
+.slide-text {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  text-align: center;
+  line-height: 108px;
+  font-size: 28px;
+  font-weight: 500;
+  letter-spacing: 2px;
+  color: #a2937f;
+  transition: color 0.3s ease, opacity 0.3s ease;
+}
+.slide-track.is-done .slide-text {
+  color: #fff;
+  font-weight: 600;
+}
+.slide-knob {
+  position: absolute;
+  left: 10px;
+  top: 10px;
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 6px 16px rgba(92, 70, 40, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.25s ease;
+  z-index: 2;
+}
+.slide-knob.is-dragging {
+  transition: none;
+}
+/* 完成态：滑块锁到右端（不依赖 JS translate，避免测量失败/单位转换导致停在左侧） */
+.slide-track.is-done .slide-knob {
+  left: auto;
+  right: 10px;
+  transform: none !important;
+  transition: none;
+}
+.knob-arrow {
+  width: 22px;
+  height: 22px;
+  border-top: 5px solid #c25330;
+  border-right: 5px solid #c25330;
+  transform: rotate(45deg);
+  margin-left: -8px;
+}
+.knob-check {
+  width: 26px;
+  height: 14px;
+  border-left: 5px solid #3e9670;
+  border-bottom: 5px solid #3e9670;
+  border-radius: 2px;
+  transform: rotate(-45deg);
+  margin-top: -6px;
+}
+
+/* ── 完成后的再次分享 ── */
+.reshare-btn {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 108px;
+  padding: 0 32px;
+  border-radius: 54px;
+  background: #c25330;
+  color: #fff;
+  font-size: 27px;
+  font-weight: 700;
+  box-sizing: border-box;
+  white-space: nowrap;
+}
+.reshare-btn.is-pressed {
+  background: #a84527;
+  transform: translateY(2px);
+}
+.reshare-ic {
+  width: 30px;
+  height: 30px;
+}

@@ -2,12 +2,14 @@ import { memo } from 'react'
 import { View, Text, Image, Button } from '@tarojs/components'
 import type { SettingsSummary } from '../../../api/auth.api'
 import bannerImg from '../../../assets/banner.png'
+import aiKidPlanIcon from '../../../assets/ai-kid-plan/entry-icon.png'
 import { menuRows, menuSuffix, type MenuRow } from '../settingsMenu'
 
 interface SettingsContentProps {
   settingsSummary: SettingsSummary | null
   onMenu: (row: MenuRow) => void
   onGuestBannerClick: () => void
+  onAiKidPlanClick: () => void
 }
 
 interface MenuItemProps {
@@ -49,7 +51,7 @@ function MenuItem({ row, suffix, onMenu }: MenuItemProps) {
   )
 }
 
-function SettingsContent({ settingsSummary, onMenu, onGuestBannerClick }: SettingsContentProps) {
+function SettingsContent({ settingsSummary, onMenu, onGuestBannerClick, onAiKidPlanClick }: SettingsContentProps) {
   return (
     <View className='content'>
       <View className='guest-top'>
@@ -84,6 +86,15 @@ function SettingsContent({ settingsSummary, onMenu, onGuestBannerClick }: Settin
             />
           ))}
         </View>
+      </View>
+
+      <View className='ai-plan-entry' hoverClass='ai-plan-entry--pressed' onClick={onAiKidPlanClick}>
+        <Image className='ai-plan-entry__icon' src={aiKidPlanIcon} mode='aspectFit' />
+        <View className='ai-plan-entry__content'>
+          <Text className='ai-plan-entry__title'>AI启蒙计划 🎉</Text>
+          <Text className='ai-plan-entry__desc'>5天学习计划，和孩子一起认识ai</Text>
+        </View>
+        <Text className='ai-plan-entry__arrow'>›</Text>
       </View>
 
       <View className='version-area'>

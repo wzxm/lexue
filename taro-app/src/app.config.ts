@@ -18,6 +18,9 @@ export default defineAppConfig({
     'pages/tools/index',
     'pages/schedule-manage/index',
     'pages/invite-accept/index',
+    'pages/ai-kid-plan/index',
+    'pages/ai-kid-plan/course/index',
+    'pages/ai-kid-plan/poster/index',
   ],
   tabBar: {
     custom: true,
