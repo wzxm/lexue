@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Button, Image, Text, View } from '@tarojs/components'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Button, Canvas, Image, Text, View } from '@tarojs/components'
 import Taro, {
   useRouter,
   useShareAppMessage,
@@ -47,6 +47,7 @@ function buildQrPlaceholder () {
 export default function AiPosterPage () {
   const { params } = useRouter()
   const [showTimelineTip, setShowTimelineTip] = useState(false)
+  const sharingTimelineRef = useRef(false)
 
   const total = Math.max(1, Number(params.total) || COURSE_TOTAL_FALLBACK)
   const day = Math.min(Math.max(1, Number(params.day) || 1), total)
@@ -66,10 +67,105 @@ export default function AiPosterPage () {
   const botSrc = useMemo(() => fullBotSvg(), [])
   const qrSrc = useMemo(() => svgToDataUri(buildQrPlaceholder()), [])
 
+  const shareToTimeline = () => {
+    if (sharingTimelineRef.current) return
+    sharingTimelineRef.current = true
+
+    if (!Taro.showShareImageMenu) {
+      sharingTimelineRef.current = false
+      setShowTimelineTip(true)
+      return
+    }
+
+    Taro.showLoading({ title: '正在生成海报' })
+    let context
+    try {
+      context = Taro.createCanvasContext('ai-kid-plan-share-canvas')
+    } catch {
+      sharingTimelineRef.current = false
+      Taro.hideLoading()
+      setShowTimelineTip(true)
+      return
+    }
+    // Canvas uses a half-size logical surface; export at 2x for a crisp share image.
+    context.scale(0.5, 0.5)
+    context.setFillStyle('#FAF6EF')
+    context.fillRect(0, 0, 750, 1000)
+    context.setFillStyle('#FFFDF8')
+    context.fillRect(48, 52, 654, 896)
+    context.setFillStyle('#2E2822')
+    context.setTextAlign('center')
+    context.setFontSize(38)
+    context.fillText('挑战完成 🎉', 375, 130)
+    context.setFillStyle('#8A7B6B')
+    context.setFontSize(24)
+    context.fillText('每天 5 分钟，和孩子一起认识 AI', 375, 180)
+    context.setFillStyle('#C25330')
+    context.setFontSize(58)
+    context.fillText(`完成第 ${day} 天`, 375, 310)
+    context.setFillStyle('#2E2822')
+    context.setFontSize(32)
+    context.fillText(title.slice(0, 18), 375, 370)
+    context.setFillStyle('#F0B63A')
+    context.setFontSize(52)
+    context.fillText('★'.repeat(done) + '☆'.repeat(total - done), 375, 460)
+    context.setFillStyle('#FBEFD7')
+    context.fillRect(215, 540, 320, 150)
+    context.setFillStyle('#B5502C')
+    context.setFontSize(30)
+    context.fillText('和孩子一起认识一点 AI', 375, 630)
+    // Keep a scannable-looking placeholder in the exported card until the QR API is wired.
+    context.setFillStyle('#FFFFFF')
+    context.fillRect(295, 700, 160, 160)
+    context.setFillStyle('#4A3F35')
+    for (let row = 0; row < 15; row++) {
+      for (let col = 0; col < 15; col++) {
+        const finder = (row < 5 && col < 5) || (row < 5 && col > 9) || (row > 9 && col < 5)
+        const edge = finder && (row % 4 === 0 || col % 4 === 0)
+        const core = finder && row % 4 >= 1 && row % 4 <= 2 && col % 4 >= 1 && col % 4 <= 2
+        if (edge || core || (!finder && (row * 7 + col * 11) % 5 < 2)) {
+          context.fillRect(305 + col * 10, 710 + row * 10, 8, 8)
+        }
+      }
+    }
+    context.setFillStyle('#8A7B6B')
+    context.setFontSize(22)
+    context.fillText('扫码一起认识 AI', 375, 900)
+    context.draw(false, () => {
+      Taro.canvasToTempFilePath({
+        canvasId: 'ai-kid-plan-share-canvas',
+        x: 0,
+        y: 0,
+        width: 375,
+        height: 500,
+        destWidth: 750,
+        destHeight: 1000,
+        success: ({ tempFilePath }) => {
+          Taro.hideLoading()
+          Taro.showShareImageMenu({
+            path: tempFilePath,
+            complete: () => {
+              sharingTimelineRef.current = false
+              Taro.hideLoading()
+            }
+          }).catch(() => {
+            sharingTimelineRef.current = false
+            setShowTimelineTip(true)
+          })
+        },
+        fail: () => {
+          sharingTimelineRef.current = false
+          Taro.hideLoading()
+          setShowTimelineTip(true)
+        }
+      })
+    })
+  }
+
   useEffect(() => {
     if (Taro.showShareMenu) {
       Taro.showShareMenu({
-        menus: ['shareAppMessage', 'shareTimeline']
+        showShareItems: ['shareAppMessage', 'shareTimeline']
       })
     }
   }, [])
@@ -139,12 +235,20 @@ export default function AiPosterPage () {
         </Button>
         <Button
           className='share-btn sub'
-          onClick={() => setShowTimelineTip(true)}
+          onClick={shareToTimeline}
         >
           <Image className='btn-ic' src={iconMoments} mode='aspectFit' />
           <Text>朋友圈</Text>
         </Button>
       </View>
+
+      <Canvas
+        id='ai-kid-plan-share-canvas'
+        canvasId='ai-kid-plan-share-canvas'
+        className='share-canvas'
+        width='375'
+        height='500'
+      />
 
       <View className='back-row'>
         <Text className='back-link' onClick={onBackCourse}>

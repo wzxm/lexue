@@ -9,8 +9,8 @@
     "css": "sass"
   },
   "scripts": {
-    "build:weapp": "taro build --type weapp",
-    "dev:weapp": "npm run build:weapp -- --watch",
+    "build:weapp": "NODE_ENV=production taro build --type weapp",
+    "dev:weapp": "NODE_ENV=production taro build --type weapp --watch",
     "ci:upload": "node scripts/upload.js",
     "ci:preview": "node scripts/preview.js",
     "ci:pack-npm": "node scripts/pack-npm.js",

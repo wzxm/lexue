@@ -1,14 +1,12 @@
 /**
  * ai 云函数 - 课程表图片识别
- * 通过腾讯云 OCR + CloudBase AI（deepseek-v4-pro）把课表照片识别为结构化课程数据
- * 流程：CloudBase AI 多模态识别 → OCR + CloudBase AI 文本解析 → OCR 启发式坐标兜底
+ * 图片 base64 直传 OpenAI 兼容视觉模型 → 结构化课程 JSON，再经本地裁判层校验/去重后返回。
+ * provider 由环境变量 AI_PROVIDER 选择：deepseek（官方）| litellm（自建 OpenAI 兼容网关），两家共存可切换。
  */
 
 const cloud = require('wx-server-sdk');
-const tcb = require('@cloudbase/node-sdk');
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
-const tcbApp = tcb.init({ env: tcb.SYMBOL_CURRENT_ENV || cloud.DYNAMIC_CURRENT_ENV, timeout: 60000 });
 
 const { ERRORS, success, fail } = require('../../shared/errors');
 const { getOpenId, requireEdit } = require('../../shared/auth');
@@ -16,46 +14,42 @@ const validator = require('../../shared/validator');
 const logger = require('../../shared/logger');
 const { resolveCourseColor } = require('../../shared/courseColors');
 const https = require('https');
-const crypto = require('crypto');
+const http = require('http');
 
 const FN = 'ai';
-const CLOUDBASE_AI_MODEL = 'hy3-preview';
-const CLOUDBASE_VISION_ENABLED = process.env.CLOUDBASE_VISION_ENABLED === 'true';
-const AI_REPAIR_ENABLED = process.env.AI_REPAIR_ENABLED !== 'false';
-const AI_AGENT_TRACE_ENABLED = process.env.AI_AGENT_TRACE_ENABLED === 'true';
 const MAX_COURSES = 12;
-const DEFAULT_OCR_TIMEOUT_MS = 12000;
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
-const OCR_MIN_TEXT_BLOCKS = 6;
-const OCR_MIN_TEXT_CHARS = 20;
-const OCR_PROMPT_MAX_BLOCKS = 50;
-const OCR_PROMPT_MAX_TEXT_LENGTH = 24;
+// 课表文字密集，默认 high；可用 AI_IMAGE_DETAIL 调成 low/original/auto
+const AI_IMAGE_DETAIL = process.env.AI_IMAGE_DETAIL || 'high';
 
-function getDeepSeekTimeoutMs() {
-  const timeout = Number(process.env.CLOUDBASE_AI_TIMEOUT_MS);
+function getVisionTimeoutMs() {
+  const timeout = Number(process.env.AI_TIMEOUT_MS);
   if (Number.isFinite(timeout) && timeout >= 5000 && timeout <= 120000) {
     return timeout;
   }
   return 50000;
 }
 
-function getOcrTimeoutMs() {
-  const timeout = Number(process.env.TENCENT_OCR_TIMEOUT_MS);
-  if (Number.isFinite(timeout) && timeout >= 3000 && timeout <= 30000) {
-    return timeout;
+/**
+ * 解析当前生效的视觉 provider 配置。
+ * 配置不全时在此 fail（fails loud），不把缺配置的问题拖到调用时才炸。
+ */
+function resolveVisionProfile() {
+  const provider = (process.env.AI_PROVIDER || 'deepseek').trim().toLowerCase();
+  if (provider === 'litellm') {
+    const baseUrl = (process.env.LITELLM_BASE_URL || '').trim().replace(/\/+$/, '');
+    const apiKey = (process.env.LITELLM_API_KEY || '').trim();
+    const model = (process.env.LITELLM_VISION_MODEL || '').trim();
+    if (!baseUrl || !apiKey || !model) {
+      throw fail(ERRORS.INTERNAL_ERROR, 'LiteLLM 配置不完整（需 LITELLM_BASE_URL / LITELLM_API_KEY / LITELLM_VISION_MODEL）');
+    }
+    return { provider: 'litellm', baseUrl, apiKey, model };
   }
-  return DEFAULT_OCR_TIMEOUT_MS;
-}
-
-function getTencentOcrConfig() {
-  return {
-    secretId: (process.env.TENCENT_SECRET_ID || '').trim(),
-    secretKey: (process.env.TENCENT_SECRET_KEY || '').trim(),
-    region: (process.env.TENCENT_OCR_REGION || 'ap-guangzhou').trim(),
-    endpoint: (process.env.TENCENT_OCR_ENDPOINT || 'ocr.tencentcloudapi.com').trim(),
-    action: (process.env.TENCENT_OCR_ACTION || 'GeneralBasicOCR').trim(),
-    version: (process.env.TENCENT_OCR_VERSION || '2018-11-19').trim(),
-  };
+  const baseUrl = (process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com').trim().replace(/\/+$/, '');
+  const apiKey = (process.env.DEEPSEEK_API_KEY || '').trim();
+  const model = (process.env.DEEPSEEK_VISION_MODEL || 'deepseek-v4-flash-vision-exp').trim();
+  if (!apiKey) throw fail(ERRORS.INTERNAL_ERROR, '未配置 DEEPSEEK_API_KEY');
+  return { provider: 'deepseek', baseUrl, apiKey, model };
 }
 
 function extractJson(text) {
@@ -110,430 +104,50 @@ function buildPrompt(schedule) {
     '   - "综合实践活" → "综合实践活动"（OCR 截断最后一字时自动补全）',
     '   - 凡括号未闭合的课程名，必须补全右括号后再输出。',
     '5. 课程名单元格内如果包含教师、教室、电话或备注，分别填入 teacher、room、contact、remark；无法确定就填空字符串。',
-    '6. 空白格、午休、课间、放学、早餐、早读、晨读、大课间、眼保健操、升旗、备注、标题、学校名、院系/专业/班级名、日期和页脚不要输出为课程。带时间标注的排除项（如"早读(8:20—8:30)""大课间(10:10—10:40)"）同样不是课程。',
+    '6. 仅忽略跨整行合并、不分星期的作息行（如午餐、午休、大课间、眼保健操、升旗、早操），以及空白格、斜杠占位、备注、标题、页脚。',
+    '   左侧节次列的标签（如早读、午读、第1节、下午1）只是时间定位，不是课程名；不要把行标签当作课程输出。',
+    '   某时段单元格内的具体内容仍要输出为课程，例如午读行的"班会""红领巾广播""安全教育"，以及"综合实践活动""校本(数学)""社团课"等。',
+    '   带时间标注的整行作息（如"午餐(12:00—12:40)""午休(12:45—13:45)""大课间(10:10—10:40)"）不要输出为课程。',
     '周次规则：',
     `7. 当前学期共 ${totalWeeks} 周。若图片没有明确写周次/单双周/起止周，weeks 必须填 1 到 ${totalWeeks} 的完整数组。`,
-    '8. “1-10周”“1～10周”“第1至10周”输出 [1,2,3,4,5,6,7,8,9,10]；“单周”输出奇数周；“双周”输出偶数周。',
-    '9. “1、3、5周”这类离散周次要逐个输出；不要把离散周次误写成连续区间。',
+    '8. “1-10周”“1～10周”“第1至10周”输出 [1,2,3,4,5,6,7,8,9,10]；“单周”输出奇数周 [1,3,5,...]；“双周”输出偶数周 [2,4,6,...]。',
+    '9. 同一单元格含"体育(单周)/英语(双周)""心理(单周)/综合实践(双周)"时，必须拆成两条课程：课名去掉(单周)/(双周)标注，weeks 分别填奇数周与偶数周，day_of_week 和 slot 保持相同。',
+    '10. “1、3、5周”这类离散周次要逐个输出；不要把离散周次误写成连续区间。',
     '质量要求：',
-    `10. 当前课表节次数为 ${periods.length || 0}，slot 范围必须是 1 到 ${Math.min(Math.max(periods.length || 0, 1), MAX_COURSES)}。`,
-    periodLines.length ? `11. 参考节次时间：${periodLines.join('；')}。` : '11. 若图片中没有节次时间，也必须根据左侧节次序号识别 slot。',
-    '12. 不确定课程名或位置时不要编造课程；把原因写入 warnings。',
-    '13. 输出前自检：每条课程必须有 name、day_of_week、slot、color、weeks；day_of_week 和 slot 必须是数字；color 必须是 hex 色值（如 #3b82f6）。',
-    '14. 输出前做合理性检查：课程总数应在 5-50 之间（过少可能漏识别，过多可能误识别）；每天至少应有 1 门课（若某天完全空白，检查是否漏识别）；同一天同一节次不应出现两门不同课程。若发现异常，写入 warnings 说明具体问题。',
-    '15. 对不确定的课程（如文字模糊、位置难以判断），在该课程的 remark 字段开头标注 "[待确认]"，便于用户重点检查。',
+    `11. 当前课表节次数为 ${periods.length || 0}，slot 范围必须是 1 到 ${Math.min(Math.max(periods.length || 0, 1), MAX_COURSES)}。`,
+    periodLines.length ? `12. 参考节次时间：${periodLines.join('；')}。` : '12. 若图片中没有节次时间，也必须根据左侧节次序号识别 slot。',
+    '13. 不确定课程名或位置时不要编造课程；把原因写入 warnings。',
+    '14. 输出前自检：每条课程必须有 name、day_of_week、slot、color、weeks；day_of_week 和 slot 必须是数字；color 必须是 hex 色值（如 #3b82f6）。',
+    '15. 输出前做合理性检查：课程总数应在 5-50 之间（过少可能漏识别，过多可能误识别）；每天至少应有 1 门课（若某天完全空白，检查是否漏识别）；同一天同一节次若 weeks 重叠则不应出现两门不同课程（单双周交替除外）。若发现异常，写入 warnings 说明具体问题。',
+    '16. 对不确定的课程（如文字模糊、位置难以判断），在该课程的 remark 字段开头标注 "[待确认]"，便于用户重点检查。',
   ].join('\n');
 }
 
+// 仅过滤整行作息/休息项（单元格名与行标签完全一致时），不误伤班会、广播、安全教育等具体科目
+const EXACT_ACTIVITY_NAMES = /^(大课间|课间操|广播操|眼保健操|眼操|午休|午餐|早餐|晚餐|升旗|早操|听广播|活动|早读|晨读|午读|晚读|课后|托管|体育锻炼|放学|课间)$/;
+const TIMED_ACTIVITY_PATTERN = /^(早读|晨读|午读|大课间|午休|午餐|眼保健操|眼操|早餐|晚餐)[\(（]\s*\d/;
 
-function collectOcrTextItems(value, result = []) {
-  if (Array.isArray(value)) {
-    value.forEach(item => collectOcrTextItems(item, result));
-    return result;
-  }
-  if (!value || typeof value !== 'object') return result;
-
-  const text = value.DetectedText || value.Text || value.Value || value.Content || value.ItemText;
-  if (typeof text === 'string' && text.trim()) {
-    result.push(value);
-  }
-
-  Object.keys(value).forEach((key) => {
-    const child = value[key];
-    if (child && typeof child === 'object') collectOcrTextItems(child, result);
-  });
-  return result;
-}
-
-function normalizeOcrBlocks(textDetections) {
-  const items = collectOcrTextItems(textDetections);
-  return items.map((item) => {
-    const polygon = Array.isArray(item.Polygon)
-      ? item.Polygon
-      : Array.isArray(item.Coord)
-        ? item.Coord
-        : Array.isArray(item.Points)
-          ? item.Points
-          : [];
-    const xs = polygon.map(point => Number(point.X ?? point.x)).filter(Number.isFinite);
-    const ys = polygon.map(point => Number(point.Y ?? point.y)).filter(Number.isFinite);
-    return {
-      text: String(item.DetectedText || item.Text || item.Value || item.Content || item.ItemText || '').trim(),
-      confidence: Number(item.Confidence ?? item.ConfidenceScore ?? item.Score) || 0,
-      x: xs.length ? Math.min(...xs) : Number(item.X ?? item.x) || 0,
-      y: ys.length ? Math.min(...ys) : Number(item.Y ?? item.y) || 0,
-      width: xs.length ? Math.max(...xs) - Math.min(...xs) : Number(item.Width ?? item.width) || 0,
-      height: ys.length ? Math.max(...ys) - Math.min(...ys) : Number(item.Height ?? item.height) || 0,
-      polygon,
-    };
-  }).filter(item => item.text);
-}
-
-function getOcrText(blocks) {
-  return blocks
-    .slice()
-    .sort((a, b) => (a.y - b.y) || (a.x - b.x))
-    .map((item) => item.text)
-    .join('\n');
-}
-
-function parseChineseNumber(text) {
-  const raw = String(text || '').trim();
-  if (/^\d+$/.test(raw)) return Number(raw);
-  const digits = { 一: 1, 二: 2, 两: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9 };
-  if (raw === '十') return 10;
-  const tenIndex = raw.indexOf('十');
-  if (tenIndex >= 0) {
-    const left = raw.slice(0, tenIndex);
-    const right = raw.slice(tenIndex + 1);
-    return (left ? digits[left] || 0 : 1) * 10 + (right ? digits[right] || 0 : 0);
-  }
-  return digits[raw] || null;
-}
-
-function getWeekdayFromText(text) {
-  const raw = String(text || '').replace(/\s/g, '');
-  const aliases = [
-    [/^(周|星期|礼拜)?一$/, 1],
-    [/^(周|星期|礼拜)?二$/, 2],
-    [/^(周|星期|礼拜)?三$/, 3],
-    [/^(周|星期|礼拜)?四$/, 4],
-    [/^(周|星期|礼拜)?五$/, 5],
-    [/^(周|星期|礼拜)?六$/, 6],
-    [/^(周|星期|礼拜)?日$/, 7],
-    [/^(周|星期|礼拜)?天$/, 7],
-  ];
-  const match = aliases.find(([pattern]) => pattern.test(raw));
-  return match ? match[1] : null;
-}
-
-function getSlotFromText(text) {
-  const raw = String(text || '')
-    .replace(/\s/g, '')
-    .replace(/[|｜:：,，.。·\-—–~～_＿]/g, '');
-  const match = raw.match(/^(?:第)?([一二两三四五六七八九十\d]{1,3})(?:节|课)?$/);
-  return match ? parseChineseNumber(match[1]) : null;
-}
-
-function isIgnoredOcrText(text) {
-  const raw = String(text || '').replace(/\s/g, '').replace(/[|｜:：,，.。·\-—–~～_＿]/g, '');
-  if (!raw) return true;
-  if (getWeekdayFromText(raw) || getSlotFromText(raw)) return true;
-  // 纯数字或单个字符（孤立噪声）
-  if (/^\d+$/.test(raw)) return true;
-  if (raw.length === 1 && !/[一-龥]/.test(raw)) return true;
-  // 完全匹配的排除项
-  if (/^(课程表|课表|时间|节次|上午|下午|晚上|午休|午餐午休|课间|放学|早餐|午餐|晚餐|户外活动|课外活动|大课间|升旗|眼保健操|备注|日期|早读|晚读|早操|晨读|午读|午餐午休)$/.test(raw)) return true;
-  // 排除项开头 + 括号内时间
-  if (/^(课程表|课表|午休|午餐午休|课间|放学|大课间|早读|晚读|早操|晨读|午读|户外活动|课外活动|眼保健操)[\(（]/.test(raw)) return true;
-  // 纯时间格式
-  if (/^\d{1,2}[:：]\d{2}/.test(raw)) return true;
-  // 日期格式
-  if (/^\d{4}[-/.年]/.test(raw)) return true;
-  // 不完整的括号片段（如单独的 "术)"）— 仅一个汉字+右括号
-  if (/^.{0,2}[)）]$/.test(raw) && raw.length <= 3) return true;
+function isLegitimateActivityCourse(name) {
+  const raw = String(name || '').replace(/\s/g, '');
+  if (!raw) return false;
+  if (/综合实践活动/.test(raw)) return true;
+  if (/^校本[\(（]/.test(raw)) return true;
+  if (/^社团[\(（]/.test(raw) || (raw.length > 2 && /社团/.test(raw))) return true;
+  // 早读/午读时段内的具体科目（非行标签本身）
+  if (/^(班会|安全教育|红领巾广播|班队活动|德育)/.test(raw)) return true;
+  if (/广播/.test(raw) && raw !== '听广播' && raw.length > 3) return true;
   return false;
 }
 
-function centerOf(block, axis) {
-  if (axis === 'x') return Number(block.x || 0) + Number(block.width || 0) / 2;
-  return Number(block.y || 0) + Number(block.height || 0) / 2;
-}
-
-function nearestBy(items, target, getValue) {
-  if (!items.length) return null;
-  return items.reduce((best, item) => {
-    const distance = Math.abs(getValue(item) - target);
-    if (!best || distance < best.distance) return { item, distance };
-    return best;
-  }, null).item;
-}
-
-function clusterRows(blocks) {
-  const rows = [];
-  blocks
-    .slice()
-    .sort((a, b) => centerOf(a, 'y') - centerOf(b, 'y'))
-    .forEach((block) => {
-      const y = centerOf(block, 'y');
-      const row = rows.find(item => Math.abs(item.y - y) <= 18);
-      if (row) {
-        row.blocks.push(block);
-        row.y = row.blocks.reduce((sum, item) => sum + centerOf(item, 'y'), 0) / row.blocks.length;
-      } else {
-        rows.push({ y, blocks: [block] });
-      }
-    });
-  return rows;
-}
-
-/**
- * 合并被 OCR 拆分的文本块（处理括号被拆分的情况）
- * 例如 "艺术(美" + "术)" → "艺术(美术)"
- */
-function mergeFragmentedBlocks(blocks) {
-  if (!blocks || blocks.length < 2) return blocks;
-  const consumed = new Set();
-  const merged = [];
-
-  for (let i = 0; i < blocks.length; i++) {
-    if (consumed.has(i)) continue;
-    const current = blocks[i];
-    const text = String(current.text || '');
-    const openCount = (text.match(/[\(（]/g) || []).length;
-    const closeCount = (text.match(/[\)）]/g) || []).length;
-
-    if (openCount > closeCount) {
-      let combinedText = text;
-      let found = false;
-      const pendingIndices = [i];
-
-      for (let j = i + 1; j < blocks.length && j <= i + 10; j++) {
-        if (consumed.has(j)) continue;
-        const next = blocks[j];
-        const nextText = String(next.text || '');
-        const xClose = Math.abs(centerOf(current, 'x') - centerOf(next, 'x')) < Math.max(current.width || 60, 60);
-        const yBelow = centerOf(next, 'y') > centerOf(current, 'y') &&
-                       (centerOf(next, 'y') - centerOf(current, 'y')) < 400;
-
-        if (xClose && yBelow) {
-          const trial = combinedText + nextText;
-          const trialOpen = (trial.match(/[\(（]/g) || []).length;
-          const trialClose = (trial.match(/[\)）]/g) || []).length;
-
-          if (trialClose >= trialOpen) {
-            // 括号已闭合，正常合并
-            pendingIndices.push(j);
-            pendingIndices.forEach(idx => consumed.add(idx));
-            merged.push({ ...current, text: trial, height: (next.y + (next.height || 0)) - current.y });
-            found = true;
-            break;
-          }
-
-          // 短片段（≤4字，无括号）强制合并并自动补全括号
-          if (nextText.length <= 4 && !nextText.match(/[\(（\)）]/)) {
-            const autoClose = ')'.repeat(trialOpen - trialClose);
-            pendingIndices.push(j);
-            pendingIndices.forEach(idx => consumed.add(idx));
-            merged.push({ ...current, text: trial + autoClose, height: (next.y + (next.height || 0)) - current.y });
-            found = true;
-            break;
-          }
-
-          combinedText = trial;
-          pendingIndices.push(j);
-        }
-      }
-
-      if (!found) {
-        // 没找到合并对象，自动补全缺失的右括号
-        const autoClose = ')'.repeat(openCount - closeCount);
-        consumed.add(i);
-        merged.push({ ...current, text: text + autoClose });
-      }
-    } else {
-      consumed.add(i);
-      merged.push(current);
-    }
-  }
-
-  return merged;
-}
-
-function parseCoursesFromOcrBlocks(ocrBlocks, schedule) {
-  const { periods, totalWeeks } = getSchedulePromptContext(schedule);
-  const maxSlot = Math.min(Math.max(periods.length || MAX_COURSES, 1), MAX_COURSES);
-  const allWeeks = Array.from({ length: Math.max(Number(totalWeeks) || 20, 1) }, (_, i) => i + 1);
-  const rawBlocks = ocrBlocks
-    .map(block => ({ ...block, text: String(block.text || '').trim() }))
-    .filter(block => block.text);
-  const blocks = mergeFragmentedBlocks(rawBlocks);
-  const headers = blocks
-    .map(block => ({ block, day: getWeekdayFromText(block.text), x: centerOf(block, 'x'), y: centerOf(block, 'y') }))
-    .filter(item => item.day)
-    .sort((a, b) => a.day - b.day || a.x - b.x);
-
-  if (headers.length < 2) return null;
-
-  const headerBottom = Math.max(...headers.map(item => item.y));
-  const firstHeaderX = Math.min(...headers.map(item => item.x));
-  const slotLabels = blocks
-    .map(block => ({ block, slot: getSlotFromText(block.text), x: centerOf(block, 'x'), y: centerOf(block, 'y') }))
-    .filter(item => item.slot && item.slot >= 1 && item.slot <= maxSlot && item.x < firstHeaderX)
-    .sort((a, b) => a.slot - b.slot || a.y - b.y);
-
-  const candidateBlocks = blocks.filter((block) => {
-    const y = centerOf(block, 'y');
-    const x = centerOf(block, 'x');
-    return y > headerBottom + 6 && x >= firstHeaderX - 12 && !isIgnoredOcrText(block.text);
-  });
-  const rowFallback = clusterRows(candidateBlocks).map((row, index) => ({ slot: index + 1, y: row.y }));
-  const rowRefs = slotLabels.length ? slotLabels : rowFallback;
-  const warnings = ['AI 解析超时，已使用 OCR 坐标规则生成初稿，请重点核对星期和节次。'];
-  const seen = new Set();
-  const courses = [];
-
-  for (const block of candidateBlocks) {
-    const name = block.text.slice(0, 30);
-    const dayRef = nearestBy(headers, centerOf(block, 'x'), item => item.x);
-    const rowRef = nearestBy(rowRefs, centerOf(block, 'y'), item => item.y);
-    const dayOfWeek = dayRef && dayRef.day;
-    const slot = rowRef && rowRef.slot;
-    if (!dayOfWeek || !slot || slot < 1 || slot > maxSlot) continue;
-    const key = `${name}|${dayOfWeek}|${slot}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    courses.push({
-      name,
-      day_of_week: dayOfWeek,
-      slot,
-      teacher: '',
-      room: '',
-      contact: '',
-      color: resolveCourseColor(''),
-      weeks: allWeeks,
-      remark: '',
-    });
-  }
-
-  return courses.length ? success({
-    courses,
-    warnings,
-    rawText: getOcrText(ocrBlocks),
-    aiProvider: 'ocr-heuristic',
-    aiModel: 'local-fallback',
-    aiStage: 'ocr-fallback',
-    ocrProvider: 'tencent',
-  }) : null;
-}
-
-function hasSameCourseSlot(courses, candidate) {
-  return courses.some(course => (
-    Number(course.day_of_week) === Number(candidate.day_of_week) &&
-    Number(course.slot) === Number(candidate.slot)
-  ));
-}
-
-function mergeOcrHeuristicCourses(result, fallback) {
-  if (!result || result.code !== 0 || !result.data || !fallback || fallback.code !== 0 || !fallback.data) {
-    return result;
-  }
-
-  const courses = Array.isArray(result.data.courses) ? result.data.courses : [];
-  const fallbackCourses = Array.isArray(fallback.data.courses) ? fallback.data.courses : [];
-  const supplemental = fallbackCourses.filter(course => !hasSameCourseSlot(courses, course));
-
-  if (supplemental.length === 0) return result;
-
-  result.data.courses = [...courses, ...supplemental];
-  result.data.warnings = [
-    ...(result.data.warnings || []),
-    `已根据 OCR 坐标补齐 ${supplemental.length} 个可能漏识别的课节，请重点核对。`,
-  ];
-  result.data.ocrHeuristicSupplemental = supplemental.length;
-  return result;
-}
-
-function isOcrUsable(blocks) {
-  const text = getOcrText(blocks).replace(/\s/g, '');
-  return blocks.length >= OCR_MIN_TEXT_BLOCKS && text.length >= OCR_MIN_TEXT_CHARS;
-}
-
-/**
- * 将 OCR 块按行列聚类，重构成类表格文本格式
- * 让 AI 看到结构化的课表而非散乱的坐标块
- */
-function buildOcrTableText(ocrBlocks) {
-  const rawBlocks = ocrBlocks.map(b => ({ ...b, text: String(b.text || '').trim() })).filter(b => b.text);
-  const mergedBlocks = mergeFragmentedBlocks(rawBlocks);
-
-  // 过滤噪声块
-  const isNoiseBlock = (b) => {
-    const t = String(b.text || '').replace(/\s/g, '');
-    if (!t) return true;
-    if (/^\d{1,2}[:：]\d{2}/.test(t)) return true;
-    if (/\d{1,2}[:：~～]\d{2}/.test(t) && t.length <= 14) return true;
-    if (t.length === 1 && !/[一二三四五六七八九十]/.test(t)) return true;
-    return false;
-  };
-
-  const blocks = mergedBlocks.filter(b => !isNoiseBlock(b));
-  if (!blocks.length) return '(无OCR内容)';
-
-  // 按 y 坐标聚类成行（容差 30px）
-  const rows = [];
-  blocks.slice().sort((a, b) => centerOf(a, 'y') - centerOf(b, 'y')).forEach(block => {
-    const y = centerOf(block, 'y');
-    const row = rows.find(r => Math.abs(r.y - y) <= 30);
-    if (row) {
-      row.blocks.push(block);
-      row.y = row.blocks.reduce((sum, b) => sum + centerOf(b, 'y'), 0) / row.blocks.length;
-    } else {
-      rows.push({ y, blocks: [block] });
-    }
-  });
-
-  // 每行内按 x 排序，拼接成文本
-  const lines = rows.map(row => {
-    const sorted = row.blocks.sort((a, b) => centerOf(a, 'x') - centerOf(b, 'x'));
-    return sorted.map(b => b.text).join(' | ');
-  });
-
-  return lines.join('\n');
-}
-
-function buildOcrPrompt(schedule, ocrBlocks) {
-  const { periods, totalWeeks } = getSchedulePromptContext(schedule);
-  const maxSlot = Math.min(Math.max(periods.length || 0, 1), MAX_COURSES);
-
-  // 重构为类表格文本
-  const tableText = buildOcrTableText(ocrBlocks);
-
-  return [
-    '你是课程表识别助手。下面是一个从图片OCR提取的课表文本表示，请把它转成JSON。',
-    '',
-    '输出格式:',
-    '{"courses":[{"name":"","day_of_week":1,"slot":1,"teacher":"","room":"","contact":"","remark":"","color":"#3b82f6","weeks":[1]}],"warnings":[]}',
-    '',
-    '识别规则:',
-    `1. 表头中的星期列：一/二/三/四/五/六/日、周一/周二、星期一/星期二 → day_of_week=1-7`,
-    `2. 左侧节次行：第1节、上午1、下午1、1等都映射为 slot；当前课表共 ${periods.length || 0} 节，slot范围1-${maxSlot}`,
-    '3. 每个课程单元格按所在列（星期）和所在行（节次）输出一条课程',
-    '4. 课程名保留原样，括号内容属于课程名时要保留并确保完整',
-    '   OCR拆分合并：括号未闭合的碎片必须与同列相邻块拼合，右括号丢失时自动补全',
-    '   "艺术(美"+"术)"→"艺术(美术)"；"艺术(音"+"乐"→"艺术(音乐)"；"综合实践活"→"综合实践活动"',
-    '5. 以下不是课程，不要输出：空白格、午休、课间、放学、早餐、早读、大课间、眼保健操、升旗、标题、学校名、院系/专业/班级名、日期、页脚',
-    '   带时间标注的排除项如"早读(8:20—8:30)""大课间(10:10—10:40)"同样不是课程',
-    '   "校本""课后素质班"这类跨整行或特殊安排也不是单日课程',
-    '6. 教师/教室/电话/备注从课程名单元格中提取，无法确定就填空字符串',
-    '',
-    '周次规则:',
-    `7. 当前学期共 ${totalWeeks} 周。若图片没有明确写周次/单双周/起止周，weeks 必须填 1 到 ${totalWeeks} 的完整数组`,
-    '8. "1-10周""1～10周""第1至10周"输出 [1,2,3,4,5,6,7,8,9,10]；"单周"输出奇数周；"双周"输出偶数周',
-    '9. "1、3、5周"这类离散周次要逐个输出；不要把离散周次误写成连续区间',
-    '',
-    '质量自检:',
-    `10. 课程总数应在 5-50 之间；每天至少应有 1 门课；同一天同一节次不应出现两门不同课程`,
-    '11. 不确定课程名或位置时不要编造课程；把原因写入 warnings',
-    '12. 输出前自检：每条课程必须有 name、day_of_week、slot、color、weeks；day_of_week 和 slot 必须是数字',
-    '13. 对不确定的课程，在 remark 字段开头标注 "[待确认]"',
-    '',
-    '只输出严格 JSON，不要 Markdown，不要解释，不要代码块。',
-    '',
-    '=== 课表文本表示（每行用 | 分隔各列）===',
-    tableText,
-    '=== 结束 ===',
-  ].join('\n');
-}
-
-
-const ACTIVITY_TEXT_PATTERN = /(早读|晨读|午读|晚读|大课间|课间|眼保健操|眼操|午休|午餐|早餐|晚餐|放学|升旗|早操|课后|托管|体育锻炼|听广播|活动|校本|社团)/;
-const COURSE_NOISE_PATTERN = /^(课程表|课表|时间|节次|上午|下午|晚上|星期|周|备注|日期|学校|班级|姓名|教师|教室)$/;
-
 function isActivityText(text) {
   const raw = String(text || '').replace(/\s/g, '');
-  return ACTIVITY_TEXT_PATTERN.test(raw);
+  if (!raw || isLegitimateActivityCourse(raw)) return false;
+  if (EXACT_ACTIVITY_NAMES.test(raw)) return true;
+  if (TIMED_ACTIVITY_PATTERN.test(raw)) return true;
+  return false;
 }
+
+const COURSE_NOISE_PATTERN = /^(课程表|课表|时间|节次|上午|下午|晚上|星期|周|备注|日期|学校|班级|姓名|教师|教室)$/;
 
 function markPendingRemark(remark, reason) {
   const clean = String(remark || '').trim();
@@ -552,229 +166,77 @@ function weeksIntersect(left, right) {
   return left.some(w => right.includes(w));
 }
 
-function createAgentTracer() {
-  const trace = [];
-  return {
-    async step(stage, fn) {
-      const started = Date.now();
-      try {
-        const result = await fn();
-        trace.push({ stage, ok: true, durationMs: Date.now() - started, ...summarizeAgentStageResult(result) });
-        return result;
-      } catch (err) {
-        trace.push({ stage, ok: false, durationMs: Date.now() - started, error: String(err && err.message || err).slice(0, 120) });
-        throw err;
-      }
-    },
-    mark(stage, info = {}) {
-      trace.push({ stage, ok: true, durationMs: 0, ...info });
-    },
-    getTrace() { return trace; },
-  };
+function buildOddWeeks(totalWeeks) {
+  const total = Math.max(Number(totalWeeks) || 20, 1);
+  return Array.from({ length: total }, (_, i) => i + 1).filter(w => w % 2 === 1);
 }
 
-function summarizeAgentStageResult(result) {
-  if (!result) return {};
-  if (Array.isArray(result)) return { count: result.length };
-  if (result.code === 0 && result.data) {
-    return {
-      courses: Array.isArray(result.data.courses) ? result.data.courses.length : undefined,
-      periods: Array.isArray(result.data.periods) ? result.data.periods.length : undefined,
-      warnings: Array.isArray(result.data.warnings) ? result.data.warnings.length : undefined,
-      confidence: result.data.confidence,
-    };
-  }
-  return {
-    blocks: Array.isArray(result.blocks) ? result.blocks.length : undefined,
-    candidates: Array.isArray(result.courseCandidates) ? result.courseCandidates.length : undefined,
-    rows: Array.isArray(result.rows) ? result.rows.length : undefined,
-    warnings: Array.isArray(result.warnings) ? result.warnings.length : undefined,
-  };
+function buildEvenWeeks(totalWeeks) {
+  const total = Math.max(Number(totalWeeks) || 20, 1);
+  return Array.from({ length: total }, (_, i) => i + 1).filter(w => w % 2 === 0);
 }
 
-function attachAgentMeta(result, meta = {}) {
-  if (!result || result.code !== 0 || !result.data) return result;
-  if (meta.confidence && !result.data.confidence) result.data.confidence = meta.confidence;
-  if (meta.reviewItems && !result.data.reviewItems) result.data.reviewItems = meta.reviewItems;
-  if (AI_AGENT_TRACE_ENABLED && meta.agentTrace) result.data.agentTrace = meta.agentTrace;
-  return result;
+function stripWeekTypeLabel(name) {
+  return String(name || '')
+    .replace(/[\(（]\s*单周\s*[\)）]/g, '')
+    .replace(/[\(（]\s*双周\s*[\)）]/g, '')
+    .trim();
 }
 
-function getImageGuardDecision(ocrResult) {
-  const blocks = (ocrResult && ocrResult.blocks) || [];
-  const compactText = getOcrText(blocks).replace(/\s/g, '');
-  const hasWeekday = blocks.some(block => getWeekdayFromText(block.text));
-  const hasSlot = blocks.some(block => getSlotFromText(block.text));
-  const hasScheduleWords = /(课程表|课表|星期|周一|周二|周三|周四|周五|第\d|上午|下午)/.test(compactText);
-
-  if (!ocrResult || !ocrResult.enabled) {
-    return { ok: false, confidence: 'low', warnings: ['未配置或未启用 OCR，无法可靠识别课表图片'] };
-  }
-  if (!isOcrUsable(blocks)) {
-    return { ok: false, confidence: 'low', warnings: ['图片中文字过少或不清晰，请上传包含完整星期和节次的清晰课表图'] };
-  }
-  if (!hasWeekday && !hasScheduleWords) {
-    return { ok: false, confidence: 'low', warnings: ['未识别到明显的星期表头，请上传完整课表截图或照片'] };
-  }
-  return {
-    ok: true,
-    confidence: hasWeekday && (hasSlot || hasScheduleWords) ? 'medium' : 'low',
-    warnings: hasSlot ? [] : ['未稳定识别到左侧节次，将根据行位置推断，请重点核对节次。'],
-  };
+function inferWeeksFromCourseName(name, totalWeeks, fallbackWeeks) {
+  const raw = String(name || '');
+  if (/单周/.test(raw) && !/双周/.test(raw.split(/[\/／]/)[0] || '')) return buildOddWeeks(totalWeeks);
+  if (/双周/.test(raw)) return buildEvenWeeks(totalWeeks);
+  return fallbackWeeks;
 }
 
+/** 拆分「体育(单周)/英语(双周)」这类同格交替周次为两条课程 */
+function splitAlternatingWeekCell(raw, totalWeeks) {
+  const text = String(raw.name || '').trim();
+  if (!/[\/／]/.test(text) || !/单周|双周/.test(text)) return null;
 
-function reconstructOcrTable(ocrBlocks, schedule) {
-  const { periods } = getSchedulePromptContext(schedule);
-  const maxSlot = Math.min(Math.max(periods.length || MAX_COURSES, 1), MAX_COURSES);
-  const rawBlocks = ocrBlocks.map(block => ({ ...block, text: String(block.text || '').trim() })).filter(block => block.text);
-  const blocks = mergeFragmentedBlocks(rawBlocks);
-  const headers = blocks
-    .map(block => ({ text: block.text, day: getWeekdayFromText(block.text), x: centerOf(block, 'x'), y: centerOf(block, 'y') }))
-    .filter(item => item.day)
-    .sort((a, b) => a.day - b.day || a.x - b.x);
-  const headerBottom = headers.length ? Math.max(...headers.map(item => item.y)) : 0;
-  const firstHeaderX = headers.length ? Math.min(...headers.map(item => item.x)) : 0;
-  const slotLabels = blocks
-    .map(block => ({ text: block.text, slot: getSlotFromText(block.text), x: centerOf(block, 'x'), y: centerOf(block, 'y') }))
-    .filter(item => item.slot && item.slot >= 1 && item.slot <= maxSlot && (!headers.length || item.x < firstHeaderX))
-    .sort((a, b) => a.slot - b.slot || a.y - b.y);
-
-  const candidateBlocks = blocks.filter((block) => {
-    const y = centerOf(block, 'y');
-    const x = centerOf(block, 'x');
-    const text = String(block.text || '').replace(/\s/g, '');
-    if (headers.length && y <= headerBottom + 6) return false;
-    if (headers.length && x < firstHeaderX - 12) return false;
-    if (getWeekdayFromText(text) || getSlotFromText(text)) return false;
-    if (COURSE_NOISE_PATTERN.test(text)) return false;
-    if (/^\d{1,2}[:：]\d{2}/.test(text)) return false;
-    return Boolean(text);
-  });
-
-  const rows = clusterRows(candidateBlocks).map((row, index) => ({
-    index: index + 1,
-    y: row.y,
-    text: row.blocks.slice().sort((a, b) => centerOf(a, 'x') - centerOf(b, 'x')).map(b => b.text).join(' | '),
-    isActivity: row.blocks.some(b => isActivityText(b.text)) && row.blocks.length <= Math.max(3, headers.length ? Math.ceil(headers.length / 2) : 4),
-  }));
-  const rowRefs = slotLabels.length ? slotLabels.map(item => ({ slot: item.slot, y: item.y, text: item.text })) : rows.map(row => ({ slot: row.index, y: row.y, text: row.text }));
-
-  const courseCandidates = [];
-  const activityRows = [];
-  const seen = new Set();
-  for (const row of rows) {
-    if (row.isActivity) activityRows.push({ row: row.index, y: row.y, text: row.text });
-  }
-  for (const block of candidateBlocks) {
-    const text = String(block.text || '').trim();
-    if (!text || isIgnoredOcrText(text) || isActivityText(text)) continue;
-    const dayRef = headers.length ? nearestBy(headers, centerOf(block, 'x'), item => item.x) : null;
-    const rowRef = nearestBy(rowRefs, centerOf(block, 'y'), item => item.y);
-    const dayOfWeek = dayRef && dayRef.day;
-    const slot = rowRef && rowRef.slot;
-    if (!dayOfWeek || !slot || slot < 1 || slot > maxSlot) continue;
-    const key = `${dayOfWeek}|${slot}|${text}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    courseCandidates.push({
-      text,
-      day_of_week: dayOfWeek,
-      slot,
-      confidence: Number(block.confidence || 0),
-      x: Math.round(block.x || 0),
-      y: Math.round(block.y || 0),
-      rowText: rowRef && rowRef.text || '',
+  const parts = text.split(/[\/／]/).map(part => part.trim()).filter(Boolean);
+  const items = [];
+  for (const part of parts) {
+    let weekType = null;
+    if (/单周/.test(part)) weekType = 'odd';
+    else if (/双周/.test(part)) weekType = 'even';
+    if (!weekType) continue;
+    const name = completeSubjectName(stripWeekTypeLabel(part));
+    if (!name) continue;
+    items.push({
+      ...raw,
+      name,
+      weeks: weekType === 'odd' ? buildOddWeeks(totalWeeks) : buildEvenWeeks(totalWeeks),
     });
   }
-
-  return {
-    headers,
-    slotLabels,
-    rows,
-    activityRows,
-    courseCandidates,
-    tableText: buildOcrTableText(ocrBlocks),
-    warnings: [
-      ...(headers.length < 2 ? ['星期表头识别不足，星期位置可能需要核对。'] : []),
-      ...(slotLabels.length < 2 ? ['节次标签识别不足，将更多依赖行位置推断。'] : []),
-    ],
-  };
+  return items.length >= 2 ? items : null;
 }
 
-function buildAgentParsePrompt(schedule, table) {
-  const { periods, totalWeeks } = getSchedulePromptContext(schedule);
-  const maxSlot = Math.min(Math.max(periods.length || MAX_COURSES, 1), MAX_COURSES);
-  const headersText = table.headers.map(h => `day=${h.day},x=${Math.round(h.x)},text=${h.text}`).join('; ') || '未稳定识别';
-  const slotText = table.slotLabels.map(s => `slot=${s.slot},y=${Math.round(s.y)},text=${s.text}`).join('; ') || '未稳定识别';
-  const candidatesText = table.courseCandidates.slice(0, 80).map(c => (
-    `day=${c.day_of_week},slot=${c.slot},text=${c.text},row=${c.rowText}`
-  )).join('\n') || '(无课程候选)';
-  const activityText = table.activityRows.map(r => `row=${r.row},text=${r.text}`).join('\n') || '(无活动行候选)';
-
-  return [
-    '你是课表结构化抽取 Agent。输入是 OCR 坐标重建后的课表结构，请只根据证据输出 JSON。',
-    '不要编造没有证据的课程；不确定的位置在 remark 开头写 [待确认]。',
-    '',
-    '输出格式：',
-    '{"periods":[{"index":1,"startTime":"08:00","endTime":"08:40","label":"第一节","type":"class"}],"courses":[{"name":"语文","day_of_week":1,"slot":1,"teacher":"","room":"","contact":"","remark":"","color":"#3b82f6","weeks":[1]}],"warnings":[]}',
-    '',
-    `当前学期总周数：${totalWeeks}；合法 slot 范围：1-${maxSlot}。`,
-    `现有课表节次参考：${periods.map(p => `第${p.index}节 ${p.label || ''} ${p.startTime || ''}-${p.endTime || ''}`).join('；') || '无'}`,
-    `星期表头：${headersText}`,
-    `节次标签：${slotText}`,
-    '',
-    '活动行候选（早读/大课间/午休/眼保健操/放学等只能进 periods，不要进 courses）：',
-    activityText,
-    '',
-    '课程候选（优先信任 day 和 slot，但仍需按上下文纠错）：',
-    candidatesText,
-    '',
-    'OCR 行文本：',
-    table.tableText,
-    '',
-    '规则：',
-    '1. 课程必须来自课程候选或 OCR 行文本中的明确课程名。',
-    '2. 活动行不要输出为课程；如果能识别时间安排，输出到 periods 并标 type="activity"。',
-    `3. 图片没有明确周次时，weeks 输出 1 到 ${totalWeeks} 的完整数组。`,
-    '4. 同一 day_of_week + slot 不要输出两门不同课程；无法判断时保留更可信的一门并加 [待确认]。',
-    '5. 只输出严格 JSON，不要 Markdown，不要解释。',
-  ].join('\n');
+function expandAlternatingWeekCourses(payloadCourses, totalWeeks) {
+  const expanded = [];
+  for (const raw of payloadCourses || []) {
+    if (!raw || typeof raw !== 'object') continue;
+    const split = splitAlternatingWeekCell(raw, totalWeeks);
+    if (split) expanded.push(...split);
+    else expanded.push(raw);
+  }
+  return expanded;
 }
 
-function buildRepairPrompt(schedule, table, draftData, issues) {
-  const { totalWeeks } = getSchedulePromptContext(schedule);
-  return [
-    '你是课表 JSON 修复 Agent。根据校验问题修复初稿，只改有问题的字段，不要重写无问题课程。',
-    '无法确定的课程不要删除，除非它是活动/噪声；请在 remark 开头标记 [待确认]。',
-    `学期总周数：${totalWeeks}。`,
-    '',
-    '校验问题：',
-    JSON.stringify(issues.slice(0, 20)),
-    '',
-    '课程候选证据：',
-    table.courseCandidates.slice(0, 80).map(c => `day=${c.day_of_week},slot=${c.slot},text=${c.text},row=${c.rowText}`).join('\n'),
-    '',
-    '活动行证据：',
-    table.activityRows.map(r => `row=${r.row},text=${r.text}`).join('\n') || '(无)',
-    '',
-    '初稿 JSON：',
-    JSON.stringify({ periods: draftData.periods || [], courses: draftData.courses || [], warnings: draftData.warnings || [] }),
-    '',
-    '输出同样格式的严格 JSON：{"periods":[],"courses":[],"warnings":[]}。',
-  ].join('\n');
+function findSameSlotCourses(list, dayOfWeek, slot) {
+  return list.filter(course => course.day_of_week === dayOfWeek && course.slot === slot);
 }
 
-
-function validateAndFinalizeRecognition(data, schedule, source = 'agent') {
+function validateAndFinalizeRecognition(data, schedule, source = 'vision') {
   const { periods: schedulePeriods, totalWeeks } = getSchedulePromptContext(schedule);
   const maxSlot = Math.min(Math.max((Array.isArray(data && data.periods) && data.periods.length) || schedulePeriods.length || MAX_COURSES, 1), MAX_COURSES);
-  const normalized = normalizeCourses((data && data.courses) || [], totalWeeks || 20, maxSlot);
+  const expandedCourses = expandAlternatingWeekCourses((data && data.courses) || [], totalWeeks || 20);
+  const normalized = normalizeCourses(expandedCourses, totalWeeks || 20, maxSlot);
   const periods = normalizePeriods((data && data.periods) || []);
   const warnings = [...normalized.warnings, ...((data && Array.isArray(data.warnings)) ? data.warnings.map(String) : [])];
   const reviewItems = [];
   const result = [];
-  const slotMap = new Map();
 
   for (const course of normalized.courses) {
     if (isActivityText(course.name) || COURSE_NOISE_PATTERN.test(String(course.name || '').replace(/\s/g, ''))) {
@@ -787,20 +249,28 @@ function validateAndFinalizeRecognition(data, schedule, source = 'agent') {
       warnings.push(`课程「${course.name}」周次无效，已改为全周`);
     }
     const finalized = { ...course, weeks: weeks.length ? weeks : Array.from({ length: totalWeeks || 20 }, (_, i) => i + 1) };
-    const key = `${finalized.day_of_week}|${finalized.slot}`;
-    const existingIndex = slotMap.get(key);
-    if (existingIndex !== undefined) {
-      const existing = result[existingIndex];
-      if (existing.name === finalized.name && weeksIntersect(existing.weeks, finalized.weeks)) {
-        existing.weeks = [...new Set([...existing.weeks, ...finalized.weeks])].sort((a, b) => a - b);
+    const sameSlot = findSameSlotCourses(result, finalized.day_of_week, finalized.slot);
+
+    if (sameSlot.length > 0) {
+      const mergeTarget = sameSlot.find(item => item.name === finalized.name && weeksIntersect(item.weeks, finalized.weeks));
+      if (mergeTarget) {
+        mergeTarget.weeks = [...new Set([...mergeTarget.weeks, ...finalized.weeks])].sort((a, b) => a - b);
         continue;
       }
+
+      const isAlternatingWeek = sameSlot.every(item => item.name !== finalized.name && !weeksIntersect(item.weeks, finalized.weeks));
+      if (isAlternatingWeek) {
+        result.push(finalized);
+        continue;
+      }
+
       finalized.remark = markPendingRemark(finalized.remark, '同一星期节次存在多个识别结果，请核对');
-      existing.remark = markPendingRemark(existing.remark, '同一星期节次存在多个识别结果，请核对');
+      sameSlot.forEach(item => {
+        item.remark = markPendingRemark(item.remark, '同一星期节次存在多个识别结果，请核对');
+      });
       reviewItems.push({ type: 'slot_conflict', message: `星期${finalized.day_of_week} 第${finalized.slot}节存在多个课程候选`, day_of_week: finalized.day_of_week, slot: finalized.slot, courseName: finalized.name });
-    } else {
-      slotMap.set(key, result.length);
     }
+
     result.push(finalized);
   }
 
@@ -828,16 +298,12 @@ function validateAndFinalizeRecognition(data, schedule, source = 'agent') {
   };
 }
 
-function shouldRepairRecognition(finalized) {
-  if (!AI_REPAIR_ENABLED) return false;
-  if (!finalized || !Array.isArray(finalized.reviewItems)) return false;
-  return finalized.reviewItems.some(item => ['slot_conflict', 'few_courses', 'few_days'].includes(item.type));
-}
-
-// OCR 常见截断课程名补全表
+// OCR 常见截断课程名补全表（模型偶发漏字时兜底）
 const SUBJECT_COMPLETIONS = {
   '综合实践活': '综合实践活动',
   '综合实践': '综合实践活动',
+  '校本(数学综合活': '校本(数学综合活动)',
+  '校本(体育与健': '校本(体育与健康)',
   '道德与法': '道德与法治',
   '体育与': '体育与健康',
   '信息技': '信息技术',
@@ -849,7 +315,6 @@ const SUBJECT_COMPLETIONS = {
 function completeSubjectName(name) {
   return SUBJECT_COMPLETIONS[name] || name;
 }
-
 
 function normalizeTimeText(value) {
   const raw = String(value || '').trim().replace('：', ':');
@@ -898,7 +363,7 @@ function normalizeCourses(payloadCourses, totalWeeks, periodCount) {
 
   for (const raw of payloadCourses) {
     if (!raw || typeof raw !== 'object') continue;
-    const name = completeSubjectName(String(raw.name || '').trim().slice(0, 30));
+    let name = completeSubjectName(String(raw.name || '').trim().slice(0, 30));
     const dayOfWeek = Number(raw.day_of_week);
     const slot = Number(raw.slot);
     if (!name) {
@@ -914,9 +379,14 @@ function normalizeCourses(payloadCourses, totalWeeks, periodCount) {
       continue;
     }
 
-    const weeks = Array.isArray(raw.weeks) && raw.weeks.length > 0
+    let weeks = Array.isArray(raw.weeks) && raw.weeks.length > 0
       ? raw.weeks.map(Number).filter(w => Number.isInteger(w) && w > 0 && w <= totalWeeks)
       : allWeeks;
+
+    if (/单周|双周/.test(name)) {
+      weeks = inferWeeksFromCourseName(name, totalWeeks, weeks);
+      name = completeSubjectName(stripWeekTypeLabel(name));
+    }
 
     courses.push({
       name,
@@ -942,7 +412,6 @@ async function downloadBase64(fileId) {
   }
   return buffer.toString('base64');
 }
-
 
 /**
  * 清洗 AI 输出的课程列表：
@@ -1008,43 +477,13 @@ function cleanupCourses(courses) {
   return result.filter((_, idx) => !removed.has(idx));
 }
 
-function sha256(message, encoding) {
-  return crypto.createHash('sha256').update(message).digest(encoding);
-}
-
-function hmacSha256(key, message, encoding) {
-  return crypto.createHmac('sha256', key).update(message).digest(encoding);
-}
-
-function buildTencentAuthorization(config, timestamp, requestBody) {
-  const algorithm = 'TC3-HMAC-SHA256';
-  const date = new Date(timestamp * 1000).toISOString().slice(0, 10);
-  const service = 'ocr';
-  const credentialScope = `${date}/${service}/tc3_request`;
-  const hashedRequestPayload = sha256(requestBody, 'hex');
-  const canonicalRequest = [
-    'POST',
-    '/',
-    '',
-    `content-type:application/json; charset=utf-8\nhost:${config.endpoint}\nx-tc-action:${config.action.toLowerCase()}\n`,
-    'content-type;host;x-tc-action',
-    hashedRequestPayload,
-  ].join('\n');
-  const stringToSign = [
-    algorithm,
-    String(timestamp),
-    credentialScope,
-    sha256(canonicalRequest, 'hex'),
-  ].join('\n');
-  const secretDate = hmacSha256(`TC3${config.secretKey}`, date);
-  const secretService = hmacSha256(secretDate, service);
-  const secretSigning = hmacSha256(secretService, 'tc3_request');
-  const signature = hmacSha256(secretSigning, stringToSign, 'hex');
-  return `${algorithm} Credential=${config.secretId}/${credentialScope}, SignedHeaders=content-type;host;x-tc-action, Signature=${signature}`;
-}
-
+/**
+ * 发起 OpenAI 兼容 Chat Completions 请求。按 URL scheme 选 http/https 传输
+ * （LiteLLM 自建网关为明文 http，DeepSeek 官方为 https）。
+ */
 async function requestJson(url, headers, body, timeoutMs, errorLabel) {
   const requestBody = JSON.stringify(body);
+  const client = String(url).startsWith('http://') ? http : https;
   return await new Promise((resolve, reject) => {
     let settled = false;
     let req;
@@ -1061,7 +500,7 @@ async function requestJson(url, headers, body, timeoutMs, errorLabel) {
       finish(reject, new Error(`${errorLabel}超时: ${timeoutMs}ms`));
     }, timeoutMs);
 
-    req = https.request(url, {
+    req = client.request(url, {
       method: 'POST',
       headers: {
         ...headers,
@@ -1093,298 +532,35 @@ async function requestJson(url, headers, body, timeoutMs, errorLabel) {
   });
 }
 
-async function callTencentOcr(imageBase64) {
-  const config = getTencentOcrConfig();
-  if (!config.secretId || !config.secretKey) {
-    return { enabled: false, blocks: [], warnings: ['未配置腾讯云 OCR 密钥，已跳过 OCR'] };
-  }
-
-  const timeoutMs = getOcrTimeoutMs();
-  const timestamp = Math.floor(Date.now() / 1000);
-  const body = {
-    ImageBase64: imageBase64,
-    LanguageType: process.env.TENCENT_OCR_LANGUAGE || 'zh',
-  };
-  if (config.action === 'RecognizeAgent') {
-    body.EnableCoord = true;
-  }
-  const requestBody = JSON.stringify(body);
-  const data = await requestJson(`https://${config.endpoint}`, {
-    'content-type': 'application/json; charset=utf-8',
-    host: config.endpoint,
-    authorization: buildTencentAuthorization(config, timestamp, requestBody),
-    'x-tc-action': config.action,
-    'x-tc-version': config.version,
-    'x-tc-timestamp': String(timestamp),
-    'x-tc-region': config.region,
-  }, body, timeoutMs, '腾讯云 OCR 调用');
-
-  if (data.Response && data.Response.Error) {
-    const error = data.Response.Error;
-    throw new Error(`腾讯云 OCR 调用失败: ${error.Code || 'Unknown'} ${error.Message || ''}`.trim());
-  }
-
-  const response = data.Response || null;
-  const blocks = normalizeOcrBlocks(response && (response.TextDetections || response.AgentResult || response));
-  return {
-    enabled: true,
-    blocks,
-    warnings: [],
-    raw: response,
-  };
-}
-
-
-async function callDeepSeekVision(imageBase64, schedule) {
-  const { periods, totalWeeks } = getSchedulePromptContext(schedule);
-  const timeoutMs = getDeepSeekTimeoutMs();
-  const prompt = buildPrompt(schedule);
-  const dataUrl = `data:image/jpeg;base64,${imageBase64}`;
-
-  const callCloudBase = async () => {
-    const model = tcbApp.ai().createModel('hunyuan-v3');
-    const result = await model.generateText({
-      model: CLOUDBASE_AI_MODEL,
-      messages: [{
-        role: 'user',
-        content: [
-          { type: 'image_url', image_url: { url: dataUrl } },
-          { type: 'text', text: prompt },
-        ],
-      }],
-    });
-
-    if (result && result.error) throw result.error;
-
-    const rawText = result?.text || result?.choices?.[0]?.message?.content || '';
-    const parsed = extractJson(rawText);
-    if (parsed) {
-      const { courses, warnings } = normalizeCourses(parsed.courses, totalWeeks || 20, periods.length || 12);
-      const normalizedPeriods = normalizePeriods(parsed.periods);
-      return success({
-        courses,
-        periods: normalizedPeriods,
-        warnings: [...warnings, ...(Array.isArray(parsed.warnings) ? parsed.warnings.map(String) : [])],
-        rawText,
-        aiProvider: 'cloudbase',
-        aiModel: CLOUDBASE_AI_MODEL,
-        aiStage: 'vision',
-        visionMethod: 'cloudbase-sdk',
-        parsed,
-      });
-    }
-    logger.error(FN, 'deepseekVision:cloudbaseParseFailed', { rawText: String(rawText).slice(0, 200) });
-    return null;
-  };
-
-  try {
-    logger.info(FN, 'deepseekVision:cloudbase:start', { model: CLOUDBASE_AI_MODEL });
-    const result = await callCloudBase();
-    if (result) {
-      logger.info(FN, 'deepseekVision:cloudbaseSuccess');
-      return result;
-    }
-  } catch (err) {
-    const message = err && err.message ? err.message : String(err);
-    logger.error(FN, 'deepseekVision:cloudbaseFailed', { message, timeoutMs });
-
-    if (message.includes('429') || message.includes('rate') || message.includes('Too Many')) {
-      logger.info(FN, 'deepseekVision:cloudbase:retryAfter429');
-      await new Promise(r => setTimeout(r, 2000));
-      try {
-        const retryResult = await callCloudBase();
-        if (retryResult) {
-          logger.info(FN, 'deepseekVision:cloudbaseRetrySuccess');
-          return retryResult;
-        }
-      } catch (retryErr) {
-        logger.error(FN, 'deepseekVision:cloudbaseRetryFailed', {
-          message: retryErr && retryErr.message ? retryErr.message : String(retryErr)
-        });
-      }
-    }
-  }
-
-  return null;
-}
-
 /**
- * 诊断 CloudBase AI 网关连通性（DNS + TCP + HTTP）
+ * 图片直传视觉模型，返回 { rawText, parsed }；解析不出 JSON 返回 null。
+ * profile 由 resolveVisionProfile() 给出（baseUrl/apiKey/model）。
  */
-async function diagnoseAiGateway() {
-  const dns = require('dns');
-  const net = require('net');
-  const host = 'test-d7gxuxk5a8418c629.api.tcloudbasegateway.com';
-  const result = { host };
+async function callVisionModel(profile, imageBase64, mimeType, schedule) {
+  const prompt = buildPrompt(schedule);
+  const dataUrl = `data:${mimeType || 'image/jpeg'};base64,${imageBase64}`;
+  const data = await requestJson(`${profile.baseUrl}/chat/completions`, {
+    'content-type': 'application/json',
+    authorization: `Bearer ${profile.apiKey}`,
+  }, {
+    model: profile.model,
+    temperature: 0.1,
+    messages: [{
+      role: 'user',
+      content: [
+        { type: 'text', text: prompt },
+        { type: 'image_url', image_url: { url: dataUrl, detail: AI_IMAGE_DETAIL } },
+      ],
+    }],
+  }, getVisionTimeoutMs(), `${profile.provider} 视觉识别`);
 
-  // 1. DNS 解析
-  const dnsStart = Date.now();
-  try {
-    const addresses = await new Promise((resolve, reject) => {
-      dns.resolve4(host, (err, addrs) => err ? reject(err) : resolve(addrs));
-    });
-    result.dns = { ok: true, addresses, ms: Date.now() - dnsStart };
-  } catch (err) {
-    result.dns = { ok: false, error: err.code || err.message, ms: Date.now() - dnsStart };
-    return result; // DNS 失败，后续步骤无意义
+  const rawText = data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content || '';
+  const parsed = extractJson(rawText);
+  if (!parsed) {
+    logger.error(FN, 'vision:parseFailed', { provider: profile.provider, rawText: String(rawText).slice(0, 200) });
+    return null;
   }
-
-  // 2. TCP 连接
-  const tcpStart = Date.now();
-  try {
-    await new Promise((resolve, reject) => {
-      const socket = net.createConnection({ host: result.dns.addresses[0], port: 443 }, () => {
-        socket.destroy();
-        resolve();
-      });
-      socket.on('error', (err) => { socket.destroy(); reject(err); });
-      socket.setTimeout(5000, () => { socket.destroy(); reject(new Error('TCP timeout 5s')); });
-    });
-    result.tcp = { ok: true, ms: Date.now() - tcpStart };
-  } catch (err) {
-    result.tcp = { ok: false, error: err.code || err.message, ms: Date.now() - tcpStart };
-  }
-
-  // 3. HTTPS 请求（GET /v1 看网关是否响应）
-  const httpsStart = Date.now();
-  try {
-    const httpsResult = await new Promise((resolve, reject) => {
-      const req = https.request({
-        hostname: host,
-        port: 443,
-        path: '/v1',
-        method: 'GET',
-        timeout: 10000,
-      }, (res) => {
-        let body = '';
-        res.on('data', (chunk) => { body += chunk; });
-        res.on('end', () => resolve({ statusCode: res.statusCode, body: body.slice(0, 200) }));
-      });
-      req.on('error', (err) => reject(err));
-      req.on('timeout', () => { req.destroy(); reject(new Error('HTTPS timeout 10s')); });
-      req.end();
-    });
-    result.https = { ok: true, statusCode: httpsResult.statusCode, body: httpsResult.body, ms: Date.now() - httpsStart };
-  } catch (err) {
-    result.https = { ok: false, error: err.code || err.message, ms: Date.now() - httpsStart };
-  }
-
-  return result;
-}
-
-async function callCloudBaseAiText(prompt, schedule, stage = 'text') {
-  const { periods, totalWeeks } = getSchedulePromptContext(schedule);
-  const timeoutMs = getDeepSeekTimeoutMs();
-  const startedAt = Date.now();
-
-  const doCall = async () => {
-    const model = tcbApp.ai().createModel('hunyuan-v3');
-    const result = await model.generateText({
-      model: CLOUDBASE_AI_MODEL,
-      messages: [{ role: 'user', content: prompt }],
-      temperature: 0.1,
-    });
-
-    if (result && result.error) throw result.error;
-
-    const rawText = result?.text || result?.choices?.[0]?.message?.content || '';
-    const parsed = extractJson(rawText);
-    if (!parsed) {
-      logger.error(FN, 'cloudbaseAiText:parseFailed', { stage, rawText: String(rawText).slice(0, 200) });
-      return fail(ERRORS.INTERNAL_ERROR, 'AI识别结果格式异常');
-    }
-
-    const { courses, warnings } = normalizeCourses(parsed.courses, totalWeeks || 20, periods.length || 12);
-    const normalizedPeriods = normalizePeriods(parsed.periods);
-    return success({
-      courses,
-      periods: normalizedPeriods,
-      warnings: [...warnings, ...(Array.isArray(parsed.warnings) ? parsed.warnings.map(String) : [])],
-      rawText,
-      aiProvider: 'cloudbase',
-      aiModel: CLOUDBASE_AI_MODEL,
-      aiStage: stage,
-      parsed,
-    });
-  };
-
-  try {
-    return await doCall();
-  } catch (err) {
-    const message = err && err.message ? err.message : String(err);
-    const is429 = message.includes('429') || message.includes('rate') || message.includes('Too Many');
-
-    if (is429) {
-      logger.warn(FN, 'cloudbaseAiText:429:retry', { stage, durationMs: Date.now() - startedAt });
-      await new Promise(r => setTimeout(r, 3000));
-      try {
-        return await doCall();
-      } catch (retryErr) {
-        const retryMsg = retryErr && retryErr.message ? retryErr.message : String(retryErr);
-        logger.error(FN, 'cloudbaseAiText:429:retryFailed', { stage, message: retryMsg });
-        return fail(ERRORS.INTERNAL_ERROR, 'AI 服务繁忙，请稍后重试');
-      }
-    }
-
-    // 超时或连接失败时，运行网络诊断
-    if (message.includes('timeout') || message.includes('超时') || message.includes('ECONNREFUSED') || message.includes('ENOTFOUND')) {
-      logger.warn(FN, 'cloudbaseAiText:diagnosing', { stage, message });
-      try {
-        const diagnosis = await diagnoseAiGateway();
-        logger.error(FN, 'cloudbaseAiText:diagnosis', { stage, diagnosis });
-      } catch (diagErr) {
-        logger.error(FN, 'cloudbaseAiText:diagnosisFailed', { error: diagErr.message });
-      }
-    }
-
-    logger.error(FN, 'cloudbaseAiText:failed', {
-      stage,
-      model: CLOUDBASE_AI_MODEL,
-      timeoutMs,
-      durationMs: Date.now() - startedAt,
-      promptChars: prompt.length,
-      message,
-    });
-    if (message.includes('timeout') || message.includes('超时')) {
-      return fail(ERRORS.INTERNAL_ERROR, stage === 'ocr'
-        ? 'AI 解析 OCR 文本超时，请稍后重试或换一张更清晰的图片'
-        : 'AI 服务响应超时，请稍后重试或换一张更清晰的图片');
-    }
-    return fail(ERRORS.INTERNAL_ERROR, 'AI 服务调用失败');
-  }
-}
-
-
-async function recognizeOcrWithCloudBaseAi(ocrBlocks, schedule, table = null) {
-  const prompt = table ? buildAgentParsePrompt(schedule, table) : buildOcrPrompt(schedule, ocrBlocks);
-  logger.info(FN, 'recognizeScheduleImage:cloudbaseAiOcr:prompt', {
-    blocks: ocrBlocks.length,
-    promptChars: prompt.length,
-  });
-  const result = await callCloudBaseAiText(prompt, schedule, 'ocr');
-  if (result && result.code === 0 && result.data) {
-    result.data.ocrText = getOcrText(ocrBlocks);
-  }
-  return result;
-}
-
-async function repairRecognitionWithCloudBaseAi(draftData, table, schedule) {
-  const finalized = validateAndFinalizeRecognition(draftData, schedule, 'pre-repair');
-  if (!shouldRepairRecognition(finalized)) return null;
-  const prompt = buildRepairPrompt(schedule, table, draftData, finalized.reviewItems);
-  logger.info(FN, 'recognizeScheduleImage:cloudbaseAiRepair:start', {
-    issues: finalized.reviewItems.length,
-    promptChars: prompt.length,
-  });
-  const result = await callCloudBaseAiText(prompt, schedule, 'repair');
-  if (result && result.code === 0 && result.data) {
-    logger.info(FN, 'recognizeScheduleImage:cloudbaseAiRepair:done', {
-      courses: result.data.courses.length,
-    });
-    return result;
-  }
-  logger.warn(FN, 'recognizeScheduleImage:cloudbaseAiRepair:failed', { code: result && result.code });
-  return null;
+  return { rawText, parsed };
 }
 
 function buildSuccessFromFinalized(finalized, extras = {}) {
@@ -1401,165 +577,57 @@ function buildSuccessFromFinalized(finalized, extras = {}) {
 async function recognizeScheduleImage(openid, payload) {
   validator.requireFields(payload, ['scheduleId', 'fileId']);
   const schedule = await requireEdit(openid, payload.scheduleId);
-  const tracer = createAgentTracer();
+  const profile = resolveVisionProfile();
 
   logger.info(FN, 'recognizeScheduleImage', {
     openid,
     scheduleId: payload.scheduleId,
+    provider: profile.provider,
+    model: profile.model,
   });
 
   logger.info(FN, 'recognizeScheduleImage:downloadImage:start', { fileId: payload.fileId });
-  const imageBase64 = await tracer.step('image_download', async () => downloadBase64(payload.fileId));
+  const imageBase64 = await downloadBase64(payload.fileId);
   logger.info(FN, 'recognizeScheduleImage:downloadImage:done', { bytes: Math.ceil(imageBase64.length * 3 / 4) });
-
   if (!imageBase64) {
     return fail(ERRORS.PARAM_ERROR, '图片读取失败');
   }
 
-  // 视觉直读是增强路径，但输出仍必须进入本地校验裁判。
-  if (CLOUDBASE_VISION_ENABLED) {
-    logger.info(FN, 'recognizeScheduleImage:cloudbaseVision:start');
-    const visionResult = await tracer.step('vision_extract', async () => callDeepSeekVision(imageBase64, schedule));
-    if (visionResult && visionResult.code === 0 && visionResult.data && visionResult.data.courses.length > 0) {
-      const finalized = validateAndFinalizeRecognition(visionResult.data.parsed || visionResult.data, schedule, 'vision');
-      logger.info(FN, 'recognizeScheduleImage:cloudbaseVision:done', {
-        courses: finalized.courses.length,
-        confidence: finalized.confidence,
-      });
-      return attachAgentMeta(buildSuccessFromFinalized(finalized, {
-        rawText: visionResult.data.rawText,
-        aiProvider: visionResult.data.aiProvider,
-        aiModel: visionResult.data.aiModel,
-        aiStage: 'vision',
-        visionMethod: visionResult.data.visionMethod,
-      }), { agentTrace: tracer.getTrace() });
-    }
-    logger.warn(FN, 'recognizeScheduleImage:cloudbaseVision:fallback', { reason: 'vision failed or no courses' });
-  }
-
-  let ocrResult = null;
+  let vision;
   try {
-    logger.info(FN, 'recognizeScheduleImage:ocr:start', { action: getTencentOcrConfig().action });
-    ocrResult = await tracer.step('ocr_extract', async () => callTencentOcr(imageBase64));
-    logger.info(FN, 'recognizeScheduleImage:ocr:done', {
-      enabled: ocrResult.enabled,
-      blocks: ocrResult.blocks.length,
-      chars: getOcrText(ocrResult.blocks).replace(/\s/g, '').length,
-    });
-    if (ocrResult.enabled && ocrResult.blocks.length) {
-      logger.info(FN, 'recognizeScheduleImage:ocr:blocks', {
-        blocks: ocrResult.blocks
-          .slice()
-          .sort((a, b) => (a.y - b.y) || (a.x - b.x))
-          .map(b => `(${Math.round(b.x)},${Math.round(b.y)},${Math.round(b.width)}x${Math.round(b.height)}) ${b.text}`),
-      });
-    }
+    logger.info(FN, 'recognizeScheduleImage:vision:start', { provider: profile.provider });
+    vision = await callVisionModel(profile, imageBase64, payload.mimeType, schedule);
   } catch (err) {
-    logger.error(FN, 'recognizeScheduleImage:ocr:failed', { message: err.message });
-    return fail(ERRORS.INTERNAL_ERROR, '图片文字识别失败，请稍后重试或换一张更清晰的图片');
+    if (err && typeof err.code === 'number') return err;
+    logger.error(FN, 'recognizeScheduleImage:vision:failed', { provider: profile.provider, message: err && err.message ? err.message : String(err) });
+    return fail(ERRORS.INTERNAL_ERROR, 'AI 识别失败，请稍后重试或换一张更清晰的图片');
   }
 
-  const guard = getImageGuardDecision(ocrResult);
-  tracer.mark('image_guard', {
-    confidence: guard.confidence,
-    warnings: guard.warnings.length,
-    ok: guard.ok,
-  });
-  if (!guard.ok) {
-    return attachAgentMeta(success({
+  if (!vision || !vision.parsed) {
+    return success({
       courses: [],
       periods: [],
-      warnings: [...(ocrResult && ocrResult.warnings || []), ...guard.warnings],
-      rawText: getOcrText((ocrResult && ocrResult.blocks) || []),
-      reviewItems: [{ type: 'image_unreadable', message: guard.warnings[0] || '图片不可识别，请重拍' }],
       confidence: 'low',
-      ocrProvider: ocrResult && ocrResult.enabled ? 'tencent' : '',
-      aiProvider: 'local-agent',
-      aiStage: 'image_guard',
-    }), { agentTrace: tracer.getTrace() });
-  }
-
-  const table = await tracer.step('table_reconstruct', async () => reconstructOcrTable(ocrResult.blocks, schedule));
-  const fallback = parseCoursesFromOcrBlocks(ocrResult.blocks, schedule);
-
-  let parseResult = null;
-  if (table.courseCandidates.length || isOcrUsable(ocrResult.blocks)) {
-    logger.info(FN, 'recognizeScheduleImage:cloudbaseAiOcr:start', {
-      blocks: ocrResult.blocks.length,
-      candidates: table.courseCandidates.length,
-    });
-    parseResult = await tracer.step('llm_parse', async () => recognizeOcrWithCloudBaseAi(ocrResult.blocks, schedule, table));
-    logger.info(FN, 'recognizeScheduleImage:cloudbaseAiOcr:done', {
-      courses: parseResult?.data?.courses?.length || 0,
-      code: parseResult && parseResult.code,
+      warnings: ['未能识别出课表结构，请换一张清晰、正向、包含完整星期和节次的图片。'],
+      reviewItems: [{ type: 'parse_failed', message: '未能从图片中提取可靠课表结构，请重拍或裁剪课表区域。' }],
+      aiProvider: profile.provider,
+      aiModel: profile.model,
+      aiStage: 'parse_failed',
     });
   }
 
-  if (parseResult && parseResult.code === 0 && parseResult.data) {
-    const draftData = parseResult.data.parsed || parseResult.data;
-    let finalized = validateAndFinalizeRecognition(draftData, schedule, 'ocr-agent');
-    finalized.warnings = [...new Set([...(ocrResult.warnings || []), ...guard.warnings, ...table.warnings, ...finalized.warnings])];
-
-    const repairResult = await tracer.step('llm_repair', async () => repairRecognitionWithCloudBaseAi(draftData, table, schedule));
-    if (repairResult && repairResult.code === 0 && repairResult.data) {
-      const repaired = validateAndFinalizeRecognition(repairResult.data.parsed || repairResult.data, schedule, 'ocr-agent-repair');
-      if (repaired.courses.length >= finalized.courses.length || repaired.confidence !== 'low') {
-        finalized = {
-          ...repaired,
-          warnings: [...new Set([...(ocrResult.warnings || []), ...guard.warnings, ...table.warnings, ...repaired.warnings])],
-        };
-      }
-    }
-
-    const merged = mergeOcrHeuristicCourses(buildSuccessFromFinalized(finalized, {
-      rawText: parseResult.data.rawText,
-      ocrText: getOcrText(ocrResult.blocks),
-      aiProvider: 'cloudbase',
-      aiModel: CLOUDBASE_AI_MODEL,
-      aiStage: finalized.source,
-      ocrProvider: 'tencent',
-    }), fallback);
-    if (merged && merged.code === 0 && merged.data) {
-      const postMergeFinalized = validateAndFinalizeRecognition(merged.data, schedule, 'ocr-agent-merged');
-      merged.data.courses = postMergeFinalized.courses;
-      merged.data.periods = postMergeFinalized.periods;
-      merged.data.warnings = [...new Set([...(merged.data.warnings || []), ...postMergeFinalized.warnings])];
-      merged.data.reviewItems = [...(merged.data.reviewItems || []), ...postMergeFinalized.reviewItems];
-      merged.data.confidence = postMergeFinalized.confidence;
-    }
-    return attachAgentMeta(merged, { agentTrace: tracer.getTrace() });
-  }
-
-  logger.error(FN, 'recognizeScheduleImage:cloudbaseAiOcr:failed', { code: parseResult && parseResult.code });
-  if (fallback) {
-    const finalized = validateAndFinalizeRecognition(fallback.data, schedule, 'ocr-heuristic');
-    finalized.warnings = [...new Set([...(ocrResult.warnings || []), ...guard.warnings, ...table.warnings, ...finalized.warnings, 'AI 解析失败，已使用 OCR 坐标规则生成初稿，请重点核对。'])];
-    logger.warn(FN, 'recognizeScheduleImage:ocrHeuristicFallback:done', {
-      courses: finalized.courses.length,
-      confidence: finalized.confidence,
-    });
-    return attachAgentMeta(buildSuccessFromFinalized(finalized, {
-      rawText: getOcrText(ocrResult.blocks),
-      ocrText: getOcrText(ocrResult.blocks),
-      aiProvider: 'local-agent',
-      aiModel: 'local-fallback',
-      aiStage: 'ocr-fallback',
-      ocrProvider: 'tencent',
-    }), { agentTrace: tracer.getTrace() });
-  }
-
-  // 不再调用没有图片/OCR 输入的文本模型，避免伪造结果。
-  return attachAgentMeta(success({
-    courses: [],
-    periods: [],
-    warnings: [...(ocrResult.warnings || []), ...guard.warnings, '未能从图片中提取可靠课表结构，请换一张清晰、正向、包含完整星期和节次的图片。'],
-    rawText: getOcrText(ocrResult.blocks),
-    reviewItems: [{ type: 'parse_failed', message: '未能从图片中提取可靠课表结构，请重拍或裁剪课表区域。' }],
-    confidence: 'low',
-    aiProvider: 'local-agent',
-    aiStage: 'parse_failed',
-    ocrProvider: 'tencent',
-  }), { agentTrace: tracer.getTrace() });
+  const finalized = validateAndFinalizeRecognition(vision.parsed, schedule, `vision:${profile.provider}`);
+  logger.info(FN, 'recognizeScheduleImage:vision:done', {
+    provider: profile.provider,
+    courses: finalized.courses.length,
+    confidence: finalized.confidence,
+  });
+  return buildSuccessFromFinalized(finalized, {
+    rawText: vision.rawText,
+    aiProvider: profile.provider,
+    aiModel: profile.model,
+    aiStage: 'vision',
+  });
 }
 
 exports.main = async (event, context) => {
