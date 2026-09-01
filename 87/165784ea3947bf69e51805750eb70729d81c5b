@@ -1,0 +1,131 @@
+taro-app/src/pages/schedule-ai/components/CourseEditModal.tsx
+  s_19c652a31f9798::t_7c250ad23f2b27 3,11-12,20-33,39,49-50,52,57,66-71,79,87,150-157,194-205
+taro-app/src/pages/course-form/index.tsx
+  s_6b2294d26672a1::t_ec096f779bf494 161
+  s_52339343282e4f::t_578273202d9976 139
+  s_52339343282e4f::t_e1a6f0f01172eb 1
+  s_6b2294d26672a1::t_e3f7d60cb9b70a 248-252,254
+  s_6b2294d26672a1::t_3b6d781de5f7c4 4
+  s_6b2294d26672a1::t_257e2e5d1a08de 247
+  s_52339343282e4f::t_7d9355d4edf561 288-290
+  s_6b2294d26672a1::t_d8d348ea0774be 305-310,336-340
+  s_6b2294d26672a1::t_c5a4e98b8fb0c9 361-362,364-367,369
+  s_52339343282e4f::t_2f85c757cb40e8 433-443
+  s_6b2294d26672a1::t_10154fcf8a2780 526
+  s_6b2294d26672a1::t_969cedddedf7a3 190,194-198
+  s_6b2294d26672a1::t_7d8a47f991fb97 223
+  s_52339343282e4f::t_b7e655009b67bf 20-22,29-41
+  s_6b2294d26672a1::t_707d2a14752b61 101
+  s_6b2294d26672a1::t_c7eb2c492a29da 27-28
+  s_6b2294d26672a1::t_f2354e1616b25d 73-89
+  s_52339343282e4f::t_0aee19c976ec2f 240,242-245
+  s_52339343282e4f::t_725b1db98eaf2d 246,255,292
+  s_52339343282e4f::t_2cc2ac37c40854 455-456,458-459,464-485
+  s_52339343282e4f::t_61e52b131f3869 261-266,270-271
+  s_6b2294d26672a1::t_1ee419215c2983 556
+  s_6b2294d26672a1::t_db13a2a6cfcd01 184,211
+  s_6b2294d26672a1::t_6e6b343eb02dbe 141-149
+  s_6b2294d26672a1::t_0aaa8d6724ab96 486
+  s_6b2294d26672a1::t_2763225ab3e8aa 304
+  s_6b2294d26672a1::t_6c667ece0026eb 370-374,385-402
+  s_6b2294d26672a1::t_61441c262be2a6 360
+  s_52339343282e4f::t_80f4b22c5d0f44 120,123,125,133
+  s_6b2294d26672a1::t_44911d67fd4334 17
+  s_6b2294d26672a1::t_6a10a56dd0a3c5 449
+  s_52339343282e4f::t_bfe4484c6d6fa8 134
+  s_6b2294d26672a1::t_a540d5457bae0b 177
+  s_6b2294d26672a1::t_7dffad0748b800 260
+  s_6b2294d26672a1::t_7ce21a92ecfb17 487-501
+  h_1811824342b47a 253,269,569
+  s_6b2294d26672a1::t_4cbe7664dc8658 200
+  s_52339343282e4f::t_dd36eb3ed7df7f 375,378,383,409,412,417
+  s_52339343282e4f::t_31d80de8ea6759 550
+  s_6b2294d26672a1::t_a55c0eb86f7355 105-106
+  s_6b2294d26672a1::t_0feefbac8192f8 188-189,191-193,199,201-205
+  s_6b2294d26672a1::t_7456bf55e669b2 311-331
+  s_6b2294d26672a1::t_62afbf708bf6b4 152
+  s_6b2294d26672a1::t_82244d29b90824 267-268
+  s_52339343282e4f::t_307e756e71a33a 384,560-568
+  s_6b2294d26672a1::t_6112c23784df5a 107
+  s_52339343282e4f::t_71c3b5fcd53376 291
+  s_6b2294d26672a1::t_41be1db3289ca7 140
+taro-app/src/pages/schedule/index.tsx
+  s_6b2294d26672a1::t_094108cb0225c5 322-325,342
+  s_52339343282e4f::t_72eb755592e5ff 626,642
+  s_6b2294d26672a1::t_8cda5dcd6992c3 362
+  s_6b2294d26672a1::t_148b8eef3e9230 639
+  s_6b2294d26672a1::t_d317803413b057 58
+  s_6b2294d26672a1::t_059cfd02d35acd 327,329-341,349-360,365,367,372-379,384-386,391-416,419,423,425
+  s_6b2294d26672a1::t_b0a59342596d51 310-321,326
+  s_6b2294d26672a1::t_876728ecff713f 21-22
+  s_6b2294d26672a1::t_4e2da455fab32e 19-20
+  s_6b2294d26672a1::t_8b210e044518bf 23
+  s_6b2294d26672a1::t_cc72d952da6a0d 307-309
+  s_6b2294d26672a1::t_261584e9ec2037 328
+  s_6b2294d26672a1::t_759c26711e7369 348
+  s_6b2294d26672a1::t_db0efb614a3078 361
+  s_6b2294d26672a1::t_31ed05753e4ad2 76,305-306,631
+taro-app/src/pages/course-form/components/PeriodGridSheet.tsx
+  s_52339343282e4f::t_21dc0f4dff42e6 81-83
+taro-app/src/pages/schedule-ai/index.tsx
+  s_19c652a31f9798::t_338b713481d503 371
+taro-app/src/pages/schedule/components/CourseModal.tsx
+  s_6b2294d26672a1::t_d44e034682ebe7 3
+  s_6b2294d26672a1::t_c7df9852241693 79
+  s_6b2294d26672a1::t_40a2aea05efc60 22,24-27,43,46,49,53,55-57,59-64,80
+  s_6b2294d26672a1::t_b5604723e9b22a 6,9,12,17-21,29,32,36,47-48,50-52,54,58,65-67,77-78
+  s_6b2294d26672a1::t_ddb0c967ab20aa 4-5
+  s_6b2294d26672a1::t_c360c87325e5f4 23
+taro-app/src/pages/schedule/index.scss
+  s_6b2294d26672a1::t_6604ae502f0a14 366,372,381,392-393,399,417-418
+  s_6b2294d26672a1::t_a04a12244ddb5c 408-409
+  s_6b2294d26672a1::t_d6fe2120309e13 351,354,356,360,364,367,369-370,373-379,382-389,391,394-397,400-407,410-416,419-422,426
+taro-app/src/pages/course-form/components/WeekPickerSheet.tsx
+  s_19c652a31f9798::t_4fee6e251f11b3 33
+  s_19c652a31f9798::t_b2a52e9996c57e 11
+  s_19c652a31f9798::t_5089724d703848 73
+taro-app/src/utils/weeks.ts
+  s_6b2294d26672a1::t_e4c6477cd94ddb 26-52
+  s_52339343282e4f::t_1725ace9d48302 1-25,53-91
+taro-app/src/pages/schedule/components/ScheduleGrid.scss
+  s_6b2294d26672a1::t_0f41f755286c0c 152-167
+taro-app/src/pages/schedule/components/ScheduleGrid.tsx
+  s_6b2294d26672a1::t_bc2fd9e8a98400 18-19,66,173-174,197-203
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "87165784ea3947bf69e51805750eb70729d81c5b",
+  "prompts": {},
+  "humans": {
+    "h_1811824342b47a": {
+      "author": "王哲 <wangzhe@mogulinker.com>"
+    }
+  },
+  "sessions": {
+    "s_19c652a31f9798": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "22292b4b-3606-4e26-921c-e1b498f2e019",
+        "model": "composer-2.5"
+      },
+      "human_author": "王哲 <wangzhe@mogulinker.com>"
+    },
+    "s_52339343282e4f": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "938c002e-1736-4fcf-a7c7-dc08ba5bd759",
+        "model": "composer-2.5"
+      },
+      "human_author": "王哲 <wangzhe@mogulinker.com>"
+    },
+    "s_6b2294d26672a1": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "532d1de6-8548-4628-8d7c-929ada7452f5",
+        "model": "grok-4.6"
+      },
+      "human_author": "王哲 <wangzhe@mogulinker.com>"
+    }
+  }
+}
