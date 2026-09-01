@@ -1,0 +1,14 @@
+taro-app/.design-qa/reports/design-debt.md
+  h_1811824342b47a 1-195
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "403d263be075f5c7c45be5edf6ee065192066481",
+  "prompts": {},
+  "humans": {
+    "h_1811824342b47a": {
+      "author": "王哲 <wangzhe@mogulinker.com>"
+    }
+  }
+}
