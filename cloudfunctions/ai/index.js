@@ -27,7 +27,13 @@ function getVisionTimeoutMs() {
   if (Number.isFinite(timeout) && timeout >= 5000 && timeout <= 120000) {
     return timeout;
   }
-  return 50000;
+  // 云函数 timeout=60s，预留下载图片和收尾时间
+  return 55000;
+}
+
+function isReasoningVisionModel(model) {
+  const name = String(model || '').toLowerCase();
+  return /gpt-5/.test(name) || /^o[1-9]/.test(name);
 }
 
 /**
@@ -87,39 +93,20 @@ function getSchedulePromptContext(schedule) {
 }
 
 function buildPrompt(schedule) {
-  const { periods, totalWeeks, periodLines } = getSchedulePromptContext(schedule);
+  const { periods, periodLines } = getSchedulePromptContext(schedule);
+  const maxSlot = Math.min(Math.max(periods.length || 0, 1), MAX_COURSES);
   return [
-    '你是通用学校课程表图片识别助手，适用于小学、中学、大学等不同阶段课表，目标是把图片表格精确转换为课程 JSON。',
-    '请只输出严格 JSON，不要 Markdown，不要解释，不要代码块。',
-    '输出格式如下：',
-    '{ "courses": [ { "name": "...", "day_of_week": 1, "slot": 1, "teacher": "", "room": "", "contact": "", "remark": "", "color": "#3b82f6", "weeks": [1,2,3] } ], "warnings": ["..."] }',
-    '识别步骤：',
-    '1. 先定位表头中的星期列：一/二/三/四/五/六/日、周一/周二、星期一/星期二都要映射到 day_of_week=1-7。',
-    '2. 再定位左侧节次行：第1节、1、第一节等都映射为 slot；不要把日期、时间段识别成课程。',
-    '3. 每个课程单元格按所在列和所在行输出一条课程；合并单元格或跨行内容要按实际覆盖的节次分别输出。',
-    '4. 课程名保留图片中的真实名称，括号内容属于课程名时要保留并确保完整，例如"语文（书法）""体育与健康""艺术(美术)""艺术(音乐)""阅读/心理健康""综合实践活动""高等数学""大学英语""计算机基础"。',
-    '   OCR 常见拆分情形及还原方式：',
-    '   - "艺术(美" + "术)" → "艺术(美术)"',
-    '   - "艺术(音" + "乐)" → "艺术(音乐)"（若右括号丢失则自动补全，即 "艺术(音" + "乐" → "艺术(音乐)"）',
-    '   - "综合实践活" → "综合实践活动"（OCR 截断最后一字时自动补全）',
-    '   - 凡括号未闭合的课程名，必须补全右括号后再输出。',
-    '5. 课程名单元格内如果包含教师、教室、电话或备注，分别填入 teacher、room、contact、remark；无法确定就填空字符串。',
-    '6. 仅忽略跨整行合并、不分星期的作息行（如午餐、午休、大课间、眼保健操、升旗、早操），以及空白格、斜杠占位、备注、标题、页脚。',
-    '   左侧节次列的标签（如早读、午读、第1节、下午1）只是时间定位，不是课程名；不要把行标签当作课程输出。',
-    '   某时段单元格内的具体内容仍要输出为课程，例如午读行的"班会""红领巾广播""安全教育"，以及"综合实践活动""校本(数学)""社团课"等。',
-    '   带时间标注的整行作息（如"午餐(12:00—12:40)""午休(12:45—13:45)""大课间(10:10—10:40)"）不要输出为课程。',
-    '周次规则：',
-    `7. 当前学期共 ${totalWeeks} 周。若图片没有明确写周次/单双周/起止周，weeks 必须填 1 到 ${totalWeeks} 的完整数组。`,
-    '8. “1-10周”“1～10周”“第1至10周”输出 [1,2,3,4,5,6,7,8,9,10]；“单周”输出奇数周 [1,3,5,...]；“双周”输出偶数周 [2,4,6,...]。',
-    '9. 同一单元格含"体育(单周)/英语(双周)""心理(单周)/综合实践(双周)"时，必须拆成两条课程：课名去掉(单周)/(双周)标注，weeks 分别填奇数周与偶数周，day_of_week 和 slot 保持相同。',
-    '10. “1、3、5周”这类离散周次要逐个输出；不要把离散周次误写成连续区间。',
-    '质量要求：',
-    `11. 当前课表节次数为 ${periods.length || 0}，slot 范围必须是 1 到 ${Math.min(Math.max(periods.length || 0, 1), MAX_COURSES)}。`,
-    periodLines.length ? `12. 参考节次时间：${periodLines.join('；')}。` : '12. 若图片中没有节次时间，也必须根据左侧节次序号识别 slot。',
-    '13. 不确定课程名或位置时不要编造课程；把原因写入 warnings。',
-    '14. 输出前自检：每条课程必须有 name、day_of_week、slot、color、weeks；day_of_week 和 slot 必须是数字；color 必须是 hex 色值（如 #3b82f6）。',
-    '15. 输出前做合理性检查：课程总数应在 5-50 之间（过少可能漏识别，过多可能误识别）；每天至少应有 1 门课（若某天完全空白，检查是否漏识别）；同一天同一节次若 weeks 重叠则不应出现两门不同课程（单双周交替除外）。若发现异常，写入 warnings 说明具体问题。',
-    '16. 对不确定的课程（如文字模糊、位置难以判断），在该课程的 remark 字段开头标注 "[待确认]"，便于用户重点检查。',
+    '你是学校课程表图片识别助手。只输出严格 JSON，不要 Markdown、解释或代码块。',
+    '{ "courses": [ { "name": "...", "day_of_week": 1, "slot": 1, "teacher": "", "room": "", "contact": "", "remark": "" } ], "warnings": [] }',
+    '规则：',
+    '1. 表头星期（一/周一/星期一）映射 day_of_week=1-7。',
+    '2. 左侧节次（第1节、1、第一节）映射 slot；不要把时间段识别成课程。',
+    `3. slot 范围 1-${maxSlot}。每个有课的单元格只输出一条课程，day_of_week 和 slot 对应它所在的列和行。跨多节的合并格按实际覆盖的节次分别输出。`,
+    '4. name 原样保留单元格文字，包括括号。同一格里的单周/双周（如"体育(单周) 英语(双周)""心理(单周)/综合实践(双周)"）必须写在同一条 name 里，不要拆成两条，也不要输出 weeks。',
+    '5. 单元格里的教师、教室、电话分别填 teacher/room/contact；不确定则空字符串。不要输出 weeks、color。',
+    '6. 忽略整行作息（午餐、午休、大课间、眼保健操、升旗、早操）以及空白格、斜杠占位、标题、页脚。行标签（早读、第1节）不是课程名；该行单元格里的具体科目仍要输出。',
+    periodLines.length ? `7. 参考节次：${periodLines.join('；')}。` : '7. 按左侧节次序号识别 slot。',
+    '8. 不确定就不要编造，把原因写入 warnings；对模糊项在 remark 开头加 "[待确认]"。',
   ].join('\n');
 }
 
@@ -180,36 +167,78 @@ function stripWeekTypeLabel(name) {
   return String(name || '')
     .replace(/[\(（]\s*单周\s*[\)）]/g, '')
     .replace(/[\(（]\s*双周\s*[\)）]/g, '')
+    .replace(/[\(（]?\s*\d{1,2}\s*[-~～至到]\s*\d{1,2}\s*周\s*[\)）]?/g, '')
     .trim();
 }
 
 function inferWeeksFromCourseName(name, totalWeeks, fallbackWeeks) {
   const raw = String(name || '');
-  if (/单周/.test(raw) && !/双周/.test(raw.split(/[\/／]/)[0] || '')) return buildOddWeeks(totalWeeks);
-  if (/双周/.test(raw)) return buildEvenWeeks(totalWeeks);
+  const hasOdd = /单周/.test(raw);
+  const hasEven = /双周/.test(raw);
+  if (hasOdd && hasEven) return fallbackWeeks;
+  if (hasOdd) return buildOddWeeks(totalWeeks);
+  if (hasEven) return buildEvenWeeks(totalWeeks);
+  const range = raw.match(/(\d{1,2})\s*[-~～至到]\s*(\d{1,2})\s*周/);
+  if (range) {
+    const start = Number(range[1]);
+    const end = Number(range[2]);
+    const total = Math.max(Number(totalWeeks) || 20, 1);
+    if (start >= 1 && end >= start && end <= total) {
+      return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+    }
+  }
   return fallbackWeeks;
 }
 
-/** 拆分「体育(单周)/英语(双周)」这类同格交替周次为两条课程 */
-function splitAlternatingWeekCell(raw, totalWeeks) {
-  const text = String(raw.name || '').trim();
-  if (!/[\/／]/.test(text) || !/单周|双周/.test(text)) return null;
+function extractAlternatingWeekParts(text) {
+  const raw = String(text || '').trim();
+  if (!/单周/.test(raw) || !/双周/.test(raw)) return null;
 
-  const parts = text.split(/[\/／]/).map(part => part.trim()).filter(Boolean);
-  const items = [];
-  for (const part of parts) {
-    let weekType = null;
-    if (/单周/.test(part)) weekType = 'odd';
-    else if (/双周/.test(part)) weekType = 'even';
-    if (!weekType) continue;
-    const name = completeSubjectName(stripWeekTypeLabel(part));
-    if (!name) continue;
-    items.push({
+  const chunks = raw.split(/[\/／、\n\r]+|\s+/).map(part => part.trim()).filter(Boolean);
+  let oddPart = '';
+  let evenPart = '';
+  for (const chunk of chunks) {
+    const hasOdd = /单周/.test(chunk);
+    const hasEven = /双周/.test(chunk);
+    if (hasOdd && !hasEven && !oddPart) oddPart = chunk;
+    else if (hasEven && !hasOdd && !evenPart) evenPart = chunk;
+  }
+  if (oddPart && evenPart) return { oddPart, evenPart };
+
+  const labeled = [];
+  const re = /([^\/／、\n\r]+?)[\(（]\s*(单周|双周)\s*[\)）]/g;
+  let match = re.exec(raw);
+  while (match) {
+    labeled.push({
+      source: match[0].trim(),
+      weekType: match[2] === '单周' ? 'odd' : 'even',
+    });
+    match = re.exec(raw);
+  }
+  const odd = labeled.find(item => item.weekType === 'odd');
+  const even = labeled.find(item => item.weekType === 'even');
+  if (odd && even && odd.source !== even.source) return { oddPart: odd.source, evenPart: even.source };
+  return null;
+}
+
+/** 拆分同格「体育(单周) 英语(双周)」为两条课，占用同一 day_of_week + slot */
+function splitAlternatingWeekCell(raw, totalWeeks) {
+  const parts = extractAlternatingWeekParts(raw && raw.name);
+  if (!parts) return null;
+
+  const items = [
+    { weekType: 'odd', source: parts.oddPart },
+    { weekType: 'even', source: parts.evenPart },
+  ].map(({ weekType, source }) => {
+    const name = completeSubjectName(stripWeekTypeLabel(source));
+    if (!name) return null;
+    return {
       ...raw,
       name,
       weeks: weekType === 'odd' ? buildOddWeeks(totalWeeks) : buildEvenWeeks(totalWeeks),
-    });
-  }
+    };
+  }).filter(Boolean);
+
   return items.length >= 2 ? items : null;
 }
 
@@ -363,7 +392,7 @@ function normalizeCourses(payloadCourses, totalWeeks, periodCount) {
 
   for (const raw of payloadCourses) {
     if (!raw || typeof raw !== 'object') continue;
-    let name = completeSubjectName(String(raw.name || '').trim().slice(0, 30));
+    let name = completeSubjectName(String(raw.name || '').trim().slice(0, 40));
     const dayOfWeek = Number(raw.day_of_week);
     const slot = Number(raw.slot);
     if (!name) {
@@ -379,13 +408,20 @@ function normalizeCourses(payloadCourses, totalWeeks, periodCount) {
       continue;
     }
 
+    const hasBothWeekTypes = /单周/.test(name) && /双周/.test(name);
     let weeks = Array.isArray(raw.weeks) && raw.weeks.length > 0
       ? raw.weeks.map(Number).filter(w => Number.isInteger(w) && w > 0 && w <= totalWeeks)
       : allWeeks;
 
-    if (/单周|双周/.test(name)) {
+    if (/单周|双周|\d{1,2}\s*[-~～至到]\s*\d{1,2}\s*周/.test(name)) {
       weeks = inferWeeksFromCourseName(name, totalWeeks, weeks);
       name = completeSubjectName(stripWeekTypeLabel(name));
+    }
+
+    let remark = String(raw.remark || '').trim();
+    if (hasBothWeekTypes) {
+      remark = markPendingRemark(remark, '同一格单双周未能拆分，请核对');
+      warnings.push(`课程「${name}」同时含单双周但未能拆成两条，请核对`);
     }
 
     courses.push({
@@ -397,7 +433,7 @@ function normalizeCourses(payloadCourses, totalWeeks, periodCount) {
       contact: String(raw.contact || '').trim(),
       color: resolveCourseColor(raw.color),
       weeks,
-      remark: String(raw.remark || '').trim(),
+      remark,
     });
   }
 
@@ -539,12 +575,8 @@ async function requestJson(url, headers, body, timeoutMs, errorLabel) {
 async function callVisionModel(profile, imageBase64, mimeType, schedule) {
   const prompt = buildPrompt(schedule);
   const dataUrl = `data:${mimeType || 'image/jpeg'};base64,${imageBase64}`;
-  const data = await requestJson(`${profile.baseUrl}/chat/completions`, {
-    'content-type': 'application/json',
-    authorization: `Bearer ${profile.apiKey}`,
-  }, {
+  const body = {
     model: profile.model,
-    temperature: 0.1,
     messages: [{
       role: 'user',
       content: [
@@ -552,7 +584,16 @@ async function callVisionModel(profile, imageBase64, mimeType, schedule) {
         { type: 'image_url', image_url: { url: dataUrl, detail: AI_IMAGE_DETAIL } },
       ],
     }],
-  }, getVisionTimeoutMs(), `${profile.provider} 视觉识别`);
+  };
+  if (isReasoningVisionModel(profile.model)) {
+    body.reasoning_effort = 'low';
+  } else {
+    body.temperature = 0.1;
+  }
+  const data = await requestJson(`${profile.baseUrl}/chat/completions`, {
+    'content-type': 'application/json',
+    authorization: `Bearer ${profile.apiKey}`,
+  }, body, getVisionTimeoutMs(), `${profile.provider} 视觉识别`);
 
   const rawText = data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content || '';
   const parsed = extractJson(rawText);
@@ -599,8 +640,12 @@ async function recognizeScheduleImage(openid, payload) {
     vision = await callVisionModel(profile, imageBase64, payload.mimeType, schedule);
   } catch (err) {
     if (err && typeof err.code === 'number') return err;
-    logger.error(FN, 'recognizeScheduleImage:vision:failed', { provider: profile.provider, message: err && err.message ? err.message : String(err) });
-    return fail(ERRORS.INTERNAL_ERROR, 'AI 识别失败，请稍后重试或换一张更清晰的图片');
+    const errMsg = err && err.message ? err.message : String(err);
+    logger.error(FN, 'recognizeScheduleImage:vision:failed', { provider: profile.provider, message: errMsg });
+    if (/超时/.test(errMsg)) {
+      return fail(ERRORS.INTERNAL_ERROR, '识别超时，请稍后重试');
+    }
+    return fail(ERRORS.INTERNAL_ERROR, 'AI 识别失败，请稍后重试');
   }
 
   if (!vision || !vision.parsed) {

@@ -11,15 +11,12 @@ import { DEFAULT_PERIODS } from '../../constants/periods'
 import { DEFAULT_COURSE_COLOR, COURSE_COLORS } from '../../constants/colors'
 import { getCurrentWeekOffset, getWeekDates, formatDate } from '../../utils/date'
 import { chooseMediaSource } from '../../utils/media'
+import { buildAllWeeks, buildOffWeekSlotKeys, findCoursesAtSlot, formatWeeksSummary } from '../../utils/weeks'
 import ScheduleGrid from '../schedule/components/ScheduleGrid'
 import CourseEditModal from './components/CourseEditModal'
 import type { Course, Schedule } from '../../types/index'
 import '../schedule/index.scss'
 import './index.scss'
-
-function buildAllWeeks(totalWeeks: number): number[] {
-  return Array.from({ length: totalWeeks }, (_, i) => i + 1)
-}
 
 function getDatePathParts(date = new Date()) {
   const year = date.getFullYear()
@@ -108,6 +105,39 @@ export default function ScheduleAiPage() {
     () => buildGrid(previewSchedule, previewWeekOffset),
     [previewSchedule, previewWeekOffset]
   )
+  const previewWeekNum = previewWeekOffset + 1
+  const offWeekSlotKeys = useMemo(
+    () => buildOffWeekSlotKeys(previewCourses, previewWeekNum),
+    [previewCourses, previewWeekNum]
+  )
+
+  const openDraftCourse = (course: Course) => {
+    const index = previewCourses.findIndex(item => item.id === course.id)
+    if (index < 0) return
+    const draft = draftCourses[index]
+    if (draft) setEditingCourse({ course: draft, index })
+  }
+
+  const handlePreviewSlotTap = async (weekday: number, period: number) => {
+    const slotCourses = findCoursesAtSlot(previewCourses, weekday, period, previewWeekNum, 2)
+    if (slotCourses.length === 0) return
+    if (slotCourses.length === 1) {
+      openDraftCourse(slotCourses[0])
+      return
+    }
+    try {
+      const { tapIndex } = await Taro.showActionSheet({
+        itemList: slotCourses.map((item) => {
+          const label = formatWeeksSummary(item.weeks || [], totalWeeks)
+          return `${item.name}（${label}）`
+        }),
+      })
+      const target = slotCourses[tapIndex]
+      if (target) openDraftCourse(target)
+    } catch {
+      // 用户取消
+    }
+  }
 
   const unmountedRef = useRef(false)
   useEffect(() => {
@@ -232,7 +262,17 @@ export default function ScheduleAiPage() {
       setPreviewImageVisible(false)
       setStep('preview')
     } catch (err: any) {
-      Taro.showToast({ title: err?.message || '识别失败', icon: 'none' })
+      // showToast 与 showLoading 共用同一原生层，必须先 hideLoading 再提示；
+      // 云函数 fail() 会拼出 "INTERNAL_ERROR: xxx"，过长时 toast 会直接不显示。
+      Taro.hideLoading()
+      const raw = String(err?.message || '').trim()
+      const message = raw.replace(/^[A-Z_]+:\s*/, '') || '识别失败，请稍后重试或换一张更清晰的图片'
+      Taro.showModal({
+        title: '识别失败',
+        content: message,
+        showCancel: false,
+        confirmText: '知道了',
+      })
     } finally {
       Taro.hideLoading()
       setRecognizing(false)
@@ -317,7 +357,7 @@ export default function ScheduleAiPage() {
             </View>
             {previewSchedule ? (
               <ScheduleGrid
-                weekNum={previewWeekOffset + 1}
+                weekNum={previewWeekNum}
                 weekDates={previewWeekDates}
                 today={previewToday}
                 periods={periods}
@@ -325,17 +365,14 @@ export default function ScheduleAiPage() {
                 totalWeeks={totalWeeks}
                 startDate={schedule?.start_date || schedule?.startDate}
                 setWeekOffset={setPreviewWeekOffset}
-                onTapCourse={() => {}}
-                onTapEmpty={() => {}}
+                onTapCourse={(course) => handlePreviewSlotTap(course.day_of_week, course.slot)}
+                onTapEmpty={(weekday, period) => { void handlePreviewSlotTap(weekday, period) }}
+                offWeekSlotKeys={offWeekSlotKeys}
                 interactive
                 allowWeekPicker
                 highlightToday={false}
                 hideWeekend={hideWeekend}
                 highlightUncertain
-                onCourseClick={(_course, index) => {
-                  const c = draftCourses[index]
-                  if (c) setEditingCourse({ course: c, index })
-                }}
               />
             ) : (
               <Text className='tip'>当前课表信息未加载完成，稍后再试。</Text>
