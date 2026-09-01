@@ -1,0 +1,31 @@
+cloudfunctions/ai/index.js
+  s_d7ba31d3ebda70::t_4f6f6c4014cae2 395,411,416,421-426,436
+  s_d7ba31d3ebda70::t_9829f55d033a5c 170
+  s_d7ba31d3ebda70::t_efe9d83978d2a7 30-36
+  s_d7ba31d3ebda70::t_19fd9586b45540 96-97,99-109
+  s_d7ba31d3ebda70::t_6b8a13c7de3219 208-220
+  s_d7ba31d3ebda70::t_fc82972e462c29 578,587-596
+  s_d7ba31d3ebda70::t_5f160e3e31aa23 176-189,193-207,221-224,226-235,239-241
+  s_d7ba31d3ebda70::t_c17f8c83aea59b 643-648
+taro-app/src/pages/schedule-ai/index.tsx
+  s_d7ba31d3ebda70::t_7475cbd011c873 360,368-370
+  s_d7ba31d3ebda70::t_b0d78233b09150 108-140
+  s_d7ba31d3ebda70::t_4dc97c8b1b75ec 14
+  s_d7ba31d3ebda70::t_c054ee32e9492e 265-275
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "009984fc6150ff9315748ba3ea4ae4a887fbcdfd",
+  "prompts": {},
+  "sessions": {
+    "s_d7ba31d3ebda70": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "8884b37b-5b40-4dca-a642-8c2cb2f30ae5",
+        "model": "grok-4.6"
+      },
+      "human_author": "王哲 <wangzhe@mogulinker.com>"
+    }
+  }
+}
