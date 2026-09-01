@@ -11,7 +11,7 @@ page {
   flex-direction: column;
   width: 100%;
   min-height: 100vh;
-  background: linear-gradient(180deg, #eff6ff 0%, #e8eef8 40%, #f5f6f8 100%);
+  background: linear-gradient(180deg, var(--color-primary-subtle) 0%, #e8eef8 40%, #f5f6f8 100%);
   box-sizing: border-box;
 }
 
@@ -37,7 +37,7 @@ page {
   width: 144px;
   height: 144px;
   border-radius: 48px;
-  background: linear-gradient(135deg, #3b82f6 0%, #1456f0 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-brand) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -54,14 +54,14 @@ page {
 .app-name {
   font-size: 56px;
   font-weight: 700;
-  color: #1456f0;
+  color: var(--color-primary-brand);
   letter-spacing: -0.02em;
   margin-bottom: 12px;
 }
 
 .app-slogan {
   font-size: 28px;
-  color: #45515e;
+  color: var(--color-text-sub);
   line-height: 1.5;
   margin-bottom: 56px;
 }
@@ -80,19 +80,19 @@ page {
   gap: 12px;
   padding: 16px 28px;
   background: #fff;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
 }
 
 .feature-chip-icon {
   font-size: 32px;
-  color: #3b82f6;
+  color: var(--color-primary);
   line-height: 1;
 }
 
 .feature-chip-label {
   font-size: 24px;
-  color: #45515e;
+  color: var(--color-text-sub);
   font-weight: 500;
   line-height: 1;
 }
@@ -125,7 +125,7 @@ page {
   width: 36px;
   height: 36px;
   border-radius: 8px;
-  border: 3px solid #e5e7eb;
+  border: 3px solid var(--color-border);
   flex-shrink: 0;
   margin-top: 2px;
   display: flex;
@@ -135,8 +135,8 @@ page {
 }
 
 .checkbox--checked {
-  background: #3b82f6;
-  border-color: #3b82f6;
+  background: var(--color-primary);
+  border-color: var(--color-primary);
 }
 
 .checkbox-mark {
@@ -148,19 +148,19 @@ page {
 .agreement-text {
   flex: 1;
   font-size: 23px;
-  color: #8e8e93;
+  color: var(--color-text-gray);
   line-height: 1.5;
 }
 
 .agreement-link {
-  color: #3b82f6;
+  color: var(--color-primary);
 }
 
 .login-btn {
   width: 100%;
   min-height: 96px;
   padding: 12px 0;
-  background: #3b82f6;
+  background: var(--color-primary);
   color: #fff;
   border-radius: 28px;
   border: none;
@@ -217,5 +217,5 @@ page {
   display: block;
   text-align: center;
   font-size: 22px;
-  color: #8e8e93;
+  color: var(--color-text-gray);
 }

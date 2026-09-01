@@ -27,11 +27,11 @@
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 606rpx;
-  border-radius: 40rpx;
+  width: 606px;
+  border-radius: 40px;
   overflow: hidden;
   background: #ffffff;
-  box-shadow: 0 20rpx 60rpx rgba(37, 36, 36, 0.2);
+  box-shadow: 0 20px 60px rgba(37, 36, 36, 0.2);
   transform: translate(-50%, -50%) scale(0.95);
   opacity: 0;
   transition: transform 0.25s ease, opacity 0.25s ease;
@@ -43,30 +43,30 @@
 }
 
 .edit-profile-modal-header {
-  padding: 36rpx 40rpx 28rpx;
+  padding: 36px 40px 28px;
   text-align: center;
-  border-bottom: 1rpx solid #f2f3f5;
+  border-bottom: 1px solid var(--color-border-light);
 }
 
 .edit-profile-modal-title {
-  font-size: 34rpx;
+  font-size: 34px;
   line-height: 1.2;
   color: #1a1a2e;
   font-weight: 600;
 }
 
 .edit-profile-modal-body {
-  padding: 48rpx 40rpx 24rpx;
+  padding: 48px 40px 24px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 40rpx;
+  gap: 40px;
 }
 
 .edit-profile-avatar-wrap {
   position: relative;
-  width: 152rpx;
-  height: 152rpx;
+  width: 152px;
+  height: 152px;
 }
 
 .edit-profile-avatar-btn {
@@ -82,8 +82,8 @@
 }
 
 .edit-profile-avatar {
-  width: 152rpx;
-  height: 152rpx;
+  width: 152px;
+  height: 152px;
   border-radius: 50%;
 }
 
@@ -97,18 +97,18 @@
   position: absolute;
   right: 0;
   bottom: 0;
-  width: 42rpx;
-  height: 42rpx;
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
-  background: #3b82f6;
+  background: var(--color-primary);
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 4rpx solid #ffffff;
+  border: 4px solid #ffffff;
 }
 
 .edit-profile-camera-icon {
-  font-size: 22rpx;
+  font-size: 22px;
   color: #ffffff;
   line-height: 1;
 }
@@ -117,33 +117,33 @@
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 12rpx;
+  gap: 12px;
 }
 
 .edit-profile-form-label {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 4rpx;
+  padding: 0 4px;
 }
 
 .edit-profile-form-label-text {
-  font-size: 26rpx;
+  font-size: 26px;
   line-height: 1.2;
-  color: #8e8e93;
+  color: var(--color-text-gray);
   font-weight: 500;
 }
 
 .edit-profile-sync-btn {
   display: flex;
   align-items: center;
-  gap: 6rpx;
+  gap: 6px;
   padding: 0;
   margin: 0;
   background: transparent;
   border: none;
-  color: #3b82f6;
-  font-size: 24rpx;
+  color: var(--color-primary);
+  font-size: 24px;
   line-height: 1;
   font-weight: 500;
 }
@@ -153,26 +153,26 @@
 }
 
 .edit-profile-sync-text {
-  font-size: 24rpx;
+  font-size: 24px;
   line-height: 1;
-  color: #3b82f6;
+  color: var(--color-primary);
 }
 
 .edit-profile-input-row {
   display: flex;
   align-items: center;
-  gap: 16rpx;
+  gap: 16px;
 }
 
 .edit-profile-input {
   flex: 1;
-  height: 100rpx;
-  padding: 0 28rpx;
-  border-radius: 20rpx;
+  height: 100px;
+  padding: 0 28px;
+  border-radius: 20px;
   box-sizing: border-box;
   background: #f9fafb;
-  border: 1rpx solid #f2f3f5;
-  font-size: 30rpx;
+  border: 1px solid var(--color-border-light);
+  font-size: 30px;
   color: #1a1a2e;
 }
 
@@ -182,30 +182,30 @@
 
 .edit-profile-modal-footer {
   display: flex;
-  gap: 24rpx;
-  padding: 0 40rpx 40rpx;
+  gap: 24px;
+  padding: 0 40px 40px;
 }
 
 .edit-profile-cancel,
 .edit-profile-confirm {
   flex: 1;
-  height: 92rpx;
-  border-radius: 20rpx;
+  height: 92px;
+  border-radius: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 30rpx;
+  font-size: 30px;
   font-weight: 500;
 }
 
 .edit-profile-cancel {
   background: #f9fafb;
-  color: #45515e;
-  border: 1rpx solid #f2f3f5;
+  color: var(--color-text-sub);
+  border: 1px solid var(--color-border-light);
 }
 
 .edit-profile-confirm {
-  background: #3b82f6;
+  background: var(--color-primary);
   color: #ffffff;
-  box-shadow: 0 4rpx 16rpx rgba(59, 130, 246, 0.25);
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.25);
 }

@@ -150,13 +150,13 @@
 }
 
 .ssd-schedule-name--active {
-  color: #3b82f6;
+  color: var(--color-primary);
   font-weight: bold;
 }
 
 .ssd-check-icon {
   font-size: 28px;
-  color: #3b82f6;
+  color: var(--color-primary);
   font-weight: bold;
 }
 
@@ -176,10 +176,10 @@
 
 .ssd-manage-icon {
   font-size: 32px;
-  color: #3b82f6;
+  color: var(--color-primary);
 }
 
 .ssd-manage-text {
   font-size: 28px;
-  color: #3b82f6;
+  color: var(--color-primary);
 }

@@ -28,8 +28,8 @@
 .card-side { margin-left: 24px; }
 .period-badge {
   display: inline-block;
-  background: #eff6ff;
-  color: #3b82f6;
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
   font-size: 22px;
   font-weight: 600;
   padding: 6px 16px;

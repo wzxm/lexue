@@ -12,8 +12,8 @@ page {
 
 /* 提示卡片 — 保留原文案，对齐设计稿浅蓝提示风格 */
 .tip-card {
-  background: #eff6ff;
-  border: 2px solid #bfdbfe;
+  background: var(--color-primary-subtle);
+  border: 2px solid var(--color-primary-light);
   border-radius: 28px;
   padding: 24px 28px;
   margin-bottom: 32px;
@@ -31,7 +31,7 @@ page {
 
 .tip-dot {
   font-size: 26px;
-  color: #1456f0;
+  color: var(--color-primary-brand);
   margin-right: 12px;
   line-height: 1.5;
   flex-shrink: 0;
@@ -39,7 +39,7 @@ page {
 
 .tip-text {
   font-size: 25px;
-  color: #1456f0;
+  color: var(--color-primary-brand);
   line-height: 1.5;
   flex: 1;
 }
@@ -59,13 +59,13 @@ page {
 .group-title {
   font-size: 26px;
   font-weight: 600;
-  color: #45515e;
+  color: var(--color-text-sub);
   letter-spacing: 0.02em;
 }
 
 .group-count {
   font-size: 22px;
-  color: #8e8e93;
+  color: var(--color-text-gray);
 }
 
 .student-list {
@@ -97,7 +97,7 @@ page {
 }
 
 .avatar--blue {
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
 }
 
 .avatar--green {
@@ -147,16 +147,16 @@ page {
 .init-tag {
   margin-left: 12px;
   font-size: 20px;
-  color: #8e8e93;
+  color: var(--color-text-gray);
   background: #f3f4f6;
   padding: 4px 12px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   line-height: 1.4;
 }
 
 .student-school {
   font-size: 24px;
-  color: #8e8e93;
+  color: var(--color-text-gray);
   line-height: 1.4;
 }
 
@@ -165,8 +165,8 @@ page {
   align-items: center;
   gap: 6px;
   padding: 4px 16px;
-  background: #eff6ff;
-  border-radius: 999px;
+  background: var(--color-primary-subtle);
+  border-radius: var(--radius-pill);
   margin-top: 8px;
 }
 
@@ -183,7 +183,7 @@ page {
 .shared-badge-text {
   font-size: 20px;
   font-weight: 600;
-  color: #3b82f6;
+  color: var(--color-primary);
   line-height: 1;
 }
 
@@ -198,7 +198,7 @@ page {
   height: 64px;
   border-radius: 50%;
   background-color: #f9fafb;
-  border: 2px solid #f2f3f5;
+  border: 2px solid var(--color-border-light);
   background-repeat: no-repeat;
   background-position: center;
   background-size: 30px 30px;
@@ -214,7 +214,7 @@ page {
 
 .add-card {
   background: #fff;
-  border: 4px dashed #e5e7eb;
+  border: 4px dashed var(--color-border);
   border-radius: 40px;
   padding: 32px;
   display: flex;
@@ -235,7 +235,7 @@ page {
 
 .add-card-text {
   font-size: 26px;
-  color: #8e8e93;
+  color: var(--color-text-gray);
   font-weight: 500;
 }
 

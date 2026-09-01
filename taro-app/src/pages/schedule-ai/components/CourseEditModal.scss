@@ -21,7 +21,7 @@
   background: #ffffff;
   border-radius: 32px 32px 0 0;
   padding: 0 36px 48px;
-  box-shadow: 0 -8px 32px rgba(15, 23, 42, 0.12);
+  box-shadow: var(--shadow-modal);
   animation: slide-up 0.22s ease-out;
 }
 
@@ -75,7 +75,7 @@
 
 .course-edit-field__input {
   height: 80px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-border);
   border-radius: 16px;
   padding: 0 20px;
   font-size: 28px;
@@ -89,7 +89,7 @@
   align-items: center;
   justify-content: space-between;
   height: 80px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-border);
   border-radius: 16px;
   padding: 0 20px;
   background: #f9fafb;
@@ -116,7 +116,7 @@
 .course-edit-modal__btn {
   flex: 1;
   height: 84px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -130,11 +130,11 @@
 
 .course-edit-modal__btn--ghost {
   background: #ffffff;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-border);
 }
 
 .course-edit-modal__btn--primary {
-  background: linear-gradient(135deg, #2563eb, #0ea5e9);
+  background: linear-gradient(135deg, var(--color-primary-hover), #0ea5e9);
   border: none;
 }
 

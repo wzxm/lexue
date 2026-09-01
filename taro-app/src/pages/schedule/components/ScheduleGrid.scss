@@ -21,7 +21,7 @@
 .time-col {
   padding: 14px 2px;
   font-size: 18px;
-  color: #8e8e93;
+  color: var(--color-text-gray);
   text-align: center;
   display: flex;
   align-items: center;
@@ -36,13 +36,13 @@
 .week-picker-label {
   font-size: 20px;
   font-weight: 600;
-  color: #45515e;
+  color: var(--color-text-sub);
   line-height: 1.3;
   text-align: center;
 }
 
 .grid-header {
-  border-bottom: 1px solid #f2f3f5;
+  border-bottom: 1px solid var(--color-border-light);
 }
 
 .day-col {
@@ -56,12 +56,12 @@
 }
 
 .day-col--today {
-  background: #eff6ff;
+  background: var(--color-primary-subtle);
   border-radius: 16px 16px 0 0;
 }
 
 .course-cell--today {
-  background: #eff6ff;
+  background: var(--color-primary-subtle);
 }
 
 .course-cell--today:last-child {
@@ -71,25 +71,25 @@
 .day-name {
   font-size: 22px;
   font-weight: 500;
-  color: #45515e;
+  color: var(--color-text-sub);
   line-height: 1.2;
 }
 
 .day-col--today .day-name {
-  color: #3b82f6;
+  color: var(--color-primary);
   font-weight: 600;
 }
 
 .day-num {
   font-size: 18px;
-  color: #8e8e93;
+  color: var(--color-text-gray);
   margin-top: 2px;
   line-height: 1.2;
 }
 
 .day-col--today .day-num {
   color: #ffffff;
-  background: #3b82f6;
+  background: var(--color-primary);
   border-radius: 50%;
   width: 28px;
   height: 28px;
@@ -104,9 +104,9 @@
 .time-slot {
   padding: 14px 2px 10px;
   font-size: 18px;
-  color: #8e8e93;
+  color: var(--color-text-gray);
   text-align: center;
-  border-bottom: 1px solid #f2f3f5;
+  border-bottom: 1px solid var(--color-border-light);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -118,13 +118,13 @@
 .period-index {
   font-size: 20px;
   font-weight: 600;
-  color: #45515e;
+  color: var(--color-text-sub);
   line-height: 1.2;
 }
 
 .period-time {
   font-size: 16px;
-  color: #8e8e93;
+  color: var(--color-text-gray);
   margin-top: 4px;
   line-height: 1.2;
 }
@@ -137,7 +137,7 @@
   min-width: 0;
   overflow: hidden;
   padding: 4px;
-  border-bottom: 1px solid #f2f3f5;
+  border-bottom: 1px solid var(--color-border-light);
   min-height: 108px;
   box-sizing: border-box;
   display: flex;
@@ -194,9 +194,9 @@
 
 /* 预设课程色 — 对齐 mockup c-* */
 .course-chip--blue {
-  background: #eff6ff;
+  background: var(--color-primary-subtle);
   color: #1d4ed8;
-  border-left-color: #3b82f6;
+  border-left-color: var(--color-primary);
 }
 
 .course-chip--green {

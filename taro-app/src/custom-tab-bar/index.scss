@@ -23,20 +23,21 @@
   padding: 15px 0 10px;
 }
 
+/* tabBar 是页面外的原生自定义组件，拿不到 page 上的令牌时需回退到字面值 */
 .tab-icon {
   font-size: 44px;
   line-height: 1;
-  color: #8e8e93;
+  color: var(--color-text-gray, #8e8e93);
 }
 
 .tab-text {
   font-size: 20px;
   font-weight: 500;
   margin-top: 4px;
-  color: #8e8e93;
+  color: var(--color-text-gray, #8e8e93);
 }
 
 .tab-item--active .tab-icon,
 .tab-item--active .tab-text {
-  color: #3b82f6;
+  color: var(--color-primary, #3b82f6);
 }

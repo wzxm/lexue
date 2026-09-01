@@ -70,6 +70,6 @@
 
 .add-later-text {
   font-size: 28px;
-  color: var(--color-primary, #3b82f6);
+  color: var(--color-primary, var(--color-primary));
   padding: 16px 0;
 }
