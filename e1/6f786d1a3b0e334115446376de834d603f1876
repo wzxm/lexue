@@ -1,0 +1,76 @@
+taro-app/src/types/assets.d.ts
+  s_1a56969259bfce::t_143dd355fd2c20 11-13
+  s_1a56969259bfce::t_0aa97c95fdc5b1 14-15
+taro-app/src/custom-tab-bar/index.scss
+  s_1a56969259bfce::t_2a70f5c8f8721a 26,30,37,42
+taro-app/src/app.scss
+  s_1a56969259bfce::t_b5160f4caba582 17-18,30-38,50-65
+taro-app/src/components/CourseCard/index.scss
+  s_1a56969259bfce::t_5460535b080474 31-32
+taro-app/src/components/FeatureHighlights/index.scss
+  s_1a56969259bfce::t_1aef5c515fdfd6 38
+taro-app/src/components/ScheduleSwitchDrawer/index.scss
+  s_1a56969259bfce::t_e5340aacdcfab7 153,159,179,184
+taro-app/src/pages/copy-schedule/index.scss
+  s_1a56969259bfce::t_3fccaa19e76e54 11,17-18,22-23,25,29-30,34-35,44,47,52-53,55,61-64,70-71,77-78,85-87,96-98,100,105,107,115,120,127-129,131,137-138,140,149-150
+taro-app/src/pages/course-form/components/CourseNameSheet.scss
+  s_1a56969259bfce::t_12eb28ba68d68d 46,83,136,154,173
+taro-app/src/pages/course-form/components/PeriodGridSheet.scss
+  s_1a56969259bfce::t_682850febbf331 99,120
+taro-app/src/pages/course-form/components/WeekPickerSheet.scss
+  s_1a56969259bfce::t_1522c7c421e91e 29,62-63,89,97
+taro-app/src/pages/course-form/index.scss
+  s_1a56969259bfce::t_1d52037cb7c02c 17,24-25,27,34-36,46,56,60,66,75,84,87,93,101,111-112,124,131-132,135,140,149-153,158-159,168,174,179,185-186,190,193
+taro-app/src/pages/family-manage/index.scss
+  s_1a56969259bfce::t_38c6c0e4041d25 432
+taro-app/src/pages/invite-accept/index.scss
+  s_1a56969259bfce::t_b61548f730711c 3,40,57,78,101,158
+taro-app/src/pages/login/index.scss
+  s_1a56969259bfce::t_e8ed052ff5f5ce 14,40,57,64,83,89,95,128,138-139,151,156,163,220
+taro-app/src/pages/notification-settings/index.scss
+  s_1a56969259bfce::t_73498b37eeb671 19,59,240
+taro-app/src/pages/schedule-ai/components/CourseEditModal.scss
+  s_1a56969259bfce::t_44b3693dc2d494 24,78,92,119,133,137
+taro-app/src/pages/schedule-ai/index.scss
+  s_1a56969259bfce::t_613e09bce9d798 17,19,65,74
+taro-app/src/pages/schedule-form/index.scss
+  s_1a56969259bfce::t_91f0f2c0481838 4,12,23,29-30,35,50,56,62,69,74,89,95-97,100,112,119,127-128,130,134-135,149,159,163,168,176,181,192-193,202-203,214,221,225,230,238,242-243,245,258-259,274,277,285,294,302,306,311-312,321,329,336-337,340,344-345,359,368,372,380,383-384,391-392,399,401,409,414,424,426,431,440,444,452,455-456,462,464,471,480,488,492,497,499-500,503,506-507,543
+taro-app/src/pages/schedule-manage/index.scss
+  s_1a56969259bfce::t_8b1f673643c785 43,51,71,80,104,110,163,234,246-247
+taro-app/src/pages/schedule/components/EmptySchedule.scss
+  s_1a56969259bfce::t_c3887e9afe780f 73
+taro-app/src/pages/schedule/components/ScheduleGrid.scss
+  s_1a56969259bfce::t_60389521b8bfac 24,39,45,59,64,74,79,85,92,107,109,121,127,140,197,199
+taro-app/src/pages/schedule/index.scss
+  s_1a56969259bfce::t_e2b88953187e11 66,117,145,238,301,390-391,495,504,510-511,519,526,534-535,539,541,545,550,558-559,564,570,574,578,589-590,610
+taro-app/src/pages/settings/components/ContactModal.scss
+  s_1a56969259bfce::t_522534bd8b6537 65,79-80
+taro-app/src/pages/settings/components/EditProfileModal.scss
+  s_1a56969259bfce::t_aae73668905119 30-31,34,46,48,52,59,63,68-69,85-86,100-101,103,107,111,120,127,131,133,140,145-146,156,158,164,169-171,174-175,185-186,192-193,197,203-204,208,210
+taro-app/src/pages/settings/index.scss
+  s_1a56969259bfce::t_e283489e99f31a 198
+taro-app/src/pages/share-schedule/index.scss
+  s_1a56969259bfce::t_cbb5358b3c3034 56-57,98,138,140,227,264,284,295-296,298
+taro-app/src/pages/student-form/index.scss
+  s_1a56969259bfce::t_deb1eea970548b 162,172
+taro-app/src/pages/student-manage/index.scss
+  s_1a56969259bfce::t_f2a82d0cd1a625 15-16,34,42,62,68,100,150,153,159,168-169,186,201,217,238
+taro-app/src/pages/tools/index.scss
+  s_1a56969259bfce::t_10a3090a725987 3,93,189
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "e16f786d1a3b0e334115446376de834d603f1876",
+  "prompts": {},
+  "sessions": {
+    "s_1a56969259bfce": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "e5c4fafd-d617-4be1-a4f3-f0c655086f1b",
+        "model": "claude-opus-5"
+      },
+      "human_author": "王哲 <wangzhe@mogulinker.com>"
+    }
+  }
+}
