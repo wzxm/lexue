@@ -1,0 +1,88 @@
+taro-app/src/types/assets.d.ts
+  s_82c765a3479bdb::t_0bdeb09aae36ce 13-17,20
+taro-app/src/pages/ai-kid-plan/course/index.scss
+  s_82c765a3479bdb::t_c4968d568f0496 3,5-7,9,31-32,35,38,40,45,72-73,76,82,108,112,118,127-129,151-152,158,160-161,163,181-183,188-189,191-193,236-237,242,246,250
+  s_6280d65a512cd1::t_35c13082de2cc9 229,231,241
+  s_6280d65a512cd1::t_627c6974964f82 1-2,4,8,10-30,33-34,36-37,39,41-43,46-71,74-75,77-81,83-107,109,111,113-116,119-126,130-145,148-149,153-157,159,162,164-180,184-187,190,194-199,207-228,230,232-235,238-240,243-245,247-249
+  s_6280d65a512cd1::t_c5acb30aa5036f 200-206
+  h_1811824342b47a 44,110,117,146-147,150
+taro-app/src/pages/settings/index.tsx
+  s_82c765a3479bdb::t_b68dd483e96ddc 189-192,210
+taro-app/src/pages/settings/index.scss
+  s_82c765a3479bdb::t_b68dd483e96ddc 334-352
+taro-app/src/pages/ai-kid-plan/data.ts
+  s_82c765a3479bdb::t_6f93af7ebfe868 1-24
+taro-app/src/constants/routes.ts
+  s_82c765a3479bdb::t_b68dd483e96ddc 21-23
+taro-app/src/pages/ai-kid-plan/index.config.ts
+  s_82c765a3479bdb::t_6f93af7ebfe868 1
+taro-app/src/pages/ai-kid-plan/index.scss
+  s_6280d65a512cd1::t_9a00ce385d86a3 1-3,5,9-11,13-14,17,19,21-25,28-32,36-57,59-60,63-65,70-71,74-89,92-97,101,103-106,110-124,127,129-130,133-150,152-162,164-168,171-172,174-191,193-199,201-202,205,207-215,217-225,228
+  s_6280d65a512cd1::t_86ec6b3b7f649a 227,231-235,237-239,242-246,249-263,266-279,282-292,295-339,343-348,350-372
+  s_82c765a3479bdb::t_6f93af7ebfe868 4,6-8,12,15-16,18,20,26-27,33-35,58,61-62,66-69,72-73,90-91,98-99,102,107-109,125-126,131-132,151,163,169-170,173,200,203-204,206,216,226,229-230,236,240-241,248,264-265,280-281,293-294,340-342,349,373
+  h_1811824342b47a 100,128,192,247
+taro-app/src/pages/ai-kid-plan/poster/index.config.ts
+  s_6280d65a512cd1::t_2aafc2afa48909 1-6
+taro-app/src/pages/ai-kid-plan/botIcon.ts
+  s_6280d65a512cd1::t_80423f9fc72fd6 1-2,4-99
+  s_6280d65a512cd1::t_760ecc5e5fbdeb 3
+taro-app/src/pages/ai-kid-plan/index.tsx
+  s_6280d65a512cd1::t_6ad0576a3ae10b 1-2,4,13-14,40,44,48-71,73-89,91-92,96-101,103,106-110
+  s_82c765a3479bdb::t_b14dcdc0cf78e9 3,6,25
+  s_82c765a3479bdb::t_6f93af7ebfe868 5,7-8,10-12,168
+  s_6280d65a512cd1::t_016fc67d3ecc9c 9,15-24,26-39,41-43,45-47,72,90,93-95,102,104-105,111-167
+taro-app/src/pages/settings/components/SettingsContent.tsx
+  s_82c765a3479bdb::t_b68dd483e96ddc 5,12,54,91-97
+  s_82c765a3479bdb::t_f73066fedb7544 98-99
+taro-app/src/pages/ai-kid-plan/course/index.tsx
+  s_6280d65a512cd1::t_e9abf46aa167fc 184-191,197-201
+  s_6280d65a512cd1::t_c997edcc7a41da 84-85
+  s_82c765a3479bdb::t_23d3827b85e136 103,105,116-118
+  h_1811824342b47a 133,162,169,178,203,205,216-218
+  s_82c765a3479bdb::t_e48538e4622a67 95
+  s_6280d65a512cd1::t_ca70514cc3b71d 1-4,6,9-12,16,19-26,30-38,40,47-49,53-57,63-65,67-76,82,87,89,91-94,96,98-102,104,106-115,119-131,135-152,155,157,163-168,171,173,176-177,179,182-183,192-196,202,204,206-211,213-215
+  s_6280d65a512cd1::t_1f6157cd544e0d 27-29,39,41-46,62,66
+  s_6280d65a512cd1::t_f439a0397af102 90,97
+  s_82c765a3479bdb::t_282e5090952539 5,7-8,13-15,17-18,50-52,58-61,77-81,83,86,88,132,134,153-154,156,158-161,170,172,174-175,180-181,212,219-220
+taro-app/src/pages/ai-kid-plan/poster/index.scss
+  s_6280d65a512cd1::t_be1d4991cdcc8a 1-255
+taro-app/src/pages/ai-kid-plan/course/index.config.ts
+  s_82c765a3479bdb::t_a8aac7437576ad 1
+taro-app/src/pages/ai-kid-plan/poster/index.tsx
+  s_6280d65a512cd1::t_9f5eba9df2a7cc 1,3-8,10-11,14-160,162-177
+  s_6280d65a512cd1::t_2084cf3167cbf0 161
+  s_82c765a3479bdb::t_a8aac7437576ad 2,9,12-13
+taro-app/src/app.config.ts
+  s_82c765a3479bdb::t_b68dd483e96ddc 21-23
+project.private.config.json
+  h_1811824342b47a 24-37,42-43
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "b31e50871d081b000549d1a3dae231e017b06112",
+  "prompts": {},
+  "humans": {
+    "h_1811824342b47a": {
+      "author": "王哲 <wangzhe@mogulinker.com>"
+    }
+  },
+  "sessions": {
+    "s_6280d65a512cd1": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "8efd1160-bbf2-4a95-8b41-23503ca683a3",
+        "model": "default"
+      },
+      "human_author": "王哲 <wangzhe@mogulinker.com>"
+    },
+    "s_82c765a3479bdb": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a05aa3-04f3-7061-ba27-cbdf8abad733",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "王哲 <wangzhe@mogulinker.com>"
+    }
+  }
+}
