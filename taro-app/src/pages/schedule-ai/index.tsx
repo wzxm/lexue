@@ -307,19 +307,25 @@ export default function ScheduleAiPage() {
   }
 
   return (
-    <View className='schedule-ai-page'>
+    <View className={`schedule-ai-page${step === 'preview' ? ' schedule-ai-page--with-bottom-bar' : ''}`}>
       <View className='hero'>
-        <Text className='eyebrow'>AI识别</Text>
-        <Text className='title'>拍照识别课程表</Text>
+        <View className='hero-title-row'>
+          <Text className='title'>AI识别课表</Text>
+          <Text className='eyebrow'>限量测试中</Text>
+        </View>
         <Text className='desc'>上传照片，AI自动整理可导入的课程。</Text>
       </View>
 
       {step === 'pick' && (
         <View className='card'>
+          <View className='pick-tips'>
+            <Text className='pick-tip'>请保证上传的照片内容清晰，包含完整的课程和节次。</Text>
+            <Text className='pick-tip'>⚠️注意：AI功能灰度中，所用模型暂时不是国际领先的（因为贵...٩(•̤̀ᵕ•̤́๑)哈哈哈🤣）</Text>
+            <Text className='pick-tip'>若识别有误，您可动动小手动调整～</Text>
+          </View>
           <Button className='primary-btn' onClick={handlePickImage} disabled={loading || recognizing}>
-            {loading || recognizing ? '处理中...' : '拍照 / 相册识别课表'}
+            {loading || recognizing ? '处理中...' : '拍照/相册'}
           </Button>
-          <Text className='tip'>支持相册图片和现场拍照。建议选择清晰、正向、包含完整星期和节次的课表图。</Text>
         </View>
       )}
 
@@ -336,6 +342,18 @@ export default function ScheduleAiPage() {
               </View>
             </View>
           ) : null}
+
+          {(warnings.length > 0 || reviewItems.length > 0) && (
+            <View className='card warning-card'>
+              <Text className='section-title'>识别提示</Text>
+              {reviewItems.map((item, index) => (
+                <Text key={`review-${item}-${index}`} className='warning-line warning-line--review'>{item}</Text>
+              ))}
+              {warnings.map((warning, index) => (
+                <Text key={`${warning}-${index}`} className='warning-line'>{warning}</Text>
+              ))}
+            </View>
+          )}
 
           <View className={`card preview-card${hideWeekend ? ' preview-card--hide-weekend' : ''}`}>
             <View className='preview-header'>
@@ -379,25 +397,21 @@ export default function ScheduleAiPage() {
             )}
           </View>
 
-          {(warnings.length > 0 || reviewItems.length > 0) && (
-            <View className='card warning-card'>
-              <Text className='section-title'>识别提示</Text>
-              {reviewItems.map((item, index) => (
-                <Text key={`review-${item}-${index}`} className='warning-line warning-line--review'>{item}</Text>
-              ))}
-              {warnings.map((warning, index) => (
-                <Text key={`${warning}-${index}`} className='warning-line'>{warning}</Text>
-              ))}
+          <View className='bottom-bar'>
+            <Text className='edit-tip'>点击课程可编辑或删除</Text>
+            <View className='footer'>
+              <Button className='ghost-btn reset-btn' onClick={() => setStep('pick')}>
+                <View className='reset-btn-icon' />
+                <Text className='reset-btn-text'>重新选择</Text>
+              </Button>
+              <Button
+                className='primary-btn confirm-btn'
+                onClick={handleConfirmImport}
+                disabled={draftCourses.length === 0}
+              >
+                确认导入
+              </Button>
             </View>
-          )}
-
-          <Text className='edit-tip'>点击课程可编辑或删除</Text>
-
-          <View className='footer'>
-            <Button className='ghost-btn' onClick={() => setStep('pick')}>重新选择</Button>
-            <Button className='primary-btn' onClick={handleConfirmImport} disabled={draftCourses.length === 0}>
-              确认导入
-            </Button>
           </View>
 
           <CourseEditModal
