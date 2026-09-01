@@ -1,0 +1,72 @@
+taro-app/package.json
+  h_1811824342b47a 12-13
+taro-app/src/pages/ai-kid-plan/poster/index.scss
+  s_516a43f81c9ac5::t_18985c52e347ef 256-265
+taro-app/src/pages/ai-kid-plan/poster/index.tsx
+  s_516a43f81c9ac5::t_6234aacf914cbc 154
+  s_516a43f81c9ac5::t_d8cf41ffa0f8bd 146-153
+  s_516a43f81c9ac5::t_dc92d6ca8f3bfb 1,50,71-73,75,81-89,157
+  s_516a43f81c9ac5::t_ee31c80d5dbe60 70,74,76-80,92-111,114-115,131-132,134-138,141-145,155-156,158-164,238,245-248,251
+  s_516a43f81c9ac5::t_be7085f1f5ee2f 90-91,139-140,249-250
+  s_516a43f81c9ac5::t_cfd3c9e0652e1e 168
+  s_516a43f81c9ac5::t_c715eaf4e64bea 113,116,133
+  s_516a43f81c9ac5::t_e05f62939095ed 117-130
+  s_516a43f81c9ac5::t_01ff2c879565ac 2,112
+  s_516a43f81c9ac5::t_8f8c79f59c4475 252
+cloudfunctions/ai/pnpm-workspace.yaml
+  s_19c652a31f9798::t_f71b3584309018 1-2
+cloudfunctions/ai/index.js
+  s_19c652a31f9798::t_4f4d935adbf4f2 117-120,122
+  s_19c652a31f9798::t_27aa55664f11f6 305-306
+  s_19c652a31f9798::t_622c2efa0838f9 130-135,139,142,144-146
+  s_19c652a31f9798::t_b6a7f14ce9b449 126-128,136-138
+  s_19c652a31f9798::t_1d2ea8f6a46f6c 107-110
+  s_19c652a31f9798::t_cb127709857421 234-235,252-263,266,268-270,273
+  s_df4c672b360e04::t_511128ee3aff1b 3-4,17,22-23,25-26,33-46,48-52,231,301,480-483,486,503,536-537,539-561,563,580,585-586,590,596,598-599,601-603,606-607,611-615,619-630
+  s_19c652a31f9798::t_d4b1c4357d2873 113-115
+  s_19c652a31f9798::t_6926e6d588d187 121
+  s_19c652a31f9798::t_2b9a740c981315 366,382,386-389
+  s_19c652a31f9798::t_4e47dda7041274 169-171,174-176,179-183,186-190,193-196,198-210,213,216-224,227-228
+  s_19c652a31f9798::t_ab437255bc7658 390
+package.json
+  s_19c652a31f9798::t_61314175256fbe 21-22
+taro-app/pnpm-workspace.yaml
+  s_19c652a31f9798::t_ca97b0f18fca8d 1-10
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "70dfb1411a294ea48da1efb8a2bc975e9d3ac012",
+  "prompts": {},
+  "humans": {
+    "h_1811824342b47a": {
+      "author": "王哲 <wangzhe@mogulinker.com>"
+    }
+  },
+  "sessions": {
+    "s_19c652a31f9798": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "22292b4b-3606-4e26-921c-e1b498f2e019",
+        "model": "composer-2.5"
+      },
+      "human_author": "王哲 <wangzhe@mogulinker.com>"
+    },
+    "s_516a43f81c9ac5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a05afd-1e20-7a82-bb04-19ec4dc28f9e",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "王哲 <wangzhe@mogulinker.com>"
+    },
+    "s_df4c672b360e04": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4d1e7ce9-8fa6-46ef-be6b-99967d87a63a",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "王哲 <wangzhe@mogulinker.com>"
+    }
+  }
+}
