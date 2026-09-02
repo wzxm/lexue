@@ -1,0 +1,23 @@
+---
+description: 智鑫课表 CloudBase 规范查阅 — 按需读 rules/
+alwaysApply: true
+---
+
+# CloudBase 规范
+
+云环境 ID 固定为 `test-d7gxuxk5a8418c629`。部署用仓库脚本：`npm run deploy` / `npm run deploy:<name>`。
+
+先遵循 `AGENTS.md` / `CLAUDE.md` 和现有实现，再按需读 `rules/{name}/rule.md`。
+
+| 场景 | 阅读 |
+|------|------|
+| 小程序页面、Taro、预览/上传 | `rules/miniprogram-development/rule.md` |
+| 云函数增改/部署约定 | `rules/cloud-functions/rule.md` |
+| 微信鉴权 / OPENID | `rules/auth-wechat/rule.md` |
+| 云数据库（小程序） | `rules/no-sql-wx-mp-sdk/rule.md` |
+| 云函数里调 AI | `rules/ai-model-cloudbase/rule.md` |
+| 全新视觉改版 | `rules/ui-design/rule.md` |
+
+本项目是 **Taro 微信小程序 + Event 云函数 + 文档型数据库**。`rules/` 只保留上表场景的官方规范（CloudBase skills **2.32.5**）。不要走 Web SDK、Native HTTP、CloudRun、MySQL 那套规则。
+
+与项目约定冲突时，以文件顶部的「智鑫课表」覆盖段和 `AGENTS.md` 为准。

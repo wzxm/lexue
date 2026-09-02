@@ -12,6 +12,7 @@
 - `cloudfunctions/` — 云函数（auth/schedule/course/student/family/share/notify/reminder）
 - `shared/` — 云函数公共模块（db.js/auth.js/errors.js/logger.js/validator.js）
 - `schema/` — 数据库集合字段 & 索引说明
+- `rules/` — CloudBase 按需规范（不是运行时代码）
 
 ## 常用命令
 
@@ -37,3 +38,18 @@ npm run deploy:auth     # 部署单个
 - **样式**：Tailwind 工具类 + Sass(.scss)，`pxtransform` 自动 px→rpx
 - **云环境 ID**：`test-d7gxuxk5a8418c629`
 - **包管理**：前端 pnpm，根目录 npm，别混用
+
+## CloudBase 规范查阅
+
+需要平台细节时读 `rules/{name}/rule.md`：
+
+| 场景 | 阅读 |
+|------|------|
+| 小程序 / Taro / 预览上传 | `rules/miniprogram-development/rule.md` |
+| 云函数 | `rules/cloud-functions/rule.md` |
+| 微信鉴权 / OPENID | `rules/auth-wechat/rule.md` |
+| 云数据库 | `rules/no-sql-wx-mp-sdk/rule.md` |
+| 云函数调 AI | `rules/ai-model-cloudbase/rule.md` |
+| 全新视觉改版 | `rules/ui-design/rule.md` |
+
+`rules/` 只保留上表场景（CloudBase skills **2.32.5** + 项目覆盖段）。与项目约定冲突时，以本文件和规则顶部的「智鑫课表」覆盖段为准。

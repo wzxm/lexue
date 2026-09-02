@@ -1,6 +1,6 @@
 # AGENTS.md
 
-This file provides guidance to Codex (Codex.ai/code) when working with code in this repository.
+This file provides guidance to Codex and Cursor when working with code in this repository.
 
 ## 项目简介
 
@@ -23,8 +23,24 @@ This file provides guidance to Codex (Codex.ai/code) when working with code in t
 │   ├── notify/        # 消息通知
 │   └── reminder/      # 上课提醒
 ├── shared/            # 云函数公共模块（db.js、auth.js、errors.js、logger.js、validator.js）
-└── schema/            # 数据库集合字段 & 索引说明
+├── schema/            # 数据库集合字段 & 索引说明
+└── rules/             # CloudBase 按需规范（不是运行时代码）
 ```
+
+## CloudBase 规范查阅
+
+需要 CloudBase 平台细节时，先看现有实现和本文件约定，再按场景读 `rules/{name}/rule.md`：
+
+| 场景 | 阅读 |
+|------|------|
+| 小程序页面、Taro、预览/上传 | `rules/miniprogram-development/rule.md` |
+| 云函数增改/部署约定 | `rules/cloud-functions/rule.md` |
+| 微信鉴权 / OPENID | `rules/auth-wechat/rule.md` |
+| 云数据库（小程序） | `rules/no-sql-wx-mp-sdk/rule.md` |
+| 云函数里调 AI | `rules/ai-model-cloudbase/rule.md` |
+| 全新视觉改版 | `rules/ui-design/rule.md` |
+
+本项目是 Taro 微信小程序 + Event 云函数 + 文档型数据库。`rules/` 只保留上表场景的官方规范（CloudBase skills **2.32.5**）加项目覆盖段。不要套用 Web SDK、Native HTTP、CloudRun、MySQL。与本文件或规则顶部「智鑫课表」覆盖段冲突时，以项目约定为准。云函数部署用根目录 `npm run deploy`。
 
 ## 常用命令
 
