@@ -35,13 +35,13 @@ export default function EmptySchedule({ scheduleId, useRedirect, onAddLater, onA
 
   return (
     <View className="empty-schedule-view">
-      {!hideTitle && <Text className="step2-title">选择添加课程方式</Text>}
+      {!hideTitle && <Text className="step2-title">添加课程方式</Text>}
       <View className="section">
 
         <View className="list-item" onClick={handleAiRecognize}>
-          <Text className="list-label">照片</Text>
+          <Text className="list-label">AI识别照片</Text>
           <View className="list-right">
-            <Text className="list-value list-value--tag">AI识别</Text>
+            <Text className="list-value list-value--tag">适合首次创建课表</Text>
             <Text className="list-arrow">›</Text>
           </View>
         </View>
@@ -59,7 +59,7 @@ export default function EmptySchedule({ scheduleId, useRedirect, onAddLater, onA
         */}
 
         <View className="list-item" onClick={goToCopySchedule}>
-          <Text className="list-label">复制课表</Text>
+          <Text className="list-label">复制同学课表</Text>
           <View className="list-right">
             <Text className="list-value list-value--tag">输入口令复制</Text>
             <Text className="list-arrow">›</Text>
@@ -69,6 +69,7 @@ export default function EmptySchedule({ scheduleId, useRedirect, onAddLater, onA
         <View className="list-item" onClick={goToCourseForm}>
           <Text className="list-label">手动添加课程</Text>
           <View className="list-right">
+            <Text className="list-value list-value--tag">适合新增单个课程</Text>
             <Text className="list-arrow">›</Text>
           </View>
         </View>

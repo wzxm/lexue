@@ -671,7 +671,7 @@ export default function SchedulePage () {
       >
         <View className='add-course-sheet'>
           <View className='add-course-sheet-header'>
-            <Text className='add-course-sheet-title'>选择添加课程方式</Text>
+            <Text className='add-course-sheet-title'>添加课程方式</Text>
             <Text
               className='add-course-sheet-close'
               onClick={() => { setShowAddCourseSheet(false); tabState.setVisible(true) }}
