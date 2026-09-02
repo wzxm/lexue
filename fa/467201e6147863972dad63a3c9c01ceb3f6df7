@@ -1,0 +1,43 @@
+.cursor/rules/cloudbase.mdc
+  s_238c94992025ec::t_d9cc2d81dc4f98 21,23
+  s_d2265ca5690470::t_eba5abd9e87822 2,6
+  s_d2265ca5690470::t_7155e743f04711 1,3-5,7-20,22
+CLAUDE.md
+  s_d2265ca5690470::t_89f5e7fa56c609 44
+  s_d2265ca5690470::t_378973bd35edf5 15
+  s_d2265ca5690470::t_26eef2da221200 41-43,45-54
+  s_238c94992025ec::t_819fd6716cb652 55
+AGENTS.md
+  s_238c94992025ec::t_1c10582fad437c 43
+  s_d2265ca5690470::t_c5915ad8155d5b 3
+  s_d2265ca5690470::t_16e00d7eda5901 26-27,30-31,33-42
+  s_d2265ca5690470::t_fb7383dd8e4e04 32
+  s_238c94992025ec::t_cc78dd4802b283 44
+rules/cloud-functions/references.md
+  s_238c94992025ec::t_e4ed5372dca4aa 5-6,9
+  s_238c94992025ec::t_6e50af7280430a 32-51,57-59,61,65-78,83,86
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "fa467201e6147863972dad63a3c9c01ceb3f6df7",
+  "prompts": {},
+  "sessions": {
+    "s_238c94992025ec": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "d5de36e5-6110-4c02-ba82-c0ebf76ed14c",
+        "model": "grok-4.6"
+      },
+      "human_author": "王哲 <wangzhe@mogulinker.com>"
+    },
+    "s_d2265ca5690470": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "323ee02a-79fc-4f05-a07b-9a79655e490f",
+        "model": "grok-4.6"
+      },
+      "human_author": "王哲 <wangzhe@mogulinker.com>"
+    }
+  }
+}
