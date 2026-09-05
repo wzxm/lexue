@@ -37,9 +37,10 @@ function ContactModal({ visible, onClose, onCopy }: ContactModalProps) {
         onClick={(e) => e.stopPropagation()}
       >
         <View className='contact-modal-body'>
-          <Text className='contact-modal-title'>您可通过以下方式联系我们：</Text>
+          <Text className='contact-modal-title'>目前是内测阶段，功能持续继续打磨中。如有反馈，您可通过以下方式联系我们：</Text>
           <Text className='contact-modal-line'>📮 email：up91@foxmail.com</Text>
           <Text className='contact-modal-line'>✉️ 微信号：atgoing</Text>
+          <Text className='contact-modal-line'>👉公众号留言：kebiao2026</Text>
         </View>
         <View className='contact-modal-actions'>
           <View className='contact-modal-btn contact-modal-btn--cancel' onClick={onClose}>

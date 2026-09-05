@@ -132,11 +132,7 @@ export default function StudentManagePage() {
         </View>
         <View className='tip-item'>
           <Text className='tip-dot'>•</Text>
-          <Text className='tip-text'>升学后，请记得修改学生信息。</Text>
-        </View>
-        <View className='tip-item'>
-          <Text className='tip-dot'>•</Text>
-          <Text className='tip-text'>家人共享的数据可共同维护，修改后会同步给对应家人。</Text>
+          <Text className='tip-text'>升学后，请及时更新学生信息</Text>
         </View>
       </View>
 

@@ -21,7 +21,7 @@ import SettingsHeader from './components/SettingsHeader'
 import { type MenuRow } from './settingsMenu'
 import './index.scss'
 
-const CONTACT_TEXT = '📮email：up91@foxmail.com\n✉️微信号：atgoing'
+const CONTACT_TEXT = '📮email：up91@foxmail.com\n✉️微信号：atgoing\n👉公众号留言：kebiao2026'
 
 function useNavLayout() {
   return useMemo(() => {

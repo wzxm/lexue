@@ -88,7 +88,7 @@ export default function FamilyManagePage() {
     <View className='family-page'>
       <View className='family-tip'>
         <Text className='family-tip-text'>
-          邀请家人后，对方将加入你的家长列表；别人共享给你的家人也会显示在这里。
+          家人加入后，彼此创建的课表均可互相查看、管理。
         </Text>
       </View>
 
