@@ -645,7 +645,7 @@ async function recognizeScheduleImage(openid, payload) {
     if (/超时/.test(errMsg)) {
       return fail(ERRORS.INTERNAL_ERROR, '识别超时，请稍后重试');
     }
-    return fail(ERRORS.INTERNAL_ERROR, 'AI 识别失败，请稍后重试');
+    return fail(ERRORS.INTERNAL_ERROR, '智能识别失败，请稍后重试');
   }
 
   if (!vision || !vision.parsed) {

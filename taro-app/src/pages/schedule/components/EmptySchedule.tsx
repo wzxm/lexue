@@ -39,7 +39,7 @@ export default function EmptySchedule({ scheduleId, useRedirect, onAddLater, onA
       <View className="section">
 
         <View className="list-item" onClick={handleAiRecognize}>
-          <Text className="list-label">AI识别照片</Text>
+          <Text className="list-label">智能识别照片</Text>
           <View className="list-right">
             <Text className="list-value list-value--tag">适合首次创建课表</Text>
             <Text className="list-arrow">›</Text>

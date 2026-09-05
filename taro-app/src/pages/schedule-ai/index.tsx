@@ -152,7 +152,7 @@ export default function ScheduleAiPage() {
 
   // 页面 mount 时一次性做权限 & 数据检查，不随响应式状态重复触发路由
   useEffect(() => {
-    Taro.setNavigationBarTitle({ title: 'AI识别课表' })
+    Taro.setNavigationBarTitle({ title: '智能识别课表' })
     if (!useAuthStore.getState().isLoggedIn) {
       Taro.navigateTo({ url: ROUTES.LOGIN })
       return
@@ -228,7 +228,7 @@ export default function ScheduleAiPage() {
     if (!scheduleId || !targetFileId) return
     setRecognizing(true)
     try {
-      Taro.showLoading({ title: 'AI识别中', mask: true })
+      Taro.showLoading({ title: '智能识别中', mask: true })
       const result = await recognizeScheduleImage({
           scheduleId,
           fileId: targetFileId,
@@ -310,17 +310,17 @@ export default function ScheduleAiPage() {
     <View className={`schedule-ai-page${step === 'preview' ? ' schedule-ai-page--with-bottom-bar' : ''}`}>
       <View className='hero'>
         <View className='hero-title-row'>
-          <Text className='title'>AI识别课表</Text>
+          <Text className='title'>智能识别课表</Text>
           <Text className='eyebrow'>限量测试中</Text>
         </View>
-        <Text className='desc'>上传照片，AI自动整理可导入的课程。</Text>
+        <Text className='desc'>上传照片，智能自动整理可导入的课程。</Text>
       </View>
 
       {step === 'pick' && (
         <View className='card'>
           <View className='pick-tips'>
             <Text className='pick-tip'>请保证上传的照片内容清晰，包含完整的课程和节次。</Text>
-            <Text className='pick-tip'>⚠️注意：AI功能灰度中，所用模型暂时不是国际领先的（因为贵...٩(•̤̀ᵕ•̤́๑)哈哈哈🤣）</Text>
+            <Text className='pick-tip'>⚠️注意：智能功能灰度中，所用模型暂时不是国际领先的（因为贵...٩(•̤̀ᵕ•̤́๑)哈哈哈🤣）</Text>
             <Text className='pick-tip'>若识别有误，您可动动小手动调整～</Text>
           </View>
           <Button className='primary-btn' onClick={handlePickImage} disabled={loading || recognizing}>

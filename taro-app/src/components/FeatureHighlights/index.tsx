@@ -14,7 +14,7 @@ interface Props {
 }
 
 const DEFAULT_FEATURES: FeatureItem[] = [
-  { icon: '\ue759', name: '随时查看', desc: 'Ai 一键导入' },
+  { icon: '\ue759', name: '随时查看', desc: '多种方式录入课程' },
   { icon: '\ue696', name: '课周定位', desc: '单/双周课程轻松记' },
   { icon: '\ue600', name: '多孩管理', desc: '多个孩子课表轻松管理' },
   { icon: '\ue729', name: '课表共享', desc: '家人共同管理课表' },
