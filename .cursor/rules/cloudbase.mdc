@@ -1,5 +1,5 @@
 ---
-description: 智鑫课表 CloudBase 规范查阅 — 按需读 rules/
+description: 课表管家 CloudBase 规范查阅 — 按需读 rules/
 alwaysApply: true
 ---
 
@@ -20,4 +20,4 @@ alwaysApply: true
 
 本项目是 **Taro 微信小程序 + Event 云函数 + 文档型数据库**。`rules/` 只保留上表场景的官方规范（CloudBase skills **2.32.5**）。不要走 Web SDK、Native HTTP、CloudRun、MySQL 那套规则。
 
-与项目约定冲突时，以文件顶部的「智鑫课表」覆盖段和 `AGENTS.md` 为准。
+与项目约定冲突时，以文件顶部的「课表管家」覆盖段和 `AGENTS.md` 为准。

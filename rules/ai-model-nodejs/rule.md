@@ -1,6 +1,6 @@
 ---
 name: ai-model-nodejs
-description: 智鑫课表 Node.js 云函数 AI 调用规范 - CloudBase AI SDK (hy3-preview) + 腾讯云 OCR
+description: 课表管家 Node.js 云函数 AI 调用规范 - CloudBase AI SDK (hy3-preview) + 腾讯云 OCR
 version: 2.18.0
 alwaysApply: false
 ---

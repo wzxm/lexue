@@ -1,3 +1,3 @@
 export default definePageConfig({
-  navigationBarTitleText: '智鑫课表',
+  navigationBarTitleText: '课表管家',
 })

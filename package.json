@@ -1,7 +1,7 @@
 {
   "name": "lexue",
   "version": "0.1.0",
-  "description": "智鑫课表 - 家庭共享课表微信小程序",
+  "description": "课表管家 - 家庭共享课表微信小程序",
   "scripts": {
     "deploy": "node scripts/deploy-cloud-functions.js",
     "deploy:auth": "node scripts/deploy-cloud-functions.js auth",

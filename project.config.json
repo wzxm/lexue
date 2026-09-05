@@ -1,7 +1,7 @@
 {
-  "appid": "wx9e61c736ed51e5d1",
+  "appid": "wx49bf2eb03573e0d3",
   "projectname": "lexue-kebiao",
-  "description": "智鑫课表 - 家庭共享课表小程序",
+  "description": "课表管家 - 家庭共享课表小程序",
   "miniprogramRoot": "taro-app/dist/",
   "cloudfunctionRoot": "cloudfunctions/",
   "cloudbaseRoot": "cloudfunctions/",
@@ -58,5 +58,6 @@
     "include": []
   },
   "editorSetting": {},
-  "cloudfunctionTemplateRoot": "cloudfunctionTemplate/"
+  "cloudfunctionTemplateRoot": "cloudfunctionTemplate/",
+  "isGameTourist": false
 }

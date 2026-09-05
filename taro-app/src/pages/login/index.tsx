@@ -117,7 +117,7 @@ export default function LoginPage() {
           <View className='logo-icon'>
             <Text className='iconfont logo-icon-inner'>{'\ue696'}</Text>
           </View>
-          <Text className='app-name'>智鑫课表</Text>
+          <Text className='app-name'>课表管家</Text>
           {/* <Text className='app-slogan'>让每个家庭的课表管理更轻松</Text> */}
 
           <View className='features'>

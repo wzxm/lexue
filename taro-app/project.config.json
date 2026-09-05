@@ -1,7 +1,7 @@
 {
   "appid": "wx9e61c736ed51e5d1",
   "projectname": "lexue-taro",
-  "description": "智鑫课表 - Taro 4.x 重构版",
+  "description": "课表管家 - Taro 4.x 重构版",
   "miniprogramRoot": "dist/",
   "setting": {
     "urlCheck": false,

@@ -2,7 +2,7 @@
   "name": "lexue-taro",
   "version": "1.0.0",
   "private": true,
-  "description": "智鑫课表 - Taro 4.x 重构版",
+  "description": "课表管家 - Taro 4.x 重构版",
   "templateInfo": {
     "name": "default",
     "typescript": true,

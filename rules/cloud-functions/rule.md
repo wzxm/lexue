@@ -5,7 +5,7 @@ version: 2.17.1
 alwaysApply: false
 ---
 
-## ⚠️ 项目覆盖：智鑫课表云函数约定
+## ⚠️ 项目覆盖：课表管家云函数约定
 
 - 云环境 ID：`test-d7gxuxk5a8418c629`，包管理用 **npm**（根目录）
 - 现有函数：`auth` | `schedule` | `course` | `student` | `family` | `share` | `notify` | `reminder` | `ai`

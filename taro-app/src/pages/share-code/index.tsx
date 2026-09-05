@@ -74,7 +74,7 @@ export default function ShareCodePage() {
               <Text className='tips-title'>📋 使用说明</Text>
             </View>
             <View className='tips-list'>
-              {['将口令发送给家人或朋友', '对方打开智鑫课表小程序', '在课表页点击「输入口令」', '输入口令即可复制课表数据'].map((t, i) => (
+              {['将口令发送给家人或朋友', '对方打开课表管家小程序', '在课表页点击「输入口令」', '输入口令即可复制课表数据'].map((t, i) => (
                 <View key={i} className='tips-item'>
                   <Text className='tips-num'>{i + 1}</Text>
                   <Text className='tips-content'>{t}</Text>

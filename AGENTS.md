@@ -4,7 +4,7 @@ This file provides guidance to Codex and Cursor when working with code in this r
 
 ## 项目简介
 
-**智鑫课表** — 面向学生家长的微信小程序，用于管理学生课表、家庭成员共享、上课提醒等。
+**课表管家** — 面向学生家长的微信小程序，用于管理学生课表、家庭成员共享、上课提醒等。
 
 技术栈：Taro 4.x + React + TypeScript + Zustand + Sass + Tailwind CSS + 微信云开发（wx-server-sdk）
 
@@ -40,7 +40,7 @@ This file provides guidance to Codex and Cursor when working with code in this r
 | 云函数里调 AI | `rules/ai-model-cloudbase/rule.md` |
 | 全新视觉改版 | `rules/ui-design/rule.md` |
 
-本项目是 Taro 微信小程序 + Event 云函数 + 文档型数据库。`rules/` 只保留上表场景的官方规范（CloudBase skills **2.32.5**）加项目覆盖段。不要套用 Web SDK、Native HTTP、CloudRun、MySQL。与本文件或规则顶部「智鑫课表」覆盖段冲突时，以项目约定为准。云函数部署用根目录 `npm run deploy`。
+本项目是 Taro 微信小程序 + Event 云函数 + 文档型数据库。`rules/` 只保留上表场景的官方规范（CloudBase skills **2.32.5**）加项目覆盖段。不要套用 Web SDK、Native HTTP、CloudRun、MySQL。与本文件或规则顶部「课表管家」覆盖段冲突时，以项目约定为准。云函数部署用根目录 `npm run deploy`。
 
 ## 常用命令
 

@@ -2,7 +2,7 @@
 
 Use this file to decide which detailed reference to read after the main skill.
 
-智鑫课表只用 Event Function（`exports.main` + `{ action, payload }`）。HTTP Function / Custom Image / VPC TCP 数据库参考不要套用。
+课表管家只用 Event Function（`exports.main` + `{ action, payload }`）。HTTP Function / Custom Image / VPC TCP 数据库参考不要套用。
 
 ## Read this next when
 

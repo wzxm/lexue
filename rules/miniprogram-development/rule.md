@@ -5,7 +5,7 @@ version: 2.17.2
 alwaysApply: false
 ---
 
-## ⚠️ 项目覆盖：智鑫课表使用 Taro 4.x，非原生小程序
+## ⚠️ 项目覆盖：课表管家使用 Taro 4.x，非原生小程序
 
 - 框架：Taro 4.x + React + TypeScript，写 `.tsx`，不写 WXML / Page() / Component()
 - 包管理：`taro-app/` 内用 **pnpm**

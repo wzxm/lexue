@@ -2,7 +2,7 @@
 
 ## 项目简介
 
-**智鑫课表** — 微信小程序，管理学生课表、家庭共享、上课提醒。
+**课表管家** — 微信小程序，管理学生课表、家庭共享、上课提醒。
 
 技术栈：Taro 4.x + React + TypeScript + Zustand + Sass + Tailwind CSS + 微信云开发
 
@@ -52,4 +52,4 @@ npm run deploy:auth     # 部署单个
 | 云函数调 AI | `rules/ai-model-cloudbase/rule.md` |
 | 全新视觉改版 | `rules/ui-design/rule.md` |
 
-`rules/` 只保留上表场景（CloudBase skills **2.32.5** + 项目覆盖段）。与项目约定冲突时，以本文件和规则顶部的「智鑫课表」覆盖段为准。
+`rules/` 只保留上表场景（CloudBase skills **2.32.5** + 项目覆盖段）。与项目约定冲突时，以本文件和规则顶部的「课表管家」覆盖段为准。

@@ -1,6 +1,6 @@
 ---
 name: ai-model-cloudbase
-description: 智鑫课表 AI 模型调用规范 - CloudBase AI SDK 调用 hy3-preview
+description: 课表管家 AI 模型调用规范 - CloudBase AI SDK 调用 hy3-preview
 alwaysApply: false
 ---
 
