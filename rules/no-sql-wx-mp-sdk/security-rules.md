@@ -59,5 +59,4 @@ Do not set `_openid` manually in write payloads.
 
 ## Related references
 
-- For the full rule system and examples, also read `../cloudbase-document-database-web-sdk/security-rules.md`.
-- For Mini Program identity flow, read `../auth-wechat-miniprogram/SKILL.md`.
+- For Mini Program identity flow, read `../auth-wechat/rule.md`.

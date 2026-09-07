@@ -14,7 +14,7 @@ alwaysApply: false
 
 ## 本仓库规则包
 
-本项目只收录智鑫课表会用到的 CloudBase 规范（官方 skills **2.32.5**）。先读本文件顶部覆盖段和 `AGENTS.md`。
+本项目只收录课表管家会用到的 CloudBase 规范（官方 skills **2.32.5**）。先读本文件顶部覆盖段和 `AGENTS.md`。
 
 | 场景 | 阅读 |
 |------|------|

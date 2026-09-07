@@ -67,18 +67,6 @@ manageFunctions({
 
 ## Invocation patterns
 
-### Web
-
-```javascript
-import cloudbase from "@cloudbase/js-sdk";
-
-const app = cloudbase.init({ env: "your-env-id" });
-const result = await app.callFunction({
-  name: "myFunction",
-  data: { userId: "123" }
-});
-```
-
 ### Mini Program
 
 ```javascript
@@ -87,28 +75,6 @@ const result = await wx.cloud.callFunction({
   data: { userId: "123" }
 });
 ```
-
-### Node.js backend
-
-```javascript
-const tcb = require("@cloudbase/node-sdk");
-const app = tcb.init({ env: "your-env-id" });
-
-const result = await app.callFunction({
-  name: "myFunction",
-  data: { userId: "123" }
-});
-```
-
-### Raw HTTP API
-
-Use the CloudBase HTTP API only when the task is explicitly about raw API invocation.
-
-```text
-https://{envId}.api.tcloudbasegateway.com/v1/functions/{functionName}
-```
-
-This path requires authentication and belongs with the `http-api-cloudbase` skill, not browser-facing anonymous access.
 
 ## Common patterns
 
@@ -142,9 +108,3 @@ exports.main = async () => {
   return { apiKeyExists: Boolean(apiKey), envId };
 };
 ```
-
-## When to stop and reroute
-
-- If the user wants a long-lived HTTP service, SSE, or WebSocket server, reroute to HTTP Functions or CloudRun.
-- If the user wants browser SDK auth or UI login, reroute to the relevant auth skill.
-- If the user wants MySQL or document database schema design, reroute to the data skills instead of forcing it into a function tutorial.
