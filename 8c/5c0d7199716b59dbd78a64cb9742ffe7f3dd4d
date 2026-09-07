@@ -1,0 +1,39 @@
+rules/cloud-functions/references.md
+  s_e88cc260da771f::t_3e1262bf18549e 3,5-6
+rules/no-sql-wx-mp-sdk/security-rules.md
+  s_e88cc260da771f::t_85b0ffaab1464a 62
+rules/cloud-functions/references/operations-and-config.md
+  s_e88cc260da771f::t_85b0ffaab1464a 81
+rules/auth-wechat/rule.md
+  s_e88cc260da771f::t_e7b3918fee3e81 8,16
+rules/cloud-functions/checklist.md
+  s_e88cc260da771f::t_3e1262bf18549e 1,3,5-10
+rules/miniprogram-development/rule.md
+  s_e88cc260da771f::t_e7b3918fee3e81 19
+rules/cloud-functions/rule.md
+  s_e88cc260da771f::t_85b0ffaab1464a 33,35-39,41,43-45
+  s_e88cc260da771f::t_e7b3918fee3e81 3,20
+rules/ui-design/rule.md
+  s_e88cc260da771f::t_e7b3918fee3e81 17
+rules/ai-model-cloudbase/rule.md
+  s_e88cc260da771f::t_e7b3918fee3e81 3
+  s_e88cc260da771f::t_3e1262bf18549e 7,9,11,13-17,20,22
+rules/no-sql-wx-mp-sdk/rule.md
+  s_e88cc260da771f::t_e7b3918fee3e81 19
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "8c5c0d7199716b59dbd78a64cb9742ffe7f3dd4d",
+  "prompts": {},
+  "sessions": {
+    "s_e88cc260da771f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a07b5f-a15f-7a10-8f4e-1ac4ad886959",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "王哲 <wangzhe@mogulinker.com>"
+    }
+  }
+}
