@@ -1,7 +1,7 @@
 ---
 name: ui-design
 description: Use when users need visual direction, interface hierarchy, layout decisions, design specifications, or prototypes before implementing a Web or mini program UI.
-version: 2.17.1
+version: 2.32.5
 alwaysApply: false
 ---
 
@@ -12,16 +12,20 @@ alwaysApply: false
 - 组件：Taro 内置组件（`View`/`Text`/`Image`/`ScrollView`），不用 HTML 标签；`Image` 需显式指定宽高
 - 审美：受众是学生家长，风格偏**柔和/有秩序感**，避免强对比或混乱的视觉设计
 
----
+## 本仓库规则包
 
-## Standalone Install Note
+本项目只收录智鑫课表会用到的 CloudBase 规范（官方 skills **2.32.5**）。先读本文件顶部覆盖段和 `AGENTS.md`。
 
-If this environment only installed the current skill, start from the CloudBase main entry and use the published `cloudbase/references/...` paths for sibling skills.
+| 场景 | 阅读 |
+|------|------|
+| 小程序 / Taro / 预览上传 | `../miniprogram-development/rule.md` |
+| 云函数 | `../cloud-functions/rule.md` |
+| 微信鉴权 / OPENID | `../auth-wechat/rule.md` |
+| 文档数据库 | `../no-sql-wx-mp-sdk/rule.md` |
+| 云函数调 AI | `../ai-model-cloudbase/rule.md` |
+| 全新视觉改版 | `../ui-design/rule.md` |
 
-- CloudBase main entry: `https://cnb.cool/tencent/cloud/cloudbase/cloudbase-skills/-/git/raw/main/skills/cloudbase/SKILL.md`
-- Current skill raw source: `https://cnb.cool/tencent/cloud/cloudbase/cloudbase-skills/-/git/raw/main/skills/cloudbase/references/ui-design/SKILL.md`
-
-Keep local `references/...` paths for files that ship with the current skill directory. When this file points to a sibling skill such as `auth-tool` or `web-development`, use the standalone fallback URL shown next to that reference.
+不要套用 Web SDK、HTTP Function、CloudRun、MySQL、微信支付。缺失的 sibling skill 不要远程拉取。
 
 ## Activation Contract
 
@@ -37,8 +41,7 @@ Keep local `references/...` paths for files that ship with the current skill dir
 
 ### Then also read
 
-- Web implementation -> `../web-development/SKILL.md` (standalone fallback: `https://cnb.cool/tencent/cloud/cloudbase/cloudbase-skills/-/git/raw/main/skills/cloudbase/references/web-development/SKILL.md`)
-- Mini program implementation -> `../miniprogram-development/SKILL.md` (standalone fallback: `https://cnb.cool/tencent/cloud/cloudbase/cloudbase-skills/-/git/raw/main/skills/cloudbase/references/miniprogram-development/SKILL.md`)
+- Mini program implementation -> `../miniprogram-development/rule.md`
 
 ### Do NOT use for
 
@@ -180,6 +183,18 @@ DESIGN SPECIFICATION
 6. **Realism Enhancement**:
    - Use real UI images instead of placeholder images (can be selected from Unsplash, Pexels, Apple official UI resources)
    - If video materials are needed, can use Vimeo website for video resources
+
+### Downloading Remote Assets (images / icons / fonts)
+
+> ⚠️ The `downloadRemoteFile` MCP tool has been **removed** (high error rate on content-type/SSRF filtering). To download a remote asset into the project, use a shell command instead:
+
+- **macOS / Linux**: `curl -L --fail -o assets/images/logo.png "https://example.com/logo.png"` (add `--create-dirs` if the parent folder doesn't exist; `wget` works too)
+- **Windows (PowerShell)**: `Invoke-WebRequest -Uri "https://example.com/logo.png" -OutFile "assets\images\logo.png"` (or use `curl.exe -L -o assets/images/logo.png <url>` in cmd/PowerShell 5.1+, which ships with Windows 10 1803+)
+
+Guidance:
+- Always use `-L`/`--location` (curl) or `-UseBasicParsing` (PowerShell) so redirects are followed.
+- Prefer HTTPS URLs; avoid private/internal hosts (may be blocked by network policy or rejected for security).
+- If the target returns `application/octet-stream`, that is fine for binaries — the removed tool's strict whitelist was the problem, not the URL.
 
 ## Frontend Aesthetics Guidelines
 

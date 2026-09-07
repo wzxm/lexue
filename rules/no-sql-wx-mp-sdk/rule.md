@@ -1,7 +1,7 @@
 ---
 name: cloudbase-document-database-in-wechat-miniprogram
 description: Use CloudBase document database WeChat MiniProgram SDK to query, create, update, and delete data. Supports complex queries, pagination, aggregation, and geolocation queries.
-version: 2.17.1
+version: 2.32.5
 alwaysApply: false
 ---
 
@@ -12,20 +12,22 @@ alwaysApply: false
 数据流：`cloud.call('funcName', { action, payload })` → 云函数 → `shared/db.js` → 返回结果
 
 - 写新功能：在对应云函数加 action，再写 `*.api.ts` 函数
-- 本 skill 仅在写**云函数侧** DB 代码时参考
+- 本规范仅在写**云函数侧** DB 代码时参考（`wx-server-sdk` / `shared/db.js`）
 
----
+## 本仓库规则包
 
-## Standalone Install Note
+本项目只收录智鑫课表会用到的 CloudBase 规范（官方 skills **2.32.5**）。先读本文件顶部覆盖段和 `AGENTS.md`。
 
-If this environment only installed the current skill, start from the CloudBase main entry and use the published `cloudbase/references/...` paths for sibling skills.
+| 场景 | 阅读 |
+|------|------|
+| 小程序 / Taro / 预览上传 | `../miniprogram-development/rule.md` |
+| 云函数 | `../cloud-functions/rule.md` |
+| 微信鉴权 / OPENID | `../auth-wechat/rule.md` |
+| 文档数据库 | `../no-sql-wx-mp-sdk/rule.md` |
+| 云函数调 AI | `../ai-model-cloudbase/rule.md` |
+| 全新视觉改版 | `../ui-design/rule.md` |
 
-- CloudBase main entry: `https://cnb.cool/tencent/cloud/cloudbase/cloudbase-skills/-/git/raw/main/skills/cloudbase/SKILL.md`
-- Current skill raw source: `https://cnb.cool/tencent/cloud/cloudbase/cloudbase-skills/-/git/raw/main/skills/cloudbase/references/no-sql-wx-mp-sdk/SKILL.md`
-
-Keep local `references/...` paths for files that ship with the current skill directory. When this file points to a sibling skill such as `auth-tool` or `web-development`, use the standalone fallback URL shown next to that reference.
-
-# CloudBase Document Database WeChat Mini Program SDK
+不要套用 Web SDK、HTTP Function、CloudRun、MySQL、微信支付。缺失的 sibling skill 不要远程拉取。
 
 ## Activation Contract
 
@@ -41,9 +43,8 @@ Keep local `references/...` paths for files that ship with the current skill dir
 
 ### Then also read
 
-- Mini Program project rules and CloudBase integration -> `../miniprogram-development/SKILL.md` (standalone fallback: `https://cnb.cool/tencent/cloud/cloudbase/cloudbase-skills/-/git/raw/main/skills/cloudbase/references/miniprogram-development/SKILL.md`)
-- Mini Program auth and identity flow -> `../auth-wechat/SKILL.md` (standalone fallback: `https://cnb.cool/tencent/cloud/cloudbase/cloudbase-skills/-/git/raw/main/skills/cloudbase/references/auth-wechat/SKILL.md`)
-- Browser-side document database code -> `../no-sql-web-sdk/SKILL.md` (standalone fallback: `https://cnb.cool/tencent/cloud/cloudbase/cloudbase-skills/-/git/raw/main/skills/cloudbase/references/no-sql-web-sdk/SKILL.md`)
+- Mini Program project rules and CloudBase integration -> `../miniprogram-development/rule.md`
+- Mini Program auth and identity flow -> `../auth-wechat/rule.md`
 
 ### Do NOT use for
 

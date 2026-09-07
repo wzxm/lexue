@@ -11,8 +11,10 @@ qrcode.jpg
 # AI 工具索引
 .codegraph/
 
-# Cursor 规则
-.cursor/
+# Cursor 本地状态（.cursor/rules 可共享）
+.cursor/*
+!.cursor/rules/
+!.cursor/rules/**
 
 # 环境变量
 .env

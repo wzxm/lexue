@@ -1,7 +1,7 @@
 ---
 name: cloud-functions
 description: CloudBase function runtime guide for building, deploying, and debugging your own Event Functions or HTTP Functions. This skill should be used when users need application runtime code on CloudBase, not when they are merely calling CloudBase official platform APIs.
-version: 2.17.1
+version: 2.32.5
 alwaysApply: false
 ---
 
@@ -13,19 +13,22 @@ alwaysApply: false
 - 响应格式：`{ code: 0, message, data }` 成功 / `{ code: 4xxxx|50000, message, data: null }` 失败
 - OPENID：只从 `cloud.getWXContext().OPENID` 取，禁止从 `event.payload` 传
 - 前端调用：只走 `src/api/cloud.ts` 的 `cloud.call<T>()`，不直接调 `Taro.cloud.callFunction`
+- 部署：根目录 `npm run deploy` / `npm run deploy:<name>`，不要用 `tcb deploy` 或 HTTP Function
 
----
+## 本仓库规则包
 
-## Standalone Install Note
+本项目只收录智鑫课表会用到的 CloudBase 规范（官方 skills **2.32.5**）。先读本文件顶部覆盖段和 `AGENTS.md`。
 
-If this environment only installed the current skill, start from the CloudBase main entry and use the published `cloudbase/references/...` paths for sibling skills.
+| 场景 | 阅读 |
+|------|------|
+| 小程序 / Taro / 预览上传 | `../miniprogram-development/rule.md` |
+| 云函数 | `../cloud-functions/rule.md` |
+| 微信鉴权 / OPENID | `../auth-wechat/rule.md` |
+| 文档数据库 | `../no-sql-wx-mp-sdk/rule.md` |
+| 云函数调 AI | `../ai-model-cloudbase/rule.md` |
+| 全新视觉改版 | `../ui-design/rule.md` |
 
-- CloudBase main entry: `https://cnb.cool/tencent/cloud/cloudbase/cloudbase-skills/-/git/raw/main/skills/cloudbase/SKILL.md`
-- Current skill raw source: `https://cnb.cool/tencent/cloud/cloudbase/cloudbase-skills/-/git/raw/main/skills/cloudbase/references/cloud-functions/SKILL.md`
-
-Keep local `references/...` paths for files that ship with the current skill directory. When this file points to a sibling skill such as `auth-tool` or `web-development`, use the standalone fallback URL shown next to that reference.
-
-# Cloud Functions Development
+不要套用 Web SDK、HTTP Function、CloudRun、MySQL、微信支付。缺失的 sibling skill 不要远程拉取。
 
 ## Activation Contract
 
@@ -39,14 +42,16 @@ Keep local `references/...` paths for files that ship with the current skill dir
 - You still need to decide between Event Function and HTTP Function.
 - The task mentions `manageFunctions`, `queryFunctions`, `manageGateway`, or legacy function-tool names.
 - The task might require `callCloudApi` as a fallback for logs or gateway setup.
+- An HTTP Function will call CloudBase resources through `@cloudbase/node-sdk` or `@cloudbase/manager-node` -> read `./references/http-function-credentials.md`. HTTP Functions must use explicit credentials; do not rely on the Event Function passwordless runtime path.
+
+### Exception only (do not read by default)
+
+- Migrating an **existing** app that already uses classic TCP DB clients (`DATABASE_URL` / Prisma / `mysql2` / `pg` / Redis) → read `./references/vpc-and-tcp-database.md` via `./references.md`. New business CRUD must prefer CloudBase native SDK (`app.database()` / `app.rdb()`) or MCP SQL tools instead of TCP.
 
 ### Then also read
 
 - Detailed reference routing -> `./references.md`
-- Auth setup or provider-related backend work -> `../auth-tool/SKILL.md` (standalone fallback: `https://cnb.cool/tencent/cloud/cloudbase/cloudbase-skills/-/git/raw/main/skills/cloudbase/references/auth-tool/SKILL.md`)
-- AI in functions -> `../ai-model-nodejs/SKILL.md` (standalone fallback: `https://cnb.cool/tencent/cloud/cloudbase/cloudbase-skills/-/git/raw/main/skills/cloudbase/references/ai-model-nodejs/SKILL.md`)
-- Long-lived container services or Agent runtimes -> `../cloudrun-development/SKILL.md` (standalone fallback: `https://cnb.cool/tencent/cloud/cloudbase/cloudbase-skills/-/git/raw/main/skills/cloudbase/references/cloudrun-development/SKILL.md`)
-- Calling CloudBase official platform APIs from a client or script -> `../http-api/SKILL.md` (standalone fallback: `https://cnb.cool/tencent/cloud/cloudbase/cloudbase-skills/-/git/raw/main/skills/cloudbase/references/http-api/SKILL.md`)
+- AI in functions -> `../ai-model-cloudbase/rule.md`
 
 ### Do NOT use for
 
@@ -54,6 +59,8 @@ Keep local `references/...` paths for files that ship with the current skill dir
 - Web authentication UI implementation.
 - Database-schema design or general data-model work.
 - CloudBase official platform API clients or raw HTTP integrations that only consume platform endpoints.
+- Creating Integration Center instances through guessed APIs. For WeChat Pay or Official Account generated functions, use `cloudbase-wechat-integration` for the business contract and this skill only for function operations.
+- **Tasks that the CloudBase JS SDK can handle directly** — simple data reads/writes, leaderboards, file uploads, real-time queries. Reach for the matching SDK surface before writing a function: `db.collection(...).get/add/update` only for confirmed NoSQL collections, and `app.rdb().from(...)` for CloudBase PG tables. Functions add deployment complexity, CORS configuration, and HTTP gateway binding that the SDK eliminates entirely.
 
 ### Common mistakes / gotchas
 
@@ -61,9 +68,17 @@ Keep local `references/...` paths for files that ship with the current skill dir
 - Confusing official CloudBase API client work with building your own HTTP function.
 - Mixing Event Function code shape (`exports.main(event, context)`) with HTTP Function code shape (`req` / `res` on port `9000`).
 - Treating HTTP Access as the implementation model for HTTP Functions. HTTP Access is a gateway configuration for Event Functions, not the HTTP Function runtime model.
+- Assuming `db.collection("name").add(...)` will create a missing document-database collection automatically. Collection creation is a separate management step.
 - Forgetting that runtime cannot be changed after creation.
 - Using cloud functions as the first answer for Web login.
 - Forgetting that HTTP Functions must ship `scf_bootstrap`, listen on port `9000`, and include dependencies.
+- Assuming an HTTP Function can use CloudBase SDKs without explicit credentials. The default temporary credential path is not reliable for HTTP Functions and credential rotation can break a running service. Use a CloudBase server API Key or Tencent Cloud key pair for `@cloudbase/node-sdk`; use a Tencent Cloud key pair for `@cloudbase/manager-node`. See `references/http-function-credentials.md`.
+- Forgetting to configure function security rules after creating an HTTP Function. Default rules reject anonymous callers with `EXCEED_AUTHORITY`. Note: anonymous login is disabled by default for new environments — if the function needs public access without authentication, configure the security rule to allow all callers rather than relying on anonymous login.
+- Mismatching the `scf_bootstrap` Node.js binary path with the function runtime (e.g. using `/var/lang/node18/bin/node` but setting `runtime: "Nodejs16.13"`).
+- For Custom Image HTTP Functions: forgetting that TCR, the CloudApp build, and SCF must be in the same region; using `:latest` instead of a unique tag; or confusing the request-driven port-`9000` image model with a long-lived CloudRun container that listens on the injected `PORT`.
+- Assuming MCP covers the whole image pipeline. `manageFunctions` covers SCF image deploy (Stage B) via `runtime: "CustomImage"` + `imageConfig`, but the CloudApp custom build → TCR push (Stage A) is a raw Tencent Cloud API path — confirm action names and parameters from official docs before any `callCloudApi` fallback.
+- **Using a bare layer name (e.g. `common`) across environments.** SCF LayerName is an account-scoped shared namespace: same name → shared version sequence. Create new layers with fixed format `{layerName}_{当前envId}` (e.g. `common_cloud1-d9ghadgak3edf6b36`). Pass the full name as `layerName` — do not invent automatic suffixes. Treat MCP layer `warnings` as soft advisories (operation still succeeds). Details: `./references/operations-and-config.md`.
+- **Defaulting new CRUD to TCP DB clients** (`DATABASE_URL` / `mysql2` / `pg` / Redis) instead of native `app.rdb()` / `app.database()` or MCP SQL. TCP is exception-only for existing ORM migrations — see `references/vpc-and-tcp-database.md` only then.
 
 ### Minimal checklist
 
@@ -76,13 +91,37 @@ Keep local `references/...` paths for files that ship with the current skill dir
 Use this skill when developing, deploying, and operating CloudBase cloud functions. CloudBase has two different programming models:
 
 - **Event Functions**: serverless handlers driven by SDK calls, timers, and other events.
-- **HTTP Functions**: standard web services for HTTP endpoints, SSE, or WebSocket workloads.
+- **HTTP Functions**: standard web services for HTTP endpoints, SSE, or WebSocket workloads. By default they run on a managed runtime (`scf_bootstrap` + zip); when they need custom system libraries or an arbitrary runtime they can instead run from a container image (`Runtime: CustomImage`, deployed from TCR — see `./references/http-functions-custom-image.md`).
 
 ## Writing mode at a glance
 
 - If the request is for SDK calls, timers, or event-driven workflows, write an **Event Function** with `exports.main = async (event, context) => {}`.
 - If the request is for REST APIs, browser-facing endpoints, SSE, or WebSocket, write an **HTTP Function** with `req` / `res` on port `9000`.
+- For Node.js HTTP Functions, default to the native `http` module unless the user explicitly asks for Express, Koa, NestJS, or another framework.
+- If the HTTP Function needs custom system libraries or an arbitrary runtime but should still be SCF request-driven and scale to zero, deploy it as a **Custom Image HTTP Function** (`Runtime: CustomImage`) from a TCR image. The container still listens on the fixed port `9000`. See `./references/http-functions-custom-image.md`. This is distinct from a CloudRun container, which listens on the injected `PORT` and runs long-lived.
 - If the user mentions HTTP access for an existing Event Function, keep the Event Function code shape and add gateway access separately.
+
+## HTTP Function authoring contract
+
+Use these rules whenever you are writing the function code itself:
+
+- Do not write an HTTP Function as `exports.main(event, context)`. That is the Event Function contract.
+- Treat the function as a standard web server process that must listen on port `9000`.
+- With Node.js, prefer `http.createServer((req, res) => { ... })` by default so the runtime contract stays explicit.
+- With the Node.js native `http` module, do not assume Express-style helpers exist. `req.body`, `req.query`, and `req.params` are not provided for you.
+- For Node.js HTTP Functions, choose one module system up front and keep it consistent. Default to CommonJS for simple functions (`require(...)`, no `"type": "module"` in `package.json`) unless you explicitly want ES Modules.
+- If you do choose ES Modules (`"type": "module"` + `import ...`), do not mix in CommonJS-only globals or APIs such as `require(...)`, `module.exports`, or bare `__dirname`. In ESM, derive file paths from `import.meta.url` with `fileURLToPath(...)` only when needed.
+- With the native `http` module, parse `req.url` yourself with `new URL(...)`, collect the request body from the stream, and only then call `JSON.parse`. Empty bodies should be handled explicitly instead of assuming JSON is always present.
+- Return responses explicitly with `res.writeHead(...)` and `res.end(...)`, including `Content-Type` such as `application/json; charset=utf-8` for JSON APIs.
+- **Handle CORS headers**. Browsers block cross-origin requests without proper CORS headers. Default to allowing all origins for simple APIs:
+  - Respond to `OPTIONS` preflight with `200` and CORS headers
+  - Include `Access-Control-Allow-Origin: *` (or specific origin) on all responses
+  - Include `Access-Control-Allow-Methods: GET, POST, OPTIONS` as needed
+  - Include `Access-Control-Allow-Headers: Content-Type` for JSON requests
+- Keep routing and method handling explicit. Unknown paths should return `404`, and known paths with unsupported methods should normally return `405`.
+- Keep gateway setup and security-rule changes separate from the runtime code. They affect access, not the HTTP Function programming model.
+- Do not add HTTP access service configuration when the task is only to create an HTTP Function itself. Gateway paths or custom domains are separate access-layer work; public invocation requirements should be handled through the function security rule workflow (note: anonymous login is disabled by default).
+- If the HTTP Function calls CloudBase through `@cloudbase/node-sdk` or `@cloudbase/manager-node`, complete the explicit credential gate in `./references/http-function-credentials.md` before deployment. Never hardcode credentials in the function package.
 
 ## Quick decision table
 
@@ -91,6 +130,8 @@ Use this skill when developing, deploying, and operating CloudBase cloud functio
 | Triggered by SDK calls or timers? | Event Function |
 | Needs browser-facing HTTP endpoint? | HTTP Function |
 | Needs SSE or WebSocket service? | HTTP Function |
+| Needs custom system libraries / arbitrary runtime, but still SCF request-driven + scale-to-zero? | HTTP Function with `Runtime: CustomImage` (deploy from a TCR image) |
+| Has a Dockerfile but is a stateless HTTP service (no long connections / custom runtime / VPC DB)? | HTTP Function (or Custom Image HTTP Function) — **not** CloudRun |
 | Needs long-lived container runtime or custom system environment? | CloudRun |
 | Only needs HTTP access for an existing Event Function? | Event Function + gateway access |
 
@@ -109,8 +150,16 @@ Use this skill when developing, deploying, and operating CloudBase cloud functio
 3. **Write code and deploy, do not stop at local files**
    - Use `manageFunctions(action="createFunction")` for creation
    - Use `manageFunctions(action="updateFunctionCode")` for code updates
-   - Keep `functionRootPath` as the parent directory of the function folder
-   - Use CLI only as a fallback when MCP tools are unavailable
+   - Use `manageFunctions(action="updateFunctionConfig")` for config updates (timeout, memorySize, envVariables)
+   - For a Custom Image HTTP Function, call `manageFunctions(action="createFunction")` with `func.runtime="CustomImage"` and `imageConfig` (`imageUri` with tag; `registryId` for enterprise TCR); iterate later with `manageFunctions(action="updateFunctionCode")` + `imageConfig`. No `functionRootPath` is needed because the code lives in the image. See `./references/http-functions-custom-image.md`.
+   - Keep `functionRootPath` as the directory that directly contains function folders (e.g., `cloudfunctions/` or `functions/`), NOT the project root and NOT the function subdirectory itself
+   - **Prefer MCP when available** — use `manageFunctions` and `queryFunctions` when those tools are in this session
+   - **CLI fallback when MCP is missing** — if function tools are not loaded (first session / pre-restart), configure MCP for next time, then use `tcb fn deploy` via `../cloudbase-cli/SKILL.md` (see guideline `tooling-fallback.md`). Do not stall waiting for restart.
+   - **Do NOT invent CLI when the runtime has no shell** — if only MCP exists and it works, stay on MCP; if neither works, report the gap
+   - For batch updates (multiple functions), call `manageFunctions(action="updateFunctionConfig")` individually for each function — MCP does not have a `--all` batch parameter like CLI
+   - If an HTTP Function uses `@cloudbase/node-sdk`, prefer a server API Key created with `manageAppAuth(action="createApiKey", keyType="api_key")` and inject it as `CLOUDBASE_APIKEY`; Tencent Cloud `SecretId` / `SecretKey` is also supported
+   - If an HTTP Function uses `@cloudbase/manager-node`, inject Tencent Cloud `SecretId` / `SecretKey`; do not claim that a CloudBase API Key initializes the Manager SDK
+   - Merge credential environment variables with the existing function configuration instead of replacing the whole environment-variable set
 
 4. **Prefer doc-first fallbacks**
    - If a task falls back to `callCloudApi`, first check the official docs or knowledge-base entry for that action
@@ -120,7 +169,15 @@ Use this skill when developing, deploying, and operating CloudBase cloud functio
 5. **Read the right detailed reference**
    - Event Function details -> `./references/event-functions.md`
    - HTTP Function details -> `./references/http-functions.md`
-   - Logs, gateway, env vars, and legacy mappings -> `./references/operations-and-config.md`
+   - HTTP Function CloudBase SDK credentials -> `./references/http-function-credentials.md`
+   - HTTP Function from a container image (`Runtime: CustomImage`, TCR image pipeline) -> `./references/http-functions-custom-image.md`
+   - Logs, gateway, env vars, layers (`{layerName}_{当前envId}`), and legacy mappings -> `./references/operations-and-config.md`
+
+## Database write reminder
+
+- If a function will write to CloudBase document database, create the target collection first through console or management tooling.
+- `db.collection("feedback").add(...)` only inserts into an existing collection; it does not auto-create `feedback` when absent.
+- If the product requirement says "create when missing", implement that as an explicit collection-management step before the first write instead of assuming the runtime write call will provision it.
 
 ## Function types comparison
 
@@ -141,10 +198,11 @@ Use this skill when developing, deploying, and operating CloudBase cloud functio
 
 ```js
 exports.main = async (event, context) => {
+  // Do not return event/context/process.env — they may contain platform secrets.
+  const name = typeof event?.name === "string" ? event.name : "world";
   return {
     ok: true,
-    message: "hello from event function",
-    event,
+    message: `hello ${name} from event function`,
   };
 };
 ```
@@ -164,14 +222,62 @@ exports.main = async (event, context) => {
 
 ```js
 const http = require("http");
+const { URL } = require("url");
 
-const server = http.createServer((req, res) => {
-  res.writeHead(200, { "Content-Type": "application/json" });
-  res.end(JSON.stringify({ ok: true, message: "hello from http function" }));
+// CORS headers — default to * for simple cross-origin APIs
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+};
+
+function sendJson(res, statusCode, data) {
+  res.writeHead(statusCode, {
+    "Content-Type": "application/json; charset=utf-8",
+    ...CORS_HEADERS,
+  });
+  res.end(JSON.stringify(data));
+}
+
+function sendOptions(res) {
+  res.writeHead(204, CORS_HEADERS);
+  res.end();
+}
+
+function readJsonBody(req) {
+  return new Promise((resolve, reject) => {
+    let raw = "";
+    req.on("data", (chunk) => { raw += chunk; });
+    req.on("end", () => {
+      if (!raw) { resolve({}); return; }
+      try { resolve(JSON.parse(raw)); } catch (e) { resolve({}); }
+    });
+    req.on("error", reject);
+  });
+}
+
+const server = http.createServer(async (req, res) => {
+  // Handle CORS preflight
+  if (req.method === "OPTIONS") {
+    return sendOptions(res);
+  }
+
+  const url = new URL(req.url || "/", "http://127.0.0.1");
+
+  if (req.method === "GET" && url.pathname === "/") {
+    sendJson(res, 200, { ok: true, message: "hello from http function" });
+  } else if (req.method === "POST" && url.pathname === "/") {
+    const body = await readJsonBody(req);
+    sendJson(res, 200, { received: body });
+  } else {
+    sendJson(res, 404, { error: "Not Found" });
+  }
 });
 
 server.listen(9000);
 ```
+
+For a more complete example with routing, method checks, and error handling, see `./references/http-functions.md`.
 
 `cloudfunctions/hello-http/scf_bootstrap`
 
@@ -179,6 +285,8 @@ server.listen(9000);
 #!/bin/bash
 /var/lang/node18/bin/node index.js
 ```
+
+The `scf_bootstrap` binary path must match the runtime — see the full mapping table in `./references/http-functions.md`.
 
 `cloudfunctions/hello-http/package.json`
 
@@ -198,20 +306,80 @@ server.listen(9000);
 - `manageFunctions(action="updateFunctionCode")`
 - `manageFunctions(action="updateFunctionConfig")`
 
+### Layers (SCF Layer)
+
+Layers are **account-scoped**, not env-scoped. Align with MCP `manageFunctions` / `queryFunctions` layer guidance:
+
+- **Naming (required for new layers):** `{layerName}_{当前envId}` — example `common_cloud1-d9ghadgak3edf6b36`. Do not reuse a bare name like `common` in another env.
+- **Create:** `manageFunctions(action="createLayerVersion", layerName="…_{envId}", …)` after `queryFunctions(action="listLayers")` to check duplicates. MCP may return a soft `warnings` entry if the name lacks the current `envId`; it does **not** rewrite the name.
+- **Read:** `queryFunctions(action="listLayers"|"listLayerVersions"|"getLayerVersionDetail"|"listFunctionLayers")` — list results are an account-level view and may include layers created in other envs.
+- **Bind / unbind / replace:** `manageFunctions(action="attachLayer"|"detachLayer"|"updateFunctionLayers")`
+- **Delete version:** `manageFunctions(action="deleteLayerVersion")` — deleting a version can affect every env that binds that version.
+- Full contract and warning semantics → `./references/operations-and-config.md`
+
 ### Logs
 
-- `queryFunctions(action="listFunctionLogs")`
-- `queryFunctions(action="getFunctionLogDetail")`
-- If these are unavailable, read `./references/operations-and-config.md` before any `callCloudApi` fallback
+**Query function logs** — use the `queryFunctions` tool:
+
+- `queryFunctions(action="listFunctionLogs", functionName="xxx")` — list execution logs of a specific function
+- `queryFunctions(action="getFunctionLogDetail", requestId="xxx")` — fetch the detail of one log entry
+
+**`queryFunctions` vs `queryLogs`**:
+- `queryFunctions` queries execution logs of a single cloud function and requires `functionName`
+- `queryLogs` searches CLS (cross-service log aggregation) using CLS query syntax
+
+**Examples**:
+```javascript
+// List recent logs for cloud function "my-function"
+queryFunctions(action="listFunctionLogs", functionName="my-function", limit=10)
+
+// Inspect the log detail for a specific request id
+queryFunctions(action="getFunctionLogDetail", requestId="abc-123")
+
+// Cross-service error search via CLS
+queryLogs(action="searchLogs", queryString='(src:app OR src:system) AND log:"ERROR"', service="tcb")
+```
+
+`queryLogs` `queryString` follows CLS syntax (see https://cloud.tencent.com/document/api/876/128127). The examples below are starting points; adapt them to the concrete log content of your query:
+- Function logs: `(src:app OR src:system) AND log:"START RequestId"`
+- Aggregated function request status: `| select request_id, max(status_code) as status where ((request_id='xxxx' AND retry_num=0) AND retry_num=0) AND status_code!=202 group by request_id, retry_num`
+- Document database (NoSQL): `module:database`
+- Document database slow-query events: `module:database AND eventType:(MongoSlowQuery)` — `MongoSlowQuery` is the document-database slow-query event
+- Relational database (MySQL): `module:rdb`
+- Relational database (MySQL) events: `module:rdb AND eventType:(MysqlFreeze OR MysqlRecover OR MysqlSlowQuery)` — `MysqlFreeze` = freeze, `MysqlRecover` = recover, `MysqlSlowQuery` = slow query
+- Workflow (approval flow): `module:workflow`
+- Data model: `module:model`
+- User permissions: `module:auth`
+- LLM trace logs: `module:llm AND logType:llm-tracelog`
+- Gateway access logs: `logType:accesslog`
+- App publish / delete events: `module:app AND eventType:(AppProdPub OR AppProdDel)` — `AppProdPub` = app publish, `AppProdDel` = app delete
+
+If these are unavailable, read `./references/operations-and-config.md` before any `callCloudApi` fallback
 
 ### Gateway exposure
 
-- `queryGateway(action="getAccess")`
-- `manageGateway(action="createAccess")`
-- If gateway operations need raw cloud API fallback, read `./references/operations-and-config.md` first
+- `queryGateway(action="getRoute")` / `listRoutes` / `listCustomDomains`
+- `manageGateway(action="createRoute")` — for HTTP functions pass `upstreamResourceType="WEB_SCF"`; for Event functions pass `upstreamResourceType="SCF"`. Omit `domain` to attach the route on the HTTP gateway IsDefault domain (`DomainType=HTTPSERVICE`, typically `*.{region}.app.tcloudbase.com`)
+- **IsDefault vs static hosting CDN:** environments often also expose a separate IsDefault `STATIC_STORE` domain (`*.tcloudbaseapp.com`). Omitting `domain` does **not** bind that static-hosting CDN entry, and it is **not** a `STATIC_STORE` upstream binding (that requires `upstreamResourceType="STATIC_STORE"`). Verify with `queryGateway(action="listRoutes")` and check `Domain` / `DomainType` / `Path` / `UpstreamResourceType`
+- `manageGateway(action="updateRoute")` / `deleteRoute` / `enableRoute` / `disableRoute` / `bindCustomDomain` / `deleteCustomDomain`
+- **Disable a route or the static hosting default domain:** prefer `manageGateway(action="disableRoute", domain=..., path=...)` (looks up the existing route, sets `Routes[].Enable=false` via `ModifyHTTPServiceRoute`). `updateRoute` may also pass `enable=false` / `route.enable=false`. To close `*.tcloudbaseapp.com`, list routes, take the `STATIC_STORE` IsDefault domain, then `disableRoute` with that `domain` and usually `path="/"` — not `manageHosting`, and not `ModifyGatewayRoute`
+- When tool results include `accessUrl` / `accessUrls`, prefer them directly (gateway custom-domain URLs are ranked before default domains)
+- Do **not** call deprecated GWAPI actions via `callCloudApi` (`CreateCloudBaseGWAPI`, etc.)
 
 ## Related skills
 
 - `cloudrun-development` -> container services, long-lived runtimes, Agent hosting
-- `http-api` -> raw CloudBase HTTP API invocation patterns
+- `http-api-cloudbase` -> raw CloudBase HTTP API invocation patterns
 - `cloudbase-platform` -> general CloudBase platform decisions
+- `ops-inspector` -> AIOps-style inspection and log search across services
+
+## Reference index
+
+All packaged reference files (required for skill lint reachability):
+
+- [event-functions.md](references/event-functions.md)
+- [http-function-credentials.md](references/http-function-credentials.md)
+- [http-functions-custom-image.md](references/http-functions-custom-image.md)
+- [http-functions.md](references/http-functions.md)
+- [operations-and-config.md](references/operations-and-config.md)
+- [vpc-and-tcp-database.md](references/vpc-and-tcp-database.md)

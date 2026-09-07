@@ -1,6 +1,6 @@
 {
   "name": "lexue",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "课表管家 - 家庭共享课表微信小程序",
   "scripts": {
     "deploy": "node scripts/deploy-cloud-functions.js",
