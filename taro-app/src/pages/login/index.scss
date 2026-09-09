@@ -79,10 +79,12 @@ page {
   display: inline-flex;
   align-items: center;
   gap: 12px;
-  padding: 16px 28px;
-  background: #fff;
-  border-radius: var(--radius-pill);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+.feature-divider {
+  font-size: 24px;
+  color: #999999;
+  line-height: 1;
 }
 
 .feature-chip-icon {

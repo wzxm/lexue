@@ -184,8 +184,9 @@ export default function LoginPage() {
           <Text className='app-name'>课表管家</Text>
 
           <View className='features'>
-            {FEATURES.map(item => (
+            {FEATURES.map((item, index) => (
               <View key={item.label} className='feature-chip'>
+                {index > 0 && <Text className='feature-divider'>｜</Text>}
                 <Text className='iconfont feature-chip-icon'>{item.icon}</Text>
                 <Text className='feature-chip-label'>{item.label}</Text>
               </View>
