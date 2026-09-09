@@ -1,0 +1,24 @@
+.impeccable.md
+  s_baeeedc69aff99::t_8fcc3b07cd9bf0 1-17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "dfde0f244cf5e4bfd7574a195c1e5c2208b62766",
+  "prompts": {},
+  "humans": {
+    "h_1811824342b47a": {
+      "author": "王哲 <wangzhe@mogulinker.com>"
+    }
+  },
+  "sessions": {
+    "s_baeeedc69aff99": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "422b9873-907f-4d5c-b23d-363ba28b71ba",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "王哲 <wangzhe@mogulinker.com>"
+    }
+  }
+}
