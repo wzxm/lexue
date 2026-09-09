@@ -195,7 +195,7 @@ export default function LoginPage() {
         </View>
 
         <View className='login-card'>
-          <Text className='login-title'>登录后可管理课表</Text>
+          <Text className='login-title'>登录后管理您的课表</Text>
 
           <Input
             className='login-input'
