@@ -1,0 +1,27 @@
+README.md
+  s_567944a278c7dd::t_9b8bb87c30620f 69-71
+scripts/deploy-cloud-functions.js
+  s_567944a278c7dd::t_e63ed3888fc2a8 325-333
+  s_567944a278c7dd::t_82f5b8d03c4a8d 48-63,334
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "44bb7dadd9de035d4f4ac0efeee3709aa14a9130",
+  "prompts": {},
+  "humans": {
+    "h_1811824342b47a": {
+      "author": "王哲 <wangzhe@mogulinker.com>"
+    }
+  },
+  "sessions": {
+    "s_567944a278c7dd": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "18ddc979-8583-4f58-90a8-297cd8fb3890",
+        "model": "claude-opus-5"
+      },
+      "human_author": "王哲 <wangzhe@mogulinker.com>"
+    }
+  }
+}
