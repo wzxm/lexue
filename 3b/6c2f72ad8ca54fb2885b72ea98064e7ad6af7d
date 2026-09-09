@@ -1,0 +1,248 @@
+taro-app/src/pages/invite-accept/index.tsx
+  s_cd6c4b9b253c21::t_8e7d7e42db0749 109
+  s_cd6c4b9b253c21::t_c31b14f960cbe8 65-69
+  s_cd6c4b9b253c21::t_bfd4c0d7331616 127
+  s_cd6c4b9b253c21::t_6b3fab41df29d4 90
+  s_cd6c4b9b253c21::t_a84e0926be761e 108
+  s_cd6c4b9b253c21::t_d754e30b1788d9 97
+taro-app/package.json
+  s_db03fa8fbdbd5f::t_d63c4f335c6630 32
+shared/sms.test.js
+  s_cd6c4b9b253c21::t_006135561b4ce2 1,3-9,11,15,21-33,37-55,69
+  s_cd6c4b9b253c21::t_58f71d2055ceae 2,10,12-14,16-20,34-36,56-57,59-61
+  s_cd6c4b9b253c21::t_5203e5c8c24d3b 58,62-68
+cloudfunctions/auth/config.json
+  s_5e55e0e66865b4::t_f62531593a6362 2
+cloudfunctions/student/index.js
+  s_cd6c4b9b253c21::t_d430a065657830 44,48,54,111,122,141,147,152,170,175,210,215,245,249-253
+  s_cd6c4b9b253c21::t_975d38f2a060f5 11,29-30,34,45,55,57,63-64,67-68,75-76,88,93-95,98,119,160,178,218
+  s_cd6c4b9b253c21::t_cd4b25dc4923db 58
+taro-app/src/pages/schedule/index.tsx
+  s_cd6c4b9b253c21::t_77b4a9ff8bbe25 159-160
+taro-app/src/utils/storage.ts
+  s_cd6c4b9b253c21::t_b997b702707872 54-67,72,77,106-117
+  s_cd6c4b9b253c21::t_9a3a64333cbadf 118
+taro-app/src/pages/student-form/index.tsx
+  s_cd6c4b9b253c21::t_ad0fea4f0ff3d2 125-126
+docs/index.md
+  s_cd6c4b9b253c21::t_8b07fa5b213d96 15
+scripts/deploy-cloud-functions.js
+  s_cd6c4b9b253c21::t_bc53fa8bf8232e 117,121
+  s_db03fa8fbdbd5f::t_e0f63f501881c7 64-68
+cloudbaserc.json
+  s_cd6c4b9b253c21::t_361395ff34898d 2
+shared/auth-bind.test.js
+  s_cd6c4b9b253c21::t_93b0bf13277025 1-44
+shared/sms.js
+  s_cd6c4b9b253c21::t_ba002db9bed470 239
+  s_cd6c4b9b253c21::t_c7863f1f76b5e7 262-263
+  s_cd6c4b9b253c21::t_35dbfa57621472 247-249,254
+  s_db03fa8fbdbd5f::t_e0f63f501881c7 39-43,55-57,60-61,190
+  s_cd6c4b9b253c21::t_61fde82fffb931 20-22
+  s_cd6c4b9b253c21::t_4b4e709018f18d 1,5-7,9-19,23-31,62-92,94-116,121,127-128,145,175-179,182-185,187,189,191-192,194-200,202-205,207-238,240-246,250-253,255-261,264-267
+  s_cd6c4b9b253c21::t_4584f87e4ae281 93,117-120,122-126,129-144,146-174
+  s_db03fa8fbdbd5f::t_4adbefc005dc7f 2-4,8,32-38,44-54,58-59,186,188,193,201
+  s_cd6c4b9b253c21::t_5edbff74fa5134 180-181,206
+cloudfunctions/auth/index.js
+  s_5e55e0e66865b4::t_710814fae631c0 176-179,361
+  s_cd6c4b9b253c21::t_8a419505faed8f 3,11,35-36,64-65,68,77,81,85,108-111,114-116,118-122,125,127-128,130,134,137,151,157,165,169-172,181-182,185-186,196-197,205,210-211,216-218,222,227-228,239-240,242,245,248,252,255,286-287,310-311,324,327,337,351,357-358,362-363,366,370,372,374,376,378
+  s_db03fa8fbdbd5f::t_d63c4f335c6630 173
+  s_5e55e0e66865b4::t_2e7a4cbb575249 360
+AGENTS.md
+  s_cd6c4b9b253c21::t_4110f5e6d210dd 129
+docs/source-tree-analysis.md
+  s_cd6c4b9b253c21::t_933e4b98fa5451 157
+shared/auth.js
+  s_cd6c4b9b253c21::t_5307da3a44dbac 3,10,17-36,41,47,52-54,61,66,69-70,77-83
+cloudfunctions/reminder/index.js
+  s_cd6c4b9b253c21::t_975d38f2a060f5 129,165
+  s_cd6c4b9b253c21::t_d430a065657830 155
+cloudfunctions/auth/package.json
+  s_db03fa8fbdbd5f::t_4adbefc005dc7f 8
+taro-app/src/pages/settings/index.tsx
+  s_cd6c4b9b253c21::t_2e72976a1e5d98 169-171
+  s_cd6c4b9b253c21::t_fcd78703379bbb 201
+taro-app/src/types/index.ts
+  s_cd6c4b9b253c21::t_89bce93882069c 64
+  s_cd6c4b9b253c21::t_0b83d76ea21258 95
+  s_cd6c4b9b253c21::t_285b98f9d651eb 83-86
+  s_5e55e0e66865b4::t_710814fae631c0 105
+  s_cd6c4b9b253c21::t_f77bc6819f9be1 103-104,106
+docs/integration-architecture.md
+  s_cd6c4b9b253c21::t_868ababee59d2f 64
+docs/data-models.md
+  s_cd6c4b9b253c21::t_ca2cabf53fd083 6
+taro-app/src/api/student.api.ts
+  s_cd6c4b9b253c21::t_f4cb8554aa2d9e 14-15,32-33
+schema/collections.md
+  s_cd6c4b9b253c21::t_08e746bf8e900c 7-10,13-18,20-21,28-44,49-50,66-69,71,77,81,93-96,115-116,127-129,131,141-142,144-145,157-160,164,174-175,177
+docs/development-guide.md
+  s_cd6c4b9b253c21::t_a889771487345f 35
+taro-app/src/pages/family-manage/index.tsx
+  s_cd6c4b9b253c21::t_d6ccc04d74a7be 116
+  s_cd6c4b9b253c21::t_2e67dafcb3d8d4 71,73
+  s_cd6c4b9b253c21::t_dcabf739276083 54
+  s_cd6c4b9b253c21::t_6cb0603913fb56 21,30
+taro-app/src/pages/login/index.tsx
+  s_cd6c4b9b253c21::t_faf28bdd4ff0d6 2,4,7,16-17,23-25,29-30,34,36,41-70,86-87,119-120,122-125,127,129-130,138,140,148-153,158,160,163-165,171-176,199-239
+  s_1e9889c1bf4a50::t_1990dd0e7a43d7 75-77,80,82
+  s_baeeedc69aff99::t_9b4dd622deb358 240
+  s_db03fa8fbdbd5f::t_8c54d07eb1af30 131-136
+  s_5e55e0e66865b4::t_9513e1fa2195a0 1,32-33,39,144
+  s_1e9889c1bf4a50::t_0fc51663badbb4 19,21-22
+cloudfunctions/notify/index.js
+  s_cd6c4b9b253c21::t_975d38f2a060f5 11,22,41,88,120
+  s_cd6c4b9b253c21::t_d430a065657830 21,40,85,117,143,147-150
+  s_cd6c4b9b253c21::t_58cacbf3a80d92 24,43,90,122
+taro-app/src/api/cloud.ts
+  s_cd6c4b9b253c21::t_da19ba8d4aa000 6
+  s_db03fa8fbdbd5f::t_d63c4f335c6630 8
+cloudfunctions/family/index.js
+  s_cd6c4b9b253c21::t_975d38f2a060f5 11,23,29,33-36,38-39,43,51-52,55-60,67-68,77,91,98-99,107-108
+  s_cd6c4b9b253c21::t_d430a065657830 22,26-27,40,46,62,76,78,82,87,90,97,101,110,115,123,127-129
+  s_cd6c4b9b253c21::t_9862815c98a0a6 30
+taro-app/src/store/auth.store.ts
+  s_cd6c4b9b253c21::t_c381dc830060cd 4-5,27,29,32,44-46,68
+  s_db03fa8fbdbd5f::t_56fbeb6b9259ef 63-64
+.cursor/rules/cloudbase.mdc
+  s_cd6c4b9b253c21::t_882d467702050f 8
+docs/project-overview.md
+  s_cd6c4b9b253c21::t_d2519e8a518071 43
+docs/cloudbase-sms-auth.md
+  s_db03fa8fbdbd5f::t_d9bfcfc4a8cca4 1-25
+taro-app/src/pages/tools/index.tsx
+  s_cd6c4b9b253c21::t_46101cf93fb0cf 130-131
+taro-app/src/api/share.api.ts
+  s_cd6c4b9b253c21::t_c09e0ec44fd5ae 8,21,28,37,60,63,66,79,82,85
+package.json
+  s_cd6c4b9b253c21::t_33579bd10c3dca 18
+  s_cd6c4b9b253c21::t_842dd06178bdde 17
+taro-app/src/api/auth.api.ts
+  s_db03fa8fbdbd5f::t_d63c4f335c6630 3-4,6-9,23-24,28-30
+  s_cd6c4b9b253c21::t_6baf5aebe0ecef 10,12-16,22,25-27,50-51
+  s_5e55e0e66865b4::t_9513e1fa2195a0 11,17,32,34-35
+  s_db03fa8fbdbd5f::t_56fbeb6b9259ef 31,40-42
+  s_db03fa8fbdbd5f::t_b4817cb1623f83 45-47
+cloudfunctions/schedule/index.js
+  s_cd6c4b9b253c21::t_d430a065657830 112,117,143,151,201,205,220,223,282,285,305,308,326,328,345,349-355
+  s_cd6c4b9b253c21::t_0a2b9b7c35e574 127
+  s_cd6c4b9b253c21::t_975d38f2a060f5 11,114,126,154,158,164,171,173,179,225,262,267,287,310,314,329
+taro-app/src/api/family.api.ts
+  s_cd6c4b9b253c21::t_d56ce883a1ff43 6,19-20,23-24
+rules/cloud-functions/rule.md
+  s_cd6c4b9b253c21::t_0211314412b661 10
+taro-app/src/constants/auth.ts
+  s_5e55e0e66865b4::t_b22d4349648081 1-2
+docs/P0-FIX-GUIDE.md
+  s_cd6c4b9b253c21::t_c8fc1b28795c98 16
+cloudfunctions/reminder/generate.js
+  s_cd6c4b9b253c21::t_d430a065657830 130,143,226,234,242
+  s_cd6c4b9b253c21::t_975d38f2a060f5 121,123-124,128,148,173,190
+taro-app/src/pages/settings/components/EditProfileModal.tsx
+  s_cd6c4b9b253c21::t_1d2e0b8194c97a 61
+  s_cd6c4b9b253c21::t_31d61a90819fcc 60
+cloudfunctions/init-db/index.js
+  s_cd6c4b9b253c21::t_19f38ffb9f77c0 12-21,24,35,39
+schema/indexes.config.json
+  s_cd6c4b9b253c21::t_b0a68b28d52a75 1,21-189
+  s_cd6c4b9b253c21::t_881fb012be222e 2-20
+cloudfunctions/course/index.js
+  s_cd6c4b9b253c21::t_d430a065657830 72,76,128,136,179,186,232,238,253,263,339,349,391-392,406,443,450,463,467-475
+  s_cd6c4b9b253c21::t_470055c9cb1323 427
+  s_cd6c4b9b253c21::t_ed051c376986a3 416
+  s_cd6c4b9b253c21::t_975d38f2a060f5 12,45,155,160,188,240,265,317,356,424,453
+shared/family.js
+  s_cd6c4b9b253c21::t_d112c232e08bac 3,6,13,15,21-22,25-26,28-29,34-35,40-41,56-57,67,69-70,77-79,83,85-87,94-96,99-100,103-104,107
+scripts/create-indexes.js
+  s_cd6c4b9b253c21::t_a42e84c52ee56e 1-2,4-5,9,11-82,84-87,90-93,95-103,148-150,152-161,168-169,172,176,184-190,192,214,216,221,224,226-227,229-231,233-236,238-246
+  s_cd6c4b9b253c21::t_2e7cc96af10a36 3,6-8,10,83,88-89,94,104-147,151,162-167,170-171,173-175,177-183,191,193-213,215,217-220,222-223,225,228,232,237
+taro-app/project.config.json
+  s_cd6c4b9b253c21::t_fec8134ff3f8b5 2
+.gitignore
+  s_cd6c4b9b253c21::t_d998997bf0c333 3-7
+cloudfunctions/ai/index.js
+  s_cd6c4b9b253c21::t_975d38f2a060f5 12
+  s_cd6c4b9b253c21::t_b0dbb21a82b0bc 624
+  s_cd6c4b9b253c21::t_d430a065657830 618,620,682,687
+taro-app/src/pages/schedule-manage/index.tsx
+  s_cd6c4b9b253c21::t_47870e05d6a62d 107
+  s_cd6c4b9b253c21::t_f61111cd5641fb 38
+  s_cd6c4b9b253c21::t_bb38cc0e90be12 8
+  s_cd6c4b9b253c21::t_a9aae0799d0b70 127
+  s_cd6c4b9b253c21::t_834072bde20914 167
+CLAUDE.md
+  s_cd6c4b9b253c21::t_23a48f41a104ef 39
+README.md
+  s_cd6c4b9b253c21::t_a68f39e26d92ac 9
+taro-app/src/pages/login/index.scss
+  s_baeeedc69aff99::t_e2ccc32b401e15 131,133-135,137-138,152
+  s_5e55e0e66865b4::t_710814fae631c0 117-130,132,147
+  h_1811824342b47a 22-23,136
+  s_cd6c4b9b253c21::t_b4f55dc884e53c 139-146
+  s_baeeedc69aff99::t_a14277a880566e 24-25,30
+cloudfunctions/share/index.js
+  s_cd6c4b9b253c21::t_d430a065657830 70,73,98,108,119,138,152,160,177,195,202,218,225,230,232,246,248,254,280,300,305,307,314,330,335,337,345,351,355,364,376,380-386
+  s_cd6c4b9b253c21::t_6fef2447a748a8 358
+  s_cd6c4b9b253c21::t_975d38f2a060f5 12,75,158,169,250,264,301,303-304,310-311,331,333-334,340,343,359
+schema/indexes.md
+  s_cd6c4b9b253c21::t_7baf2523ac1491 11,20,22-23
+  s_cd6c4b9b253c21::t_16e431f6418ec7 3,5,7-8,12,14,16-17,26,28,30,32,34-43,45,47,49,51-81,83,96,98-100
+  s_cd6c4b9b253c21::t_1a15d987afe21d 85,87,89-90,92
+cloudfunctions/auth/pnpm-lock.yaml
+  s_db03fa8fbdbd5f::t_63474e0ce4e033 238-241,712,743-746
+taro-app/pnpm-lock.yaml
+  s_db03fa8fbdbd5f::t_13a344bfc421e3 13-15,1349-1363,1941-1944,2562-2564,3374-3377,3387-3389,3559-3562,4087-4089,5140-5143,5151-5159,5386-5388,5395-5403,5407-5409,5419-5421,5725-5733,6537-6539,6667-6669,7271-7273,7350-7352,7486-7489,7553-7559,7643-7645,9375-9416,9948-9949,10530-10532,11730-11731,11741-11743,11950-11952,12553-12557,13753-13766,13781-13795,14000-14002,14007-14015,14018-14020,14031-14033,14496-14500,15245-15247,15395-15396,16072-16073,16145-16147,16255-16260,16320-16324,16458-16463
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "3b6c2f72ad8ca54fb2885b72ea98064e7ad6af7d",
+  "prompts": {},
+  "humans": {
+    "h_1811824342b47a": {
+      "author": "王哲 <wangzhe@mogulinker.com>"
+    }
+  },
+  "sessions": {
+    "s_1e9889c1bf4a50": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "21d0c803-725d-481c-8313-402bdb847ba2",
+        "model": "grok-4.6"
+      },
+      "human_author": "王哲 <wangzhe@mogulinker.com>"
+    },
+    "s_5e55e0e66865b4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a07eb7-7ed6-76f0-bd50-c5792602c6f4",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "王哲 <wangzhe@mogulinker.com>"
+    },
+    "s_baeeedc69aff99": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "422b9873-907f-4d5c-b23d-363ba28b71ba",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "王哲 <wangzhe@mogulinker.com>"
+    },
+    "s_cd6c4b9b253c21": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "a9b58d70-efd1-455b-8426-a7bb301fe768",
+        "model": "composer-2.5"
+      },
+      "human_author": "王哲 <wangzhe@mogulinker.com>"
+    },
+    "s_db03fa8fbdbd5f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0800b-ec26-7431-88a6-59e931022844",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "王哲 <wangzhe@mogulinker.com>"
+    }
+  }
+}
