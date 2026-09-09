@@ -1,0 +1,44 @@
+cloudfunctions/ai/index.js
+  s_01cf3fc286c45c::t_9b23b5a80c6aaa 100,103
+taro-app/src/store/schedule.store.ts
+  s_01cf3fc286c45c::t_656b1e4ee1498d 24-25,35
+taro-app/src/pages/schedule-ai/index.tsx
+  s_01cf3fc286c45c::t_6a3a9261bdadbe 13,44,91,93,243-244,290,295-297,301,303,306-309,316-319,328-339,456
+  s_01cf3fc286c45c::t_7cae281bc21d48 304-305,310
+  s_01cf3fc286c45c::t_9b23b5a80c6aaa 6,18,49,68,265,302,311,415,432
+taro-app/src/utils/recognitionPeriods.ts
+  s_01cf3fc286c45c::t_3d98b7595f37ca 1-34
+taro-app/src/pages/schedule-ai/index.scss
+  h_1811824342b47a 291
+project.private.config.json
+  s_fca661c95c6d6d::t_9fafd9926b7f17 4
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "ea242c2d4a2725484bdd778b441dceae0eca7a92",
+  "prompts": {},
+  "humans": {
+    "h_1811824342b47a": {
+      "author": "王哲 <wangzhe@mogulinker.com>"
+    }
+  },
+  "sessions": {
+    "s_01cf3fc286c45c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0840a-c200-7a81-80a5-6565cbd4de5d",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "王哲 <wangzhe@mogulinker.com>"
+    },
+    "s_fca661c95c6d6d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a08418-f4a6-7240-9788-286e03ffae19",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "王哲 <wangzhe@mogulinker.com>"
+    }
+  }
+}
