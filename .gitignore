@@ -1,5 +1,10 @@
 node_modules/
 cloudfunctions/*/node_modules/
+
+# 微信开发者工具按环境 ID 生成的本地缓存（不是业务云函数）
+cloudfunctions/all/
+cloudfunctions/cloud1-*/
+cloudfunctions/test-d7gxuxk5a8418c629/
 dist/
 .DS_Store
 *.log

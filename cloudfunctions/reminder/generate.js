@@ -118,16 +118,16 @@ async function generateReminders() {
     });
 
     // 收集所有需要通知的 openid 列表
-    const openidSet = new Set();
+    const userIdSet = new Set();
     schedules.forEach(s => {
-      openidSet.add(s.owner_openid);
-      (s.shared_with || []).forEach(m => openidSet.add(m.openid));
+      userIdSet.add(s.owner_user_id);
+      (s.shared_with || []).forEach(m => userIdSet.add(m.user_id));
     });
 
     // 批量查用户设置
-    const users = await db.getList('users', { openid: _.in([...openidSet]) });
+    const users = await db.getList('users', { _id: _.in([...userIdSet]) });
     const userMap = {};
-    users.forEach(u => { userMap[u.openid] = u; });
+    users.forEach(u => { userMap[u._id] = u; });
 
     let generatedCount = 0;
 
@@ -140,12 +140,12 @@ async function generateReminders() {
 
       // 获取该课表所有需要通知的成员（owner + shared_with）
       const membersToNotify = [
-        { openid: schedule.owner_openid },
+        { user_id: schedule.owner_user_id },
         ...(schedule.shared_with || []),
       ];
 
       for (const member of membersToNotify) {
-        const user = userMap[member.openid];
+        const user = userMap[member.user_id];
         if (!user) continue;
 
         // 用户关闭了通知，跳过
@@ -170,7 +170,7 @@ async function generateReminders() {
           const triggerTime = calculateTriggerTime(today, noon.slot, advanceMinutes);
           if (triggerTime > today) {
             const created = await createReminderIfNotExists(
-              member.openid,
+              member.user_id,
               scheduleId,
               noon,
               advanceMinutes,
@@ -187,7 +187,7 @@ async function generateReminders() {
           const triggerTime = calculateTriggerTime(today, afternoon.slot, advanceMinutes);
           if (triggerTime > today) {
             const created = await createReminderIfNotExists(
-              member.openid,
+              member.user_id,
               scheduleId,
               afternoon,
               advanceMinutes,
@@ -223,7 +223,7 @@ function calculateTriggerTime(today, slot, advanceMinutes) {
 /**
  * 创建提醒记录（如果不存在）
  */
-async function createReminderIfNotExists(openid, scheduleId, course, advanceMinutes, triggerTime, today, dismissType) {
+async function createReminderIfNotExists(userId, scheduleId, course, advanceMinutes, triggerTime, today, dismissType) {
   const todayStart = new Date(today);
   todayStart.setHours(0, 0, 0, 0);
   const todayEnd = new Date(today);
@@ -231,7 +231,7 @@ async function createReminderIfNotExists(openid, scheduleId, course, advanceMinu
 
   const _ = db.getCommand();
   const existing = await db.findOne('reminders', {
-    openid,
+    user_id: userId,
     course_id: course._id,
     trigger_time: _.and(_.gte(todayStart), _.lte(todayEnd)),
   });
@@ -239,7 +239,7 @@ async function createReminderIfNotExists(openid, scheduleId, course, advanceMinu
   if (existing) return false; // 已经生成过了
 
   await db.create('reminders', {
-    openid,
+    user_id: userId,
     schedule_id: scheduleId,
     course_id: course._id,
     course_name: course.name,

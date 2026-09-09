@@ -1,113 +1,100 @@
 # 课表管家 - 数据库索引配置
 
-在微信云开发控制台或通过云函数初始化时执行以下索引创建语句。
+## 一键创建（推荐）
 
-## users
+`init-db` 只建集合，**索引需单独创建**。根目录执行：
 
-```js
-// openid 唯一索引，用于登录鉴权
-db.collection("users").createIndex({ openid: 1 }, { unique: true })
-
-// 手机号唯一索引，用于微信授权手机号快捷登录（sparse：未绑定手机号的用户不参与唯一约束）
-db.collection("users").createIndex({ phone: 1 }, { unique: true, sparse: true })
+```bash
+npm run create-indexes
 ```
 
-## students
+脚本读取 [`schema/indexes.config.json`](indexes.config.json)，通过微信 `tcb/updateindex` API 批量创建，并**自动删除**旧版 `_openid_1`、`_owner_openid_1` 等遗留索引（`users` 会在新建 `openid` 索引后再删重复的 `_openid_1`）。  
+依赖 `.env` 中的 `CLOUDBASE_ENV_ID`、`WX_APPID`、`WX_SECRET`（与部署脚本相同）。
 
-```js
-// 按 owner 查学生列表
-db.collection("students").createIndex({ owner_openid: 1 })
+预览不实际创建：
+
+```bash
+npm run create-indexes -- --dry-run
 ```
 
-## schedules
+只创建、不删旧索引：
 
-```js
-// 按学生查课表
-db.collection("schedules").createIndex({ student_id: 1 })
-
-// 按创建者查课表
-db.collection("schedules").createIndex({ owner_openid: 1 })
-
-// 按共享成员查有权限的课表
-db.collection("schedules").createIndex({ "shared_with.openid": 1 })
-
-// 邀请码唯一索引，用于通过邀请码快速定位课表
-db.collection("schedules").createIndex({ invite_code: 1 }, { unique: true })
+```bash
+npm run create-indexes -- --skip-drop
 ```
 
-## courses
-
-```js
-// 按课表查所有课程
-db.collection("courses").createIndex({ schedule_id: 1 })
-
-// 按学生+星期查课程（首页课表渲染高频查询）
-db.collection("courses").createIndex({ student_id: 1, day_of_week: 1 })
-```
-
-## families
-
-```js
-// 按 owner 查家庭成员
-db.collection("families").createIndex({ owner_openid: 1 })
-
-// 按成员查所有加入的家庭
-db.collection("families").createIndex({ member_openid: 1 })
-
-// 避免同一 owner/member 关系重复创建
-db.collection("families").createIndex({ owner_openid: 1, member_openid: 1 }, { unique: true })
-```
-
-## share_codes
-
-```js
-// 口令唯一索引，用于扫码/输入口令查找
-db.collection("share_codes").createIndex({ code: 1 }, { unique: true })
-```
-> 口令不按时间过期；旧口令在同课表重新生成新口令时由业务逻辑失效（删除旧记录）。
-
-## reminders
-
-```js
-// 按状态+触发时间查待发送提醒（定时任务高频查询）
-db.collection("reminders").createIndex({ status: 1, trigger_time: 1 })
-
-// 按用户+日期查某天的提醒
-db.collection("reminders").createIndex({ openid: 1, date: 1 })
-```
-
-## tools_data
-
-```js
-// 按用户+工具类型查数据
-db.collection("tools_data").createIndex({ openid: 1, tool_type: 1 })
-
-// 按学生查关联的百宝箱数据
-db.collection("tools_data").createIndex({ student_id: 1 })
-```
-
-## course_name_presets
-
-```js
-// 按用户查自定义课程名称
-db.collection("course_name_presets").createIndex({ openid: 1, grade_level: 1 })
-```
+> 控制台里的「稀疏」选项 API 不支持；空库阶段不影响使用。若某索引已存在，脚本会跳过。
 
 ---
 
-## 索引创建云函数示例
+## 上线最低集（仅 8 个，可手动）
 
-如需通过云函数批量初始化索引，可在 `cloudfunctions/init_indexes/index.js` 中实现：
+若 API 不可用，至少先建这些即可跑通 **登录 + 课表**：
 
-```js
-const cloud = require("wx-server-sdk");
-cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
-const db = cloud.database();
+| 集合 | 索引名 | 唯一 | 字段 |
+|---|---|---|---|
+| `users` | `phone` | 是 | `phone` 升序 |
+| `users` | `openid` | 是 | `openid` 升序 |
+| `sms_codes` | `phone_status_expires_at` | 否 | `phone` ↑ → `status` ↑ → `expires_at` ↓ |
+| `sms_codes` | `phone_createTime` | 否 | `phone` ↑ → `createTime` ↓ |
+| `schedules` | `invite_code` | 是 | `invite_code` 升序 |
+| `schedules` | `owner_createTime` | 否 | `owner_user_id` ↑ → `createTime` ↓ |
+| `families` | `owner_member` | 是 | `owner_user_id` ↑ → `member_user_id` ↑ |
+| `share_codes` | `code` | 是 | `code` 升序 |
 
-exports.main = async () => {
-  // 注意：微信云数据库 JS SDK 不直接支持 createIndex
-  // 需在云开发控制台手动建立，或通过 HTTP API 调用
-  // 文档：https://developers.weixin.qq.com/miniprogram/dev/wxcloud/reference-http-api/database/
-  return { message: "请在云开发控制台手动创建索引" };
-};
-```
+路径：**数据库 → 文档型数据库 → 集合 → 索引管理 → 添加索引**
+
+其余索引在用户量上来后再补（或直接跑 `npm run create-indexes` 一次建全）。
+
+---
+
+## 完整索引清单
+
+与 `indexes.config.json` 一致，供控制台手动对照：
+
+| 集合 | 索引名称 | 唯一 | 索引字段 |
+|---|---|---|---|
+| `users` | `phone` | 是 | `phone` 升序 |
+| `users` | `openid` | 是 | `openid` 升序 |
+| `sms_codes` | `phone_status_expires_at` | 否 | `phone` ↑ → `status` ↑ → `expires_at` ↓ |
+| `sms_codes` | `phone_createTime` | 否 | `phone` ↑ → `createTime` ↓ |
+| `sms_codes` | `request_openid_createTime` | 否 | `request_openid` ↑ → `createTime` ↓ |
+| `sms_codes` | `status_expires_at` | 否 | `status` ↑ → `expires_at` ↑ |
+| `students` | `owner_createTime` | 否 | `owner_user_id` ↑ → `createTime` ↓ |
+| `students` | `owner_source` | 否 | `owner_user_id` ↑ → `source` ↑ |
+| `schedules` | `invite_code` | 是 | `invite_code` 升序 |
+| `schedules` | `owner_createTime` | 否 | `owner_user_id` ↑ → `createTime` ↓ |
+| `schedules` | `student_id` | 否 | `student_id` 升序 |
+| `schedules` | `shared_user` | 否 | `shared_with.user_id` 升序 |
+| `courses` | `schedule_day_slot` | 否 | `schedule_id` ↑ → `day_of_week` ↑ → `slot` ↑ |
+| `courses` | `day_of_week` | 否 | `day_of_week` 升序 |
+| `families` | `owner_member` | 是 | `owner_user_id` ↑ → `member_user_id` ↑ |
+| `families` | `member_user_id` | 否 | `member_user_id` 升序 |
+| `share_codes` | `code` | 是 | `code` 升序 |
+| `share_codes` | `schedule_type` | 否 | `schedule_id` ↑ → `type` ↑ |
+| `reminders` | `status_trigger_time` | 否 | `status` ↑ → `trigger_time` ↑ |
+| `reminders` | `schedule_id` | 否 | `schedule_id` 升序 |
+| `reminders` | `course_id` | 否 | `course_id` 升序 |
+| `course_name_presets` | `user_created_at` | 否 | `user_id` ↑ → `created_at` ↓ |
+| `course_name_presets` | `user_grade_name` | 是 | `user_id` ↑ → `grade_level` ↑ → `name` ↑ |
+
+`tools_data` 暂无业务查询，暂不建索引。
+
+---
+
+## 自动清理的遗留索引
+
+`npm run create-indexes` 会在**创建新索引之后**尝试删除下列旧索引（不存在则跳过）：
+
+- 全局：`_openid_1`、`_owner_openid_1`、`_member_openid_1`、`_creator_openid_1`
+- 各集合另有旧文档中的单字段索引（如 `students.owner_user_id` 等）
+
+完整列表见 `indexes.config.json` 的 `legacy_drop_indexes` / `legacy_drop_by_collection`。
+
+---
+
+## 说明
+
+- `shared/db.js` 写入的时间字段为 `createTime` / `updateTime`；`course_name_presets` 排序用 `created_at`。
+- 单集合最多 20 条索引；当前均未超限。
+- 修改索引定义时，同步更新 `indexes.config.json` 与本表。

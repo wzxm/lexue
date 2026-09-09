@@ -18,7 +18,7 @@ function getAvatarText(name?: string) {
 
 export default function FamilyManagePage() {
   const userInfo = useAuthStore((state) => state.userInfo)
-  const currentOpenId = userInfo?.openId || ''
+  const currentUserId = userInfo?.userId || ''
 
   const [members, setMembers] = useState<MemberInfo[]>([])
   const [loading, setLoading] = useState(true)
@@ -27,7 +27,7 @@ export default function FamilyManagePage() {
 
   useShareAppMessage(() => ({
     title: `${userInfo?.nickname || '家人'}邀请你加入课表管家家庭共享`,
-    path: `${ROUTES.INVITE_ACCEPT}?inviterOpenId=${currentOpenId}`,
+    path: `${ROUTES.INVITE_ACCEPT}?inviterUserId=${currentUserId}`,
   }))
 
   useEffect(() => {
@@ -51,7 +51,7 @@ export default function FamilyManagePage() {
   }
 
   const handleInvite = () => {
-    if (!currentOpenId) {
+    if (!currentUserId) {
       Taro.showToast({ title: '请先登录后再邀请', icon: 'none' })
       return
     }
@@ -68,9 +68,9 @@ export default function FamilyManagePage() {
     try {
       Taro.showLoading({ title: '处理中...', mask: true })
       if (selectedMember.relation_type === 'incoming' || selectedMember.is_owner) {
-        await familyApi.leave(selectedMember.openid)
+        await familyApi.leave(selectedMember.userId)
       } else {
-        await familyApi.removeMember(selectedMember.openid)
+        await familyApi.removeMember(selectedMember.userId)
       }
       Taro.hideLoading()
       Taro.showToast({ title: selectedMember.relation_type === 'incoming' || selectedMember.is_owner ? '已退出共享' : '已取消共享' })
@@ -113,7 +113,7 @@ export default function FamilyManagePage() {
         <View className='family-list'>
           {members.map((member, index) => (
             <View
-              key={member.openid}
+              key={member.userId}
               className='family-member'
               onClick={() => {
                 setSelectedMember(member)

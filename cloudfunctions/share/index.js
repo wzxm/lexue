@@ -9,7 +9,7 @@ cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
 const db = require('../../shared/db');
 const { ERRORS, success, fail } = require('../../shared/errors');
-const { getOpenId, requireOwner, requireMember } = require('../../shared/auth');
+const { resolveCurrentUser, requireOwner, requireMember } = require('../../shared/auth');
 const {
   listFamilyRelations,
   syncOwnerSchedulesForMember,
@@ -67,12 +67,12 @@ function generateCode() {
 /**
  * 生成口令（课表 owner 才能生成）
  */
-async function generateShareCode(openid, payload) {
+async function generateShareCode(userId, payload) {
   validator.requireFields(payload, ['scheduleId']);
 
-  const schedule = await requireOwner(openid, payload.scheduleId);
+  const schedule = await requireOwner(userId, payload.scheduleId);
 
-  logger.info(FN, 'generateCode', { openid, scheduleId: payload.scheduleId });
+  logger.info(FN, 'generateCode', { user_id: userId, scheduleId: payload.scheduleId });
 
   // 先删除该课表的旧口令，一个课表同时只保留一个有效口令
   await db.removeWhere('share_codes', { schedule_id: payload.scheduleId, type: 'code' });
@@ -95,7 +95,7 @@ async function generateShareCode(openid, payload) {
     code,
     type: 'code',
     schedule_id: payload.scheduleId,
-    creator_openid: openid,
+    creator_user_id: userId,
     used_count: 0,
   });
 
@@ -105,7 +105,7 @@ async function generateShareCode(openid, payload) {
 /**
  * 验证口令，返回课表预览信息（不需要已登录状态，但微信云开发实际上已经有 openid）
  */
-async function verifyCode(openid, payload) {
+async function verifyCode(userId, payload) {
   validator.requireFields(payload, ['code']);
 
   const shareCode = await db.findOne('share_codes', {
@@ -116,7 +116,7 @@ async function verifyCode(openid, payload) {
   if (!shareCode) return fail(ERRORS.NOT_FOUND, '口令不存在或已失效');
 
   // 本人口令不能自己用
-  if (shareCode.creator_openid === openid) {
+  if (shareCode.creator_user_id === userId) {
     return fail(ERRORS.PARAM_ERROR, '这是你自己的口令，分享给好友使用吧');
   }
 
@@ -135,7 +135,7 @@ async function verifyCode(openid, payload) {
 /**
  * 接受口令，将当前用户加入课表的 shared_with
  */
-async function acceptCode(openid, payload) {
+async function acceptCode(userId, payload) {
   validator.requireFields(payload, ['code']);
 
   const shareCode = await db.findOne('share_codes', {
@@ -149,15 +149,15 @@ async function acceptCode(openid, payload) {
   if (!schedule) return fail(ERRORS.NOT_FOUND, '课表不存在');
 
   // 不能加入自己的课表（owner）
-  if (schedule.owner_openid === openid) {
+  if (schedule.owner_user_id === userId) {
     return fail(ERRORS.PARAM_ERROR, '这是你自己的课表，不用加入了');
   }
 
   // 检查是否已经是成员
   const sharedWith = Array.isArray(schedule.shared_with)
-    ? schedule.shared_with.filter((member) => member && typeof member.openid === 'string' && member.openid.trim())
+    ? schedule.shared_with.filter((member) => member && typeof member.user_id === 'string' && member.user_id.trim())
     : [];
-  if (sharedWith.some(m => m.openid === openid)) {
+  if (sharedWith.some(m => m.user_id === userId)) {
     return fail(ERRORS.PARAM_ERROR, '你已经是该课表的成员了');
   }
 
@@ -166,7 +166,7 @@ async function acceptCode(openid, payload) {
     return fail(ERRORS.LIMIT_EXCEEDED, `课表成员已达上限 ${MAX_FAMILY_MEMBERS} 人`);
   }
 
-  logger.info(FN, 'acceptCode', { openid, scheduleId: schedule._id });
+  logger.info(FN, 'acceptCode', { user_id: userId, scheduleId: schedule._id });
 
   // 加入 shared_with（默认只读权限）
   const _ = db.getCommand();
@@ -174,7 +174,7 @@ async function acceptCode(openid, payload) {
     data: {
       shared_with: _.push({
         each: [{
-          openid,
+          user_id: userId,
           permission: 'view', // 默认只读
           join_time: new Date(),
         }],
@@ -192,14 +192,14 @@ async function acceptCode(openid, payload) {
 /**
  * 通过 invite_code 验证课表口令，返回预览信息
  */
-async function verifyInviteCode(openid, payload) {
+async function verifyInviteCode(userId, payload) {
   validator.requireFields(payload, ['code']);
 
   const code = payload.code.toUpperCase().trim();
   const schedule = await db.findOne('schedules', { invite_code: code });
   if (!schedule) return fail(ERRORS.NOT_FOUND, '口令不存在，请检查后重试');
 
-  if (schedule.owner_openid === openid) {
+  if (schedule.owner_user_id === userId) {
     return fail(ERRORS.PARAM_ERROR, '这是你自己的口令，分享给好友使用吧');
   }
 
@@ -215,21 +215,21 @@ async function verifyInviteCode(openid, payload) {
  * 课程的 teacher 和 contact 字段留空
  * 课表和课程的 owner/student 改为当前用户
  */
-async function copyByInviteCode(openid, payload) {
+async function copyByInviteCode(userId, payload) {
   validator.requireFields(payload, ['code']);
 
   const code = payload.code.toUpperCase().trim();
   const sourceSchedule = await db.findOne('schedules', { invite_code: code });
   if (!sourceSchedule) return fail(ERRORS.NOT_FOUND, '口令不存在，请检查后重试');
 
-  if (sourceSchedule.owner_openid === openid) {
+  if (sourceSchedule.owner_user_id === userId) {
     return fail(ERRORS.PARAM_ERROR, '这是你自己的口令，分享给好友使用吧');
   }
 
   // 查当前用户的默认学生（source='init' 优先，否则取第一条）
-  let defaultStudent = await db.findOne('students', { owner_openid: openid, source: 'init' });
+  let defaultStudent = await db.findOne('students', { owner_user_id: userId, source: 'init' });
   if (!defaultStudent) {
-    const studentList = await db.getList('students', { owner_openid: openid }, { limit: 1 });
+    const studentList = await db.getList('students', { owner_user_id: userId }, { limit: 1 });
     defaultStudent = studentList[0] || null;
   }
   if (!defaultStudent) {
@@ -243,15 +243,15 @@ async function copyByInviteCode(openid, payload) {
   }
 
   // 判断是否为当前用户第一个课表
-  const existingSchedules = await db.getList('schedules', { owner_openid: openid }, { limit: 1 });
+  const existingSchedules = await db.getList('schedules', { owner_user_id: userId }, { limit: 1 });
   const isDefault = existingSchedules.length === 0;
-  const familyRelations = await listFamilyRelations(openid);
+  const familyRelations = await listFamilyRelations(userId);
 
-  logger.info(FN, 'copyByInviteCode', { openid, sourceScheduleId: sourceSchedule._id });
+  logger.info(FN, 'copyByInviteCode', { user_id: userId, sourceScheduleId: sourceSchedule._id });
 
   // 复制课表
   const { _id: newScheduleId } = await db.create('schedules', {
-    owner_openid: openid,
+    owner_user_id: userId,
     student_id: defaultStudent._id,
     name: sourceSchedule.name,
     semester: sourceSchedule.semester || '',
@@ -261,7 +261,7 @@ async function copyByInviteCode(openid, payload) {
     invite_code: newInviteCode,
     is_default: isDefault,
     shared_with: familyRelations.map((relation) => ({
-      openid: relation.member_openid,
+      user_id: relation.member_user_id,
       permission: 'edit',
       join_time: relation.createTime || new Date(),
     })),
@@ -277,7 +277,7 @@ async function copyByInviteCode(openid, payload) {
     await db.create('courses', {
       schedule_id: newScheduleId,
       student_id: defaultStudent._id,
-      owner_openid: openid,
+      owner_user_id: userId,
       name: course.name,
       day_of_week: course.day_of_week,
       slot: Number.isFinite(slot) && slot > 0 ? slot : 1,
@@ -297,21 +297,21 @@ async function copyByInviteCode(openid, payload) {
 /**
  * 验证邀请人，返回账户级共享摘要
  */
-async function verifyInvite(openid, payload) {
-  validator.requireFields(payload, ['inviterOpenId']);
+async function verifyInvite(userId, payload) {
+  validator.requireFields(payload, ['inviterUserId']);
 
-  const inviterOpenId = String(payload.inviterOpenId).trim();
-  if (!inviterOpenId) return fail(ERRORS.PARAM_ERROR, '邀请参数无效');
-  if (inviterOpenId === openid) return fail(ERRORS.PARAM_ERROR, '不能邀请自己');
+  const inviterUserId = String(payload.inviterUserId).trim();
+  if (!inviterUserId) return fail(ERRORS.PARAM_ERROR, '邀请参数无效');
+  if (inviterUserId === userId) return fail(ERRORS.PARAM_ERROR, '不能邀请自己');
 
-  const inviter = await db.findOne('users', { openid: inviterOpenId });
+  const inviter = await db.getOne('users', inviterUserId);
   if (!inviter) return fail(ERRORS.NOT_FOUND, '邀请人不存在');
 
-  const students = await db.getList('students', { owner_openid: inviterOpenId });
-  const schedules = await db.getList('schedules', { owner_openid: inviterOpenId });
+  const students = await db.getList('students', { owner_user_id: inviterUserId });
+  const schedules = await db.getList('schedules', { owner_user_id: inviterUserId });
 
   return success({
-    inviter_openid: inviterOpenId,
+    inviter_user_id: inviterUserId,
     inviter_nickname: inviter.nickname || '',
     inviter_avatar_url: inviter.avatar_url || '',
     student_count: students.length,
@@ -327,41 +327,41 @@ async function verifyInvite(openid, payload) {
 /**
  * 接受账户级邀请：建立家庭关系并同步全部课表权限
  */
-async function acceptInvite(openid, payload) {
-  validator.requireFields(payload, ['inviterOpenId']);
+async function acceptInvite(userId, payload) {
+  validator.requireFields(payload, ['inviterUserId']);
 
-  const inviterOpenId = String(payload.inviterOpenId).trim();
-  if (!inviterOpenId) return fail(ERRORS.PARAM_ERROR, '邀请参数无效');
-  if (inviterOpenId === openid) return fail(ERRORS.PARAM_ERROR, '不能邀请自己');
+  const inviterUserId = String(payload.inviterUserId).trim();
+  if (!inviterUserId) return fail(ERRORS.PARAM_ERROR, '邀请参数无效');
+  if (inviterUserId === userId) return fail(ERRORS.PARAM_ERROR, '不能邀请自己');
 
-  const inviter = await db.findOne('users', { openid: inviterOpenId });
+  const inviter = await db.getOne('users', inviterUserId);
   if (!inviter) return fail(ERRORS.NOT_FOUND, '邀请人不存在');
 
-  const schedules = await db.getList('schedules', { owner_openid: inviterOpenId });
+  const schedules = await db.getList('schedules', { owner_user_id: inviterUserId });
   for (const schedule of schedules) {
     const sharedWith = Array.isArray(schedule.shared_with)
-      ? schedule.shared_with.filter((member) => member && typeof member.openid === 'string' && member.openid.trim())
+      ? schedule.shared_with.filter((member) => member && typeof member.user_id === 'string' && member.user_id.trim())
       : [];
-    const alreadyJoined = sharedWith.some((member) => member.openid === openid);
+    const alreadyJoined = sharedWith.some((member) => member.user_id === userId);
     if (!alreadyJoined && sharedWith.length + 1 > MAX_FAMILY_MEMBERS) {
       return fail(ERRORS.LIMIT_EXCEEDED, `课表《${schedule.name}》成员已达上限 ${MAX_FAMILY_MEMBERS} 人`);
     }
   }
 
-  await upsertFamilyRelation(inviterOpenId, openid, {
+  await upsertFamilyRelation(inviterUserId, userId, {
     member_nickname: '',
     member_avatar: '',
   });
-  await syncOwnerSchedulesForMember(inviterOpenId, openid);
+  await syncOwnerSchedulesForMember(inviterUserId, userId);
 
   logger.info(FN, 'acceptInvite', {
-    openid,
-    inviterOpenId,
+    userId,
+    inviterUserId,
     scheduleCount: schedules.length,
   });
 
   return success({
-    inviter_openid: inviterOpenId,
+    inviter_user_id: inviterUserId,
     schedule_ids: schedules.map((schedule) => schedule._id),
     joined_count: schedules.length,
     permission: 'edit',
@@ -373,17 +373,17 @@ exports.main = async (event, context) => {
   const wxContext = cloud.getWXContext();
 
   try {
-    const openid = getOpenId(wxContext);
+    const { userId } = await resolveCurrentUser(wxContext);
     const { action, payload = {} } = event;
 
     switch (action) {
-      case 'generateCode':   return await generateShareCode(openid, payload);
-      case 'verifyCode':     return await verifyCode(openid, payload);
-      case 'acceptCode':     return await acceptCode(openid, payload);
-      case 'verifyInviteCode': return await verifyInviteCode(openid, payload);
-      case 'copyByInviteCode': return await copyByInviteCode(openid, payload);
-      case 'verifyInvite':   return await verifyInvite(openid, payload);
-      case 'acceptInvite':   return await acceptInvite(openid, payload);
+      case 'generateCode':   return await generateShareCode(userId, payload);
+      case 'verifyCode':     return await verifyCode(userId, payload);
+      case 'acceptCode':     return await acceptCode(userId, payload);
+      case 'verifyInviteCode': return await verifyInviteCode(userId, payload);
+      case 'copyByInviteCode': return await copyByInviteCode(userId, payload);
+      case 'verifyInvite':   return await verifyInvite(userId, payload);
+      case 'acceptInvite':   return await acceptInvite(userId, payload);
       default:               return fail(ERRORS.PARAM_ERROR, `未知的 action: ${action}`);
     }
   } catch (e) {

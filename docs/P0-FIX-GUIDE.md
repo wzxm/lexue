@@ -13,22 +13,7 @@
 - 更新了 `schema/collections.md` 文档说明
 
 **数据迁移：**
-创建了 `cloudfunctions/migrate-day-of-week/` 云函数，用于将现有数据从旧格式迁移到新格式。
-
-**部署步骤：**
-```bash
-# 1. 部署迁移云函数
-npm run deploy:migrate-day-of-week
-
-# 2. 在微信云开发控制台手动触发 migrate-day-of-week 云函数
-#    检查返回结果，确认迁移成功
-
-# 3. 部署更新后的业务云函数
-npm run deploy:course
-npm run deploy:reminder
-
-# 4. 迁移完成后，可删除 migrate-day-of-week 云函数
-```
+旧环境曾用一次性云函数 `migrate-day-of-week` 把已有数据从 `0–6` 迁到 `1–7`。新环境无旧数据，该函数已从仓库删除，无需再部署。
 
 ---
 

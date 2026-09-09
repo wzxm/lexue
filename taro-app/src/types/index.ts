@@ -61,7 +61,7 @@ export interface Schedule {
   is_default: boolean;
   viewMode?: ViewMode;
   view_mode?: string;
-  owner_openid?: string;
+  owner_user_id?: string;
   shared_with?: any[];
   createdAt: number;
   updatedAt: number;
@@ -80,10 +80,10 @@ export interface Student {
   source?: 'init' | 'user';
   /** 是否为共享学生（他人通过邀请共享给我的） */
   isShared?: boolean;
-  /** 学生的实际 owner openid（用于前端权限判断） */
-  ownerOpenId?: string;
-  /** 共享来源家长 openid */
-  sharedFromOpenId?: string;
+  /** 学生的实际 owner userId（用于前端权限判断） */
+  ownerUserId?: string;
+  /** 共享来源家长 userId */
+  sharedFromUserId?: string;
   /** 共享来源家长昵称 */
   sharedFromNickname?: string;
   /** 共享来源家长头像 */
@@ -92,7 +92,7 @@ export interface Student {
 
 export interface FamilyMember {
   id: string;
-  openId: string;
+  userId: string;
   nickname: string;
   avatar: string;
   role: FamilyRole;
@@ -100,9 +100,10 @@ export interface FamilyMember {
 }
 
 export interface UserInfo {
-  openId: string;
-  /** 手机号码，微信授权绑定后才有值 */
-  phone?: string;
+  userId: string;
+  openId?: string;
+  /** 手机号码 */
+  phone: string;
   nickname: string;
   avatarUrl: string;
   settings?: BackendSettings;

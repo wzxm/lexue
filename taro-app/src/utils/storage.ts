@@ -51,15 +51,30 @@ export function loadStudents(): Student[] {
   return getItem<Student[]>('students') || [];
 }
 
-// 登录态缓存
+// 登录态缓存（以稳定 userId 为准）
+export function saveUserId(userId: string): void {
+  setItem('userId', userId);
+}
+
+export function loadUserId(): string | null {
+  return getItem<string>('userId');
+}
+
+export function clearUserId(): void {
+  removeItem('userId');
+}
+
+/** @deprecated 仅保留微信 OPENID 缓存，不作为登录判据 */
 export function saveOpenId(openId: string): void {
   setItem('openId', openId);
 }
 
+/** @deprecated */
 export function loadOpenId(): string | null {
   return getItem<string>('openId');
 }
 
+/** @deprecated */
 export function clearOpenId(): void {
   removeItem('openId');
 }
@@ -76,7 +91,6 @@ export function clearUserInfo(): void {
   removeItem('userInfo');
 }
 
-// 登录标记缓存（用于兼容 openId 缺失场景）
 export function saveLoginFlag(loggedIn: boolean): void {
   setItem('isLoggedIn', loggedIn);
 }
@@ -87,6 +101,19 @@ export function loadLoginFlag(): boolean {
 
 export function clearLoginFlag(): void {
   removeItem('isLoggedIn');
+}
+
+// 短信验证码倒计时恢复
+export function saveSmsCooldownUntil(untilMs: number): void {
+  setItem('smsCooldownUntil', untilMs);
+}
+
+export function loadSmsCooldownUntil(): number | null {
+  return getItem<number>('smsCooldownUntil');
+}
+
+export function clearSmsCooldownUntil(): void {
+  removeItem('smsCooldownUntil');
 }
 
 // 当前学生 ID

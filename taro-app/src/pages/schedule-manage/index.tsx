@@ -5,7 +5,7 @@ import { useScheduleStore } from '../../store/schedule.store'
 import { useStudentStore } from '../../store/student.store'
 import { ROUTES } from '../../constants/routes'
 import { listSchedules, deleteSchedule } from '../../api/schedule.api'
-import { loadOpenId } from '../../utils/storage'
+import { loadUserId } from '../../utils/storage'
 import noDataImg from '../../assets/noData.png'
 import './index.scss'
 import { useMemo, useState } from 'react'
@@ -35,7 +35,7 @@ function formatSemesterDisplay(value?: string): string {
 
 export default function ScheduleManagePage() {
   const userInfo = useAuthStore(s => s.userInfo)
-  const currentOpenId = userInfo?.openId || loadOpenId() || ''
+  const currentUserId = userInfo?.userId || loadUserId() || ''
   const schedules = useScheduleStore(s => s.schedules)
   const setSchedules = useScheduleStore(s => s.setSchedules)
   const students = useStudentStore(s => s.students)
@@ -104,7 +104,7 @@ export default function ScheduleManagePage() {
   const groupedSchedules = useMemo(() => {
     const map = new Map<string, { studentName: string, isShared: boolean, ownerName?: string, items: Schedule[] }>()
     for (const s of schedules) {
-      const isOwner = !s.owner_openid || s.owner_openid === currentOpenId
+      const isOwner = !s.owner_user_id || s.owner_user_id === currentUserId
       const studentInfo = students.find(st => st.id === s.student_id)
       const key = s.student_id || 'unknown'
 
@@ -124,7 +124,7 @@ export default function ScheduleManagePage() {
       map.get(key)!.items.push(s)
     }
     return Array.from(map.values())
-  }, [schedules, students, currentOpenId])
+  }, [schedules, students, currentUserId])
 
   return (
     <View className='schedule-manage-page'>
@@ -164,7 +164,7 @@ export default function ScheduleManagePage() {
 
                 <View className='schedule-cards'>
                   {group.items.map(schedule => {
-                    const isOwner = !schedule.owner_openid || schedule.owner_openid === currentOpenId
+                    const isOwner = !schedule.owner_user_id || schedule.owner_user_id === currentUserId
                     const scheduleId = schedule.id || schedule._id || ''
 
                     return (

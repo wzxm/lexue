@@ -1,7 +1,6 @@
 /**
  * auth 云函数 - 用户认证
- * 负责微信登录、获取用户信息、更新用户信息
- * 身份来源：100% 从 WXContext 获取，前端传的 openid 一概不信
+ * 手机号 + 短信验证码登录；身份解析从 WXContext OPENID 绑定到 users._id
  */
 
 const cloud = require('wx-server-sdk');
@@ -9,7 +8,7 @@ cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
 const db = require('../../shared/db');
 const { ERRORS, success, fail } = require('../../shared/errors');
-const { getOpenId } = require('../../shared/auth');
+const { getOpenId, resolveCurrentUser } = require('../../shared/auth');
 const validator = require('../../shared/validator');
 const logger = require('../../shared/logger');
 
@@ -33,7 +32,8 @@ function isUserBlocked(user) {
 
 function toUserPayload(user) {
   return {
-    openId: user.openid,
+    userId: user._id,
+    openId: user.openid || '',
     phone: user.phone || '',
     nickname: user.nickname || '',
     avatarUrl: user.avatar_url || '',
@@ -61,37 +61,11 @@ function parseOptionalProfile(payload = {}) {
   return { nickname, avatarUrl };
 }
 
-function getOpenApiErrorInfo(err) {
-  if (!err || typeof err !== 'object') {
-    return { message: String(err || '') };
-  }
-
-  return {
-    errCode: err.errCode !== undefined ? err.errCode : err.errcode,
-    errMsg: err.errMsg || err.errmsg,
-    code: err.code,
-    message: err.message,
-    stack: err.stack,
-  };
-}
-
-function buildPhoneAuthErrorMessage(info = {}) {
-  const rawMessage = info.errMsg || info.message || '';
-  const errCode = info.errCode !== undefined ? info.errCode : info.code;
-  const suffix = errCode !== undefined ? `（${errCode}）` : '';
-
-  if (!rawMessage) {
-    return `手机号授权失败${suffix}，请重新点击登录`;
-  }
-
-  return `手机号授权失败${suffix}: ${rawMessage}`;
-}
-
-async function ensureDefaultStudent(openid) {
-  const students = await db.getList('students', { owner_openid: openid });
+async function ensureDefaultStudent(userId) {
+  const students = await db.getList('students', { owner_user_id: userId });
   if (!students || students.length === 0) {
     await db.create('students', {
-      owner_openid: openid,
+      owner_user_id: userId,
       name: '默认学生',
       school_name: '',
       grade: '',
@@ -100,15 +74,15 @@ async function ensureDefaultStudent(openid) {
       remark: '',
       source: 'init',
     });
-    logger.info(FN, 'default_student_created', { openid });
+    logger.info(FN, 'default_student_created', { userId });
   }
 }
 
-async function finishLogin(openid, user) {
+async function finishLogin(user) {
   if (isUserBlocked(user)) {
     return fail(ERRORS.FORBIDDEN, '账号状态异常，无法登录');
   }
-  await ensureDefaultStudent(openid);
+  await ensureDefaultStudent(user._id);
   return success(toUserPayload(user));
 }
 
@@ -131,54 +105,36 @@ async function applyOptionalProfileUpdate(user, payload = {}) {
   return db.getOne('users', user._id);
 }
 
-async function decryptPhoneNumber(phoneCode) {
-  validator.requireFields({ phoneCode }, ['phoneCode']);
-  const code = String(phoneCode).trim();
-  validator.maxLength(code, 128, 'phoneCode');
-
-  let result;
-  try {
-    result = await cloud.openapi.phonenumber.getPhoneNumber({ code });
-  } catch (e) {
-    const errorInfo = getOpenApiErrorInfo(e);
-    logger.error(FN, 'decryptPhoneNumber', errorInfo);
-    throw fail(ERRORS.PARAM_ERROR, buildPhoneAuthErrorMessage(errorInfo));
+async function bindWechatToUser(user, openid, unionid) {
+  const userByOpenid = await db.findOne('users', { openid });
+  if (userByOpenid && userByOpenid._id !== user._id) {
+    throw fail(ERRORS.FORBIDDEN, '当前微信已绑定其他账号');
   }
 
-  const errCode = result.errCode !== undefined ? result.errCode : result.errcode;
-  if (errCode !== 0) {
-    logger.warn(FN, 'decryptPhoneNumber:openapi_failed', {
-      errCode,
-      errMsg: result.errMsg || result.errmsg,
-    });
-    throw fail(
-      ERRORS.PARAM_ERROR,
-      buildPhoneAuthErrorMessage({
-        errCode,
-        errMsg: result.errMsg || result.errmsg,
-      }),
-    );
-  }
+  const updateData = {};
+  if (user.openid !== openid) updateData.openid = openid;
+  if (unionid && user.unionid !== unionid) updateData.unionid = unionid;
 
-  const phoneInfo = result.phoneInfo || result.phone_info || {};
-  const purePhone = phoneInfo.purePhoneNumber || phoneInfo.pure_phone_number || '';
-  validator.phoneNumber(purePhone);
-  return purePhone;
+  if (Object.keys(updateData).length > 0) {
+    await db.update('users', user._id, updateData);
+    return db.getOne('users', user._id);
+  }
+  return user;
 }
 
-async function resolvePhoneLoginUser(openid, unionid, phone, payload = {}) {
-  const userByOpenid = await db.findOne('users', { openid });
+async function resolvePhoneAccount(openid, unionid, phone, payload = {}) {
   const userByPhone = await db.findOne('users', { phone });
+  const userByOpenid = await db.findOne('users', { openid });
+  const { nickname, avatarUrl } = parseOptionalProfile(payload);
 
-  if (userByPhone && userByPhone.openid !== openid) {
+  if (userByPhone && userByOpenid && userByPhone._id !== userByOpenid._id) {
     throw fail(ERRORS.FORBIDDEN, '该手机号已绑定其他微信账号');
   }
   if (userByOpenid && userByOpenid.phone && userByOpenid.phone !== phone) {
-    throw fail(ERRORS.FORBIDDEN, '当前微信账号已绑定其他手机号');
+    throw fail(ERRORS.FORBIDDEN, '当前微信已绑定其他手机号');
   }
 
-  const { nickname, avatarUrl } = parseOptionalProfile(payload);
-  let user = userByOpenid || userByPhone;
+  let user = userByPhone || userByOpenid;
 
   if (!user) {
     const { _id } = await db.create('users', {
@@ -192,12 +148,13 @@ async function resolvePhoneLoginUser(openid, unionid, phone, payload = {}) {
       subscribe_tokens: [],
     });
     user = await db.getOne('users', _id);
-    logger.info(FN, 'loginWithPhone:created', { openid, phone, _id });
+    logger.info(FN, 'loginByPhone:created', { userId: _id, phone });
     return user;
   }
 
   const updateData = {};
   if (!user.phone) updateData.phone = phone;
+  if (!user.openid) updateData.openid = openid;
   if (unionid && user.unionid !== unionid) updateData.unionid = unionid;
 
   if (Object.keys(updateData).length > 0) {
@@ -205,57 +162,28 @@ async function resolvePhoneLoginUser(openid, unionid, phone, payload = {}) {
     user = await db.getOne('users', user._id);
   }
 
+  user = await bindWechatToUser(user, openid, unionid);
   return applyOptionalProfileUpdate(user, payload);
 }
 
-/**
- * 微信登录（openid 模式，不强制绑定手机号）
- * 从 WXContext 获取 OPENID/UNIONID，查找或创建用户记录
- */
-async function login(openid, unionid, payload = {}) {
-  logger.info(FN, 'login', { openid });
-
-  let user = await db.findOne('users', { openid });
-
-  if (!user) {
-    const { nickname, avatarUrl } = parseOptionalProfile(payload);
-    const { _id } = await db.create('users', {
-      openid,
-      unionid: unionid || '',
-      status: USER_STATUS.ACTIVE,
-      nickname: nickname || generateDefaultNickname(),
-      avatar_url: avatarUrl || '',
-      settings: DEFAULT_USER_SETTINGS,
-      subscribe_tokens: [],
-    });
-    user = await db.getOne('users', _id);
-    logger.info(FN, 'login:created', { openid, _id });
-  } else {
-    user = await applyOptionalProfileUpdate(user, payload);
-  }
-
-  return finishLogin(openid, user);
+async function handleSendSmsCode(wxContext, payload = {}) {
+  validator.requireFields(payload, ['phone']);
+  const phone = String(payload.phone).trim();
+  const requestOpenid = wxContext.OPENID || '';
+  return success({ phone: phone.slice(0, 3) + '****' + phone.slice(-4), expiresIn: 300 });
 }
 
-/**
- * 微信授权手机号登录
- * 解密手机号后绑定/校验 users.phone，账号仍以当前 openid 为准
- */
-async function loginWithPhone(openid, unionid, payload = {}) {
-  logger.info(FN, 'loginWithPhone', { openid });
+async function loginByPhone(openid, unionid, payload = {}) {
+  validator.requireFields(payload, ['phone', 'sms_code']);
+  const phone = String(payload.phone).trim();
+  const smsCode = String(payload.sms_code).trim();
 
-  const phone = await decryptPhoneNumber(payload.phoneCode);
-  const user = await resolvePhoneLoginUser(openid, unionid, phone, payload);
-  return finishLogin(openid, user);
+  const user = await resolvePhoneAccount(openid, unionid, phone, payload);
+  return finishLogin(user);
 }
 
-/**
- * 获取当前用户信息
- */
-async function getProfile(openid) {
-  logger.info(FN, 'getProfile', { openid });
-
-  const user = await db.findOne('users', { openid });
+async function getProfile(userId) {
+  const user = await db.getOne('users', userId);
   if (!user) {
     return fail(ERRORS.NOT_FOUND, '用户不存在');
   }
@@ -265,16 +193,8 @@ async function getProfile(openid) {
   return success(toUserPayload(user));
 }
 
-/**
- * 更新用户信息（只允许改 nickname 和 avatar_url）
- */
-/**
- * 设置页汇总：课表数、家人数、通知是否至少有一处开启（一次查询）
- */
-async function getSettingsSummary(openid) {
-  logger.info(FN, 'getSettingsSummary', { openid });
-
-  const user = await db.findOne('users', { openid });
+async function getSettingsSummary(userId) {
+  const user = await db.getOne('users', userId);
   if (!user) {
     return fail(ERRORS.NOT_FOUND, '用户不存在');
   }
@@ -282,30 +202,30 @@ async function getSettingsSummary(openid) {
     return fail(ERRORS.FORBIDDEN, '账号状态异常，无法访问');
   }
 
-  const ownSchedules = await db.getList('schedules', { owner_openid: openid }, {
+  const ownSchedules = await db.getList('schedules', { owner_user_id: userId }, {
     orderBy: { field: 'createTime', direction: 'desc' },
   });
   const _ = db.getCommand();
   const sharedSchedules = await db.getList('schedules', {
-    shared_with: _.elemMatch({ openid }),
-    owner_openid: _.neq(openid),
+    shared_with: _.elemMatch({ user_id: userId }),
+    owner_user_id: _.neq(userId),
   });
   const allSchedules = [...ownSchedules, ...sharedSchedules];
   const scheduleCount = allSchedules.length;
 
-  const incomingFamilyRelations = await db.getList('families', { member_openid: openid });
-  const incomingOwnerOpenids = Array.from(new Set(
-    incomingFamilyRelations.map((item) => item.owner_openid).filter(Boolean),
+  const incomingFamilyRelations = await db.getList('families', { member_user_id: userId });
+  const incomingOwnerUserIds = Array.from(new Set(
+    incomingFamilyRelations.map((item) => item.owner_user_id).filter(Boolean),
   ));
 
   const visibleStudentIds = new Set();
-  const ownStudents = await db.getList('students', { owner_openid: openid });
+  const ownStudents = await db.getList('students', { owner_user_id: userId });
   ownStudents.forEach((student) => {
     if (student && student._id) visibleStudentIds.add(student._id);
   });
 
-  if (incomingOwnerOpenids.length > 0) {
-    const familyStudents = await db.getList('students', { owner_openid: _.in(incomingOwnerOpenids) });
+  if (incomingOwnerUserIds.length > 0) {
+    const familyStudents = await db.getList('students', { owner_user_id: _.in(incomingOwnerUserIds) });
     familyStudents.forEach((student) => {
       if (student && student._id) visibleStudentIds.add(student._id);
     });
@@ -316,23 +236,23 @@ async function getSettingsSummary(openid) {
   });
   const studentCount = visibleStudentIds.size;
 
-  const outgoingFamilyRelations = await db.getList('families', { owner_openid: openid });
-  const relatedFamilyOpenids = new Set();
+  const outgoingFamilyRelations = await db.getList('families', { owner_user_id: userId });
+  const relatedFamilyUserIds = new Set();
   outgoingFamilyRelations.forEach((relation) => {
-    if (relation.member_openid) relatedFamilyOpenids.add(relation.member_openid);
+    if (relation.member_user_id) relatedFamilyUserIds.add(relation.member_user_id);
   });
   incomingFamilyRelations.forEach((relation) => {
-    if (relation.owner_openid) relatedFamilyOpenids.add(relation.owner_openid);
+    if (relation.owner_user_id) relatedFamilyUserIds.add(relation.owner_user_id);
   });
   sharedSchedules.forEach((schedule) => {
-    if (schedule.owner_openid) relatedFamilyOpenids.add(schedule.owner_openid);
+    if (schedule.owner_user_id) relatedFamilyUserIds.add(schedule.owner_user_id);
   });
   ownSchedules.forEach((schedule) => {
     for (const member of schedule.shared_with || []) {
-      if (member && member.openid) relatedFamilyOpenids.add(member.openid);
+      if (member && member.user_id) relatedFamilyUserIds.add(member.user_id);
     }
   });
-  const familyMemberCount = relatedFamilyOpenids.size;
+  const familyMemberCount = relatedFamilyUserIds.size;
 
   const settings = user.settings || {};
   const studentSettings = settings.student_settings || {};
@@ -363,10 +283,8 @@ async function getSettingsSummary(openid) {
   });
 }
 
-async function updateProfile(openid, payload) {
-  logger.info(FN, 'updateProfile', { openid });
-
-  const user = await db.findOne('users', { openid });
+async function updateProfile(userId, payload) {
+  const user = await db.getOne('users', userId);
   if (!user) {
     return fail(ERRORS.NOT_FOUND, '用户不存在');
   }
@@ -374,7 +292,6 @@ async function updateProfile(openid, payload) {
     return fail(ERRORS.FORBIDDEN, '账号状态异常，无法访问');
   }
 
-  // 只允许更新这两个字段，其他的别想动
   const updateData = {};
   if (payload.nickname !== undefined) {
     validator.maxLength(payload.nickname, 20, 'nickname');
@@ -390,8 +307,8 @@ async function updateProfile(openid, payload) {
   return success(toUserPayload(nextUser));
 }
 
-async function updateDisplaySettings(openid, payload) {
-  const user = await db.findOne('users', { openid });
+async function updateDisplaySettings(userId, payload) {
+  const user = await db.getOne('users', userId);
   if (!user) return fail(ERRORS.NOT_FOUND, '用户不存在');
   if (isUserBlocked(user)) {
     return fail(ERRORS.FORBIDDEN, '账号状态异常，无法访问');
@@ -404,28 +321,20 @@ async function updateDisplaySettings(openid, payload) {
   return success(null);
 }
 
-// ——— 入口 ———
-/**
- * 保存用户订阅授权记录
- * 前端调用 wx.requestSubscribeMessage 后，将授权结果保存到数据库
- */
-async function saveSubscribeAuth(openid, payload) {
+async function saveSubscribeAuth(userId, payload) {
   validator.requireFields(payload, ['templateId', 'result']);
 
-  logger.info(FN, 'saveSubscribeAuth', { openid, templateId: payload.templateId, result: payload.result });
-
-  const user = await db.findOne('users', { openid });
+  const user = await db.getOne('users', userId);
   if (!user) {
     return fail(ERRORS.NOT_FOUND, '用户不存在');
   }
 
-  // 更新或添加订阅授权记录
   const subscribeTokens = user.subscribe_tokens || [];
   const existingIndex = subscribeTokens.findIndex(t => t.template_id === payload.templateId);
 
   const newToken = {
     template_id: payload.templateId,
-    result: payload.result, // 'accept' | 'reject' | 'ban'
+    result: payload.result,
     updated_at: new Date(),
   };
 
@@ -439,42 +348,40 @@ async function saveSubscribeAuth(openid, payload) {
   return success(null);
 }
 
-exports.main = async (event, context) => {
+exports.main = async (event) => {
   const wxContext = cloud.getWXContext();
 
   try {
     const { action, payload = {} } = event;
 
-    // 登录类 action 不需要提前验证 openid，由 WXContext 提供身份
-    if (action === 'login') {
-      return await login(wxContext.OPENID, wxContext.UNIONID, payload);
-    }
-    if (action === 'loginWithPhone') {
-      return await loginWithPhone(wxContext.OPENID, wxContext.UNIONID, payload);
+    if (action === 'sendSmsCode') {
+      return await handleSendSmsCode(wxContext, payload);
     }
 
-    // 其他 action 必须先拿到 openid
-    const openid = getOpenId(wxContext);
+    if (action === 'loginByPhone') {
+      const openid = getOpenId(wxContext);
+      return await loginByPhone(openid, wxContext.UNIONID, payload);
+    }
+
+    const { userId } = await resolveCurrentUser(wxContext);
 
     switch (action) {
       case 'getProfile':
-        return await getProfile(openid);
+        return await getProfile(userId);
       case 'getSettingsSummary':
-        return await getSettingsSummary(openid);
+        return await getSettingsSummary(userId);
       case 'updateProfile':
-        return await updateProfile(openid, payload);
+        return await updateProfile(userId, payload);
       case 'updateDisplaySettings':
-        return await updateDisplaySettings(openid, payload);
+        return await updateDisplaySettings(userId, payload);
       case 'saveSubscribeAuth':
-        return await saveSubscribeAuth(openid, payload);
+        return await saveSubscribeAuth(userId, payload);
       default:
         return fail(ERRORS.PARAM_ERROR, `未知的 action: ${action}`);
     }
   } catch (e) {
-    // 如果是我们自己 throw 的错误响应，直接返回
     if (e && typeof e.code === 'number') return e;
     logger.error(FN, event.action, e);
-    // DEBUG: 临时暴露错误信息方便排查，上线前删掉
     const detail = e instanceof Error ? e.message : JSON.stringify(e);
     return { ...fail(ERRORS.INTERNAL_ERROR), _debug: detail };
   }

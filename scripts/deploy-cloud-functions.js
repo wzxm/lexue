@@ -61,7 +61,11 @@ function validateFunctionPackage(fnName) {
 
 function hasCompleteLocalDependencies(fnName) {
   try {
-    require.resolve('wx-server-sdk', { paths: [path.join(CF_ROOT, fnName)] })
+    const fnDir = path.join(CF_ROOT, fnName)
+    const pkg = JSON.parse(fs.readFileSync(path.join(fnDir, 'package.json'), 'utf8'))
+    for (const name of Object.keys(pkg.dependencies || {})) {
+      require.resolve(name, { paths: [fnDir] })
+    }
     return true
   } catch {
     return false
@@ -110,10 +114,11 @@ function copyDirSync(src, dest, excludes = []) {
 /** 递归替换目录下所有 .js 文件中的 shared 路径 */
 function fixRequirePaths(dir) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (entry.name === 'node_modules') continue
     const fullPath = path.join(dir, entry.name)
     if (entry.isDirectory()) {
       fixRequirePaths(fullPath)
-    } else if (entry.name.endsWith('.js')) {
+    } else if (entry.isFile() && entry.name.endsWith('.js')) {
       let content = fs.readFileSync(fullPath, 'utf8')
       // 兼容各种层级的 ../../shared/ 引用，统一改为 ./shared/
       const fixed = content.replace(/require\(['"](?:\.\.\/)+shared\//g, "require('./shared/")

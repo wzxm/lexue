@@ -6,7 +6,7 @@
 
 - **前端**：Taro 4.x + React + TypeScript + Zustand + Sass（.scss）
 - **后端**：微信云开发（云函数 + 云数据库）
-- **云环境 ID**：`test-d7gxuxk5a8418c629`
+- **云环境 ID**：`cloud1-d5gbyvu3l05e11828`
 
 ## 仓库结构
 

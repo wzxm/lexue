@@ -8,7 +8,7 @@ cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
 const db = require('../../shared/db');
 const { ERRORS, success, fail } = require('../../shared/errors');
-const { getOpenId } = require('../../shared/auth');
+const { resolveCurrentUser } = require('../../shared/auth');
 const {
   listFamilyRelations,
   removeFamilyRelation,
@@ -19,53 +19,53 @@ const logger = require('../../shared/logger');
 
 const FN = 'family';
 
-async function listMembers(openid) {
-  logger.info(FN, 'listMembers', { openid });
+async function listMembers(userId) {
+  logger.info(FN, 'listMembers', { userId });
 
   const _ = db.getCommand();
-  const outgoingRelations = await listFamilyRelations(openid);
-  const incomingRelations = await db.getList('families', { member_openid: openid });
+  const outgoingRelations = await listFamilyRelations(userId);
+  const incomingRelations = await db.getList('families', { member_user_id: userId });
   const incomingSharedSchedules = await db.getList('schedules', {
-    shared_with: _.elemMatch({ openid }),
-    owner_openid: _.neq(openid),
+    shared_with: _.elemMatch({ user_id: userId }),
+    owner_user_id: _.neq(userId),
   });
 
-  const outgoingMemberOpenids = outgoingRelations.map((item) => item.member_openid).filter(Boolean);
-  const incomingOwnerOpenids = Array.from(new Set([
-    ...incomingRelations.map((item) => item.owner_openid).filter(Boolean),
-    ...incomingSharedSchedules.map((schedule) => schedule.owner_openid).filter(Boolean),
+  const outgoingMemberUserIds = outgoingRelations.map((item) => item.member_user_id).filter(Boolean);
+  const incomingOwnerUserIds = Array.from(new Set([
+    ...incomingRelations.map((item) => item.owner_user_id).filter(Boolean),
+    ...incomingSharedSchedules.map((schedule) => schedule.owner_user_id).filter(Boolean),
   ]));
-  const allOpenids = Array.from(new Set([...outgoingMemberOpenids, ...incomingOwnerOpenids]));
-  const users = allOpenids.length > 0
-    ? await db.getList('users', { openid: _.in(allOpenids) })
+  const allUserIds = Array.from(new Set([...outgoingMemberUserIds, ...incomingOwnerUserIds]));
+  const users = allUserIds.length > 0
+    ? await db.getList('users', { _id: _.in(allUserIds) })
     : [];
   const userMap = {};
-  users.forEach((user) => { userMap[user.openid] = user; });
+  users.forEach((user) => { userMap[user._id] = user; });
 
   const members = outgoingRelations.map((item) => ({
-    openid: item.member_openid,
+    userId: item.member_user_id,
     permission: 'edit',
     is_owner: false,
     relation_type: 'outgoing',
     join_time: item.createTime,
-    nickname: userMap[item.member_openid]?.nickname || item.member_nickname || '',
-    avatar_url: userMap[item.member_openid]?.avatar_url || item.member_avatar || '',
+    nickname: userMap[item.member_user_id]?.nickname || item.member_nickname || '',
+    avatar_url: userMap[item.member_user_id]?.avatar_url || item.member_avatar || '',
   }));
 
-  const outgoingSet = new Set(outgoingMemberOpenids);
-  const incomingMembers = incomingOwnerOpenids
-    .filter((ownerOpenid) => !outgoingSet.has(ownerOpenid))
-    .map((ownerOpenid) => {
-      const relation = incomingRelations.find((item) => item.owner_openid === ownerOpenid);
-      const schedule = incomingSharedSchedules.find((item) => item.owner_openid === ownerOpenid);
+  const outgoingSet = new Set(outgoingMemberUserIds);
+  const incomingMembers = incomingOwnerUserIds
+    .filter((ownerUserId) => !outgoingSet.has(ownerUserId))
+    .map((ownerUserId) => {
+      const relation = incomingRelations.find((item) => item.owner_user_id === ownerUserId);
+      const schedule = incomingSharedSchedules.find((item) => item.owner_user_id === ownerUserId);
       return {
-        openid: ownerOpenid,
+        userId: ownerUserId,
         permission: 'owner',
         is_owner: true,
         relation_type: 'incoming',
         join_time: relation?.createTime || schedule?.createTime,
-        nickname: userMap[ownerOpenid]?.nickname || '',
-        avatar_url: userMap[ownerOpenid]?.avatar_url || '',
+        nickname: userMap[ownerUserId]?.nickname || '',
+        avatar_url: userMap[ownerUserId]?.avatar_url || '',
       };
     });
 
@@ -73,46 +73,46 @@ async function listMembers(openid) {
   return success(members);
 }
 
-async function removeMember(openid, payload) {
-  validator.requireFields(payload, ['targetOpenid']);
-  if (payload.targetOpenid === openid) {
+async function removeMember(userId, payload) {
+  validator.requireFields(payload, ['targetUserId']);
+  if (payload.targetUserId === userId) {
     return fail(ERRORS.PARAM_ERROR, '不能移除自己');
   }
 
-  const removed = await removeFamilyRelation(openid, payload.targetOpenid);
+  const removed = await removeFamilyRelation(userId, payload.targetUserId);
   if (!removed) {
     return fail(ERRORS.NOT_FOUND, '该成员不在家人列表中');
   }
 
-  await removeMemberFromOwnerSchedules(openid, payload.targetOpenid);
+  await removeMemberFromOwnerSchedules(userId, payload.targetUserId);
 
   logger.info(FN, 'removeMember', {
-    openid,
-    target: payload.targetOpenid,
+    userId,
+    target: payload.targetUserId,
   });
 
   return success(null);
 }
 
-async function leave(openid, payload) {
-  if (!payload.ownerOpenid) {
-    return fail(ERRORS.PARAM_ERROR, '缺少 ownerOpenid');
+async function leave(userId, payload) {
+  if (!payload.ownerUserId) {
+    return fail(ERRORS.PARAM_ERROR, '缺少 ownerUserId');
   }
-  if (payload.ownerOpenid === openid) {
+  if (payload.ownerUserId === userId) {
     return fail(ERRORS.PARAM_ERROR, '不能退出自己的家庭关系');
   }
 
   const _ = db.getCommand();
   const sharedSchedule = await db.findOne('schedules', {
-    owner_openid: payload.ownerOpenid,
-    shared_with: _.elemMatch({ openid }),
+    owner_user_id: payload.ownerUserId,
+    shared_with: _.elemMatch({ user_id: userId }),
   });
-  const removed = await removeFamilyRelation(payload.ownerOpenid, openid);
+  const removed = await removeFamilyRelation(payload.ownerUserId, userId);
   if (!removed && !sharedSchedule) {
     return fail(ERRORS.NOT_FOUND, '未找到对应的家庭关系');
   }
 
-  await removeMemberFromOwnerSchedules(payload.ownerOpenid, openid);
+  await removeMemberFromOwnerSchedules(payload.ownerUserId, userId);
   return success(null);
 }
 
@@ -120,13 +120,13 @@ exports.main = async (event) => {
   const wxContext = cloud.getWXContext();
 
   try {
-    const openid = getOpenId(wxContext);
+    const { userId } = await resolveCurrentUser(wxContext);
     const { action, payload = {} } = event;
 
     switch (action) {
-      case 'listMembers': return await listMembers(openid);
-      case 'removeMember': return await removeMember(openid, payload);
-      case 'leave': return await leave(openid, payload);
+      case 'listMembers': return await listMembers(userId);
+      case 'removeMember': return await removeMember(userId, payload);
+      case 'leave': return await leave(userId, payload);
       default: return fail(ERRORS.PARAM_ERROR, `未知的 action: ${action}`);
     }
   } catch (e) {

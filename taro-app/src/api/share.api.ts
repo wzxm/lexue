@@ -5,7 +5,7 @@ export interface ShareCodeResult {
 }
 
 export interface InvitePreview {
-  inviterOpenId: string;
+  inviterUserId: string;
   inviterNickname?: string;
   inviterAvatarUrl?: string;
   studentCount: number;
@@ -18,14 +18,14 @@ export interface InvitePreview {
 }
 
 export interface AcceptInviteResult {
-  inviterOpenId: string;
+  inviterUserId: string;
   scheduleIds: string[];
   joinedCount: number;
   permission: string;
 }
 
 interface BackendInvitePreview {
-  inviter_openid?: string;
+  inviter_user_id?: string;
   inviter_nickname?: string;
   inviter_avatar_url?: string;
   student_count?: number;
@@ -34,7 +34,7 @@ interface BackendInvitePreview {
 }
 
 interface BackendAcceptInviteResult {
-  inviter_openid?: string;
+  inviter_user_id?: string;
   schedule_ids?: string[];
   joined_count?: number;
   permission?: string;
@@ -57,13 +57,13 @@ export async function acceptCode(code: string): Promise<void> {
   return cloud.call<void>('share', { action: 'acceptCode', payload: { code } });
 }
 
-export async function verifyInvite(inviterOpenId: string): Promise<InvitePreview> {
+export async function verifyInvite(inviterUserId: string): Promise<InvitePreview> {
   const data = await cloud.call<BackendInvitePreview>('share', {
     action: 'verifyInvite',
-    payload: { inviterOpenId },
+    payload: { inviterUserId },
   });
   return {
-    inviterOpenId: data.inviter_openid || '',
+    inviterUserId: data.inviter_user_id || '',
     inviterNickname: data.inviter_nickname || '',
     inviterAvatarUrl: data.inviter_avatar_url || '',
     studentCount: data.student_count || 0,
@@ -76,13 +76,13 @@ export async function verifyInvite(inviterOpenId: string): Promise<InvitePreview
   };
 }
 
-export async function acceptInvite(inviterOpenId: string): Promise<AcceptInviteResult> {
+export async function acceptInvite(inviterUserId: string): Promise<AcceptInviteResult> {
   const data = await cloud.call<BackendAcceptInviteResult>('share', {
     action: 'acceptInvite',
-    payload: { inviterOpenId },
+    payload: { inviterUserId },
   });
   return {
-    inviterOpenId: data.inviter_openid || '',
+    inviterUserId: data.inviter_user_id || '',
     scheduleIds: data.schedule_ids || [],
     joinedCount: data.joined_count || 0,
     permission: data.permission || 'edit',

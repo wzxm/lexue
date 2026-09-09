@@ -7,7 +7,7 @@ alwaysApply: false
 
 ## ⚠️ 项目覆盖：课表管家云函数约定
 
-- 云环境 ID：`test-d7gxuxk5a8418c629`，包管理用 **npm**（根目录）
+- 云环境 ID：`cloud1-d5gbyvu3l05e11828`，包管理用 **npm**（根目录）
 - 现有函数：`auth` | `schedule` | `course` | `student` | `family` | `share` | `notify` | `reminder` | `ai`
 - 路由模式：所有函数用 `exports.main(event, context)`，`event` 含 `{ action, payload }`，新功能加 action，不加新函数
 - 响应格式：`{ code: 0, message, data }` 成功 / `{ code: 4xxxx|50000, message, data: null }` 失败

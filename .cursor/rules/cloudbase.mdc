@@ -5,7 +5,7 @@ alwaysApply: true
 
 # CloudBase 规范
 
-云环境 ID 固定为 `test-d7gxuxk5a8418c629`。部署用仓库脚本：`npm run deploy` / `npm run deploy:<name>`。
+云环境 ID 固定为 `cloud1-d5gbyvu3l05e11828`。部署用仓库脚本：`npm run deploy` / `npm run deploy:<name>`。
 
 先遵循 `AGENTS.md` / `CLAUDE.md` 和现有实现，再按需读 `rules/{name}/rule.md`。
 

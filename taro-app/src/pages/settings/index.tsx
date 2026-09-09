@@ -166,7 +166,9 @@ export default function SettingsPage() {
     }
   }, [userInfo?.avatarUrl])
 
-  const openIdTip = userInfo?.openId ? `id:${userInfo.openId.slice(0, 6)}*** ▾` : '点击管理账号 ▾'
+  const accountTip = userInfo?.phone
+    ? `${userInfo.phone.slice(0, 3)}****${userInfo.phone.slice(-4)} ▾`
+    : '点击管理账号 ▾'
   const nickname = userInfo?.nickname || '微信昵称限6字...'
 
   const closeContactModal = useCallback(() => setContactVisible(false), [])
@@ -196,7 +198,7 @@ export default function SettingsPage() {
         isLoggedIn={isLoggedIn}
         avatarSrc={avatarSrc}
         nickname={nickname}
-        openIdTip={openIdTip}
+        openIdTip={accountTip}
         navBarStyle={navBarStyle}
         spacerStyle={spacerStyle}
         onGoLogin={goLogin}

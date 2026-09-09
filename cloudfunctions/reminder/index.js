@@ -126,7 +126,7 @@ async function sendReminders() {
     for (const reminder of reminders) {
       try {
         // 查询对应用户是否开启了通知，以及是否有订阅授权
-        const user = await db.findOne('users', { openid: reminder.openid });
+        const user = await db.getOne('users', reminder.user_id);
         if (!user || !user.settings?.notify_enabled) {
           // 用户关闭了通知，直接标记跳过
           await db.update('reminders', reminder._id, { status: 'skipped' });
@@ -152,7 +152,7 @@ async function sendReminders() {
           thing6: { value: `${reminder.dismiss_type}提前${reminder.advance_minutes}分钟` }, // 备注：提醒信息
         };
 
-        const sent = await sendSubscribeMessage(reminder.openid, messageData);
+        const sent = await sendSubscribeMessage(user.openid, messageData);
 
         if (sent) {
           await db.update('reminders', reminder._id, {
@@ -162,7 +162,7 @@ async function sendReminders() {
 
           // 一次性订阅消息发送后，授权失效，需要清除用户的订阅授权记录
           // 这样前端可以检测到授权已失效，提示用户重新授权
-          const userToUpdate = await db.findOne('users', { openid: reminder.openid });
+          const userToUpdate = await db.getOne('users', reminder.user_id);
           if (userToUpdate && userToUpdate.subscribe_tokens) {
             const updatedTokens = userToUpdate.subscribe_tokens.map(t => {
               if (t.template_id === TEMPLATE_ID && t.result === 'accept') {

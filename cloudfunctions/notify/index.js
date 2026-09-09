@@ -8,7 +8,7 @@ cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
 const db = require('../../shared/db');
 const { ERRORS, success, fail } = require('../../shared/errors');
-const { getOpenId } = require('../../shared/auth');
+const { resolveCurrentUser } = require('../../shared/auth');
 const validator = require('../../shared/validator');
 const logger = require('../../shared/logger');
 
@@ -18,10 +18,10 @@ const FN = 'notify';
  * 获取当前用户的提醒设置
  * 从 users.settings 读取
  */
-async function getSettings(openid) {
-  logger.info(FN, 'getSettings', { openid });
+async function getSettings(userId) {
+  logger.info(FN, 'getSettings', { userId });
 
-  const user = await db.findOne('users', { openid });
+  const user = await db.getOne('users', userId);
   if (!user) return fail(ERRORS.NOT_FOUND, '用户不存在');
 
   // 返回 settings，如果没有设置过则返回默认值
@@ -37,10 +37,10 @@ async function getSettings(openid) {
 /**
  * 更新提醒设置
  */
-async function updateSettings(openid, payload) {
-  logger.info(FN, 'updateSettings', { openid });
+async function updateSettings(userId, payload) {
+  logger.info(FN, 'updateSettings', { userId });
 
-  const user = await db.findOne('users', { openid });
+  const user = await db.getOne('users', userId);
   if (!user) return fail(ERRORS.NOT_FOUND, '用户不存在');
 
   const updateData = {};
@@ -82,12 +82,12 @@ async function updateSettings(openid, payload) {
  * 用户同意订阅消息后，前端调用此接口记录 token
  * subscribeRes 是微信 wx.requestSubscribeMessage 返回的结果
  */
-async function recordSubscribe(openid, payload) {
+async function recordSubscribe(userId, payload) {
   validator.requireFields(payload, ['templateId', 'result']);
 
-  logger.info(FN, 'recordSubscribe', { openid, templateId: payload.templateId });
+  logger.info(FN, 'recordSubscribe', { user_id: userId, templateId: payload.templateId });
 
-  const user = await db.findOne('users', { openid });
+  const user = await db.getOne('users', userId);
   if (!user) return fail(ERRORS.NOT_FOUND, '用户不存在');
 
   // result: 'accept' | 'reject' | 'ban'
@@ -114,12 +114,12 @@ async function recordSubscribe(openid, payload) {
  * 检查订阅授权状态
  * 返回用户是否有有效的订阅授权
  */
-async function checkSubscribeStatus(openid, payload) {
+async function checkSubscribeStatus(userId, payload) {
   validator.requireFields(payload, ['templateId']);
 
-  logger.info(FN, 'checkSubscribeStatus', { openid, templateId: payload.templateId });
+  logger.info(FN, 'checkSubscribeStatus', { user_id: userId, templateId: payload.templateId });
 
-  const user = await db.findOne('users', { openid });
+  const user = await db.getOne('users', userId);
   if (!user) return fail(ERRORS.NOT_FOUND, '用户不存在');
 
   const subscribeTokens = user.subscribe_tokens || [];
@@ -140,14 +140,14 @@ exports.main = async (event, context) => {
   const wxContext = cloud.getWXContext();
 
   try {
-    const openid = getOpenId(wxContext);
+    const { userId } = await resolveCurrentUser(wxContext);
     const { action, payload = {} } = event;
 
     switch (action) {
-      case 'getSettings':      return await getSettings(openid);
-      case 'updateSettings':   return await updateSettings(openid, payload);
-      case 'recordSubscribe':  return await recordSubscribe(openid, payload);
-      case 'checkSubscribeStatus': return await checkSubscribeStatus(openid, payload);
+      case 'getSettings':      return await getSettings(userId);
+      case 'updateSettings':   return await updateSettings(userId, payload);
+      case 'recordSubscribe':  return await recordSubscribe(userId, payload);
+      case 'checkSubscribeStatus': return await checkSubscribeStatus(userId, payload);
       default:                 return fail(ERRORS.PARAM_ERROR, `未知的 action: ${action}`);
     }
   } catch (e) {

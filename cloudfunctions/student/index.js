@@ -8,7 +8,7 @@ cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
 const db = require('../../shared/db');
 const { ERRORS, success, fail } = require('../../shared/errors');
-const { getOpenId } = require('../../shared/auth');
+const { resolveCurrentUser } = require('../../shared/auth');
 const { isFamilyMember } = require('../../shared/family');
 const validator = require('../../shared/validator');
 const logger = require('../../shared/logger');
@@ -26,12 +26,12 @@ async function cleanupAvatarFile(fileId) {
 }
 
 function attachSharedOwnerInfo(student, ownerUserMap) {
-  const ownerOpenid = student.owner_openid || '';
-  const owner = ownerUserMap[ownerOpenid] || {};
+  const ownerUserId = student.owner_user_id || '';
+  const owner = ownerUserMap[ownerUserId] || {};
   return {
     ...student,
     is_shared: true,
-    shared_from_openid: ownerOpenid,
+    shared_from_user_id: ownerUserId,
     shared_from_nickname: owner.nickname || '',
     shared_from_avatar_url: owner.avatar_url || '',
   };
@@ -41,39 +41,39 @@ function attachSharedOwnerInfo(student, ownerUserMap) {
  * 获取当前用户可见的学生列表
  * 返回：自己创建的学生 + 通过共享课表可见的他人学生（标记 is_shared）
  */
-async function list(openid) {
-  logger.info(FN, 'list', { openid });
+async function list(userId) {
+  logger.info(FN, 'list', { userId });
 
   // 1. 自己创建的学生
-  const ownStudents = await db.getList('students', { owner_openid: openid }, {
+  const ownStudents = await db.getList('students', { owner_user_id: userId }, {
     orderBy: { field: 'createTime', direction: 'desc' },
   });
 
   // 2. 共享课表里涉及到的他人学生（去重）
   const _ = db.getCommand();
-  const familyRelations = await db.getList('families', { member_openid: openid });
-  const familyOwnerOpenids = Array.from(new Set(familyRelations.map((item) => item.owner_openid).filter(Boolean)));
+  const familyRelations = await db.getList('families', { member_user_id: userId });
+  const familyOwnerUserIds = Array.from(new Set(familyRelations.map((item) => item.owner_user_id).filter(Boolean)));
   const sharedSchedules = await db.getList('schedules', {
-    shared_with: _.elemMatch({ openid }),
-    owner_openid: _.neq(openid),
+    shared_with: _.elemMatch({ user_id: userId }),
+    owner_user_id: _.neq(userId),
   });
 
   const sharedStudentIdSet = new Set();
   const sharedStudentOwnerMap = new Map();
-  if (familyOwnerOpenids.length > 0) {
-    const familyStudents = await db.getList('students', { owner_openid: _.in(familyOwnerOpenids) });
+  if (familyOwnerUserIds.length > 0) {
+    const familyStudents = await db.getList('students', { owner_user_id: _.in(familyOwnerUserIds) });
     for (const student of familyStudents) {
       sharedStudentIdSet.add(student._id);
-      if (student._id && student.owner_openid) {
-        sharedStudentOwnerMap.set(student._id, student.owner_openid);
+      if (student._id && student.owner_user_id) {
+        sharedStudentOwnerMap.set(student._id, student.owner_user_id);
       }
     }
   }
   for (const sch of sharedSchedules) {
     if (sch.student_id) {
       sharedStudentIdSet.add(sch.student_id);
-      if (sch.owner_openid && !sharedStudentOwnerMap.has(sch.student_id)) {
-        sharedStudentOwnerMap.set(sch.student_id, sch.owner_openid);
+      if (sch.owner_user_id && !sharedStudentOwnerMap.has(sch.student_id)) {
+        sharedStudentOwnerMap.set(sch.student_id, sch.owner_user_id);
       }
     }
   }
@@ -85,17 +85,17 @@ async function list(openid) {
       const fallbackOwnerOpenid = sharedStudentOwnerMap.get(sid) || '';
       sharedStudents.push({
         ...st,
-        owner_openid: st.owner_openid || fallbackOwnerOpenid,
+        owner_user_id: st.owner_user_id || fallbackOwnerOpenid,
         is_shared: true,
       });
     }
   }
-  const sharedOwnerOpenids = Array.from(new Set(sharedStudents.map((s) => s.owner_openid).filter(Boolean)));
-  const ownerUsers = sharedOwnerOpenids.length > 0
-    ? await db.getList('users', { openid: _.in(sharedOwnerOpenids) })
+  const sharedOwnerUserIds = Array.from(new Set(sharedStudents.map((s) => s.owner_user_id).filter(Boolean)));
+  const ownerUsers = sharedOwnerUserIds.length > 0
+    ? await db.getList('users', { _id: _.in(sharedOwnerUserIds) })
     : [];
   const ownerUserMap = {};
-  ownerUsers.forEach((user) => { ownerUserMap[user.openid] = user; });
+  ownerUsers.forEach((user) => { ownerUserMap[user._id] = user; });
 
   const result = [
     ...ownStudents.map(s => ({ ...s, id: s._id, is_shared: false })),
@@ -108,7 +108,7 @@ async function list(openid) {
 /**
  * 创建学生
  */
-async function create(openid, payload) {
+async function create(userId, payload) {
   validator.requireFields(payload, ['name']);
   validator.maxLength(payload.name, 20, '学生姓名');
   if (payload.school_name) validator.maxLength(payload.school_name, 50, '学校名称');
@@ -116,10 +116,10 @@ async function create(openid, payload) {
   if (payload.student_no) validator.maxLength(payload.student_no, 30, '学号');
   if (payload.grade) validator.maxLength(payload.grade, 20, '年级');
 
-  logger.info(FN, 'create', { openid, name: payload.name });
+  logger.info(FN, 'create', { user_id: userId, name: payload.name });
 
   const { _id } = await db.create('students', {
-    owner_openid: openid,
+    owner_user_id: userId,
     name: payload.name,
     school_name: payload.school_name || '',
     class_name: payload.class_name || '',
@@ -138,18 +138,18 @@ async function create(openid, payload) {
  * 获取学生详情
  * owner 可直接查看；共享成员（在该学生任一课表的 shared_with 中）也可只读查看
  */
-async function get(openid, payload) {
+async function get(userId, payload) {
   validator.requireFields(payload, ['studentId']);
 
   const student = await db.getOne('students', payload.studentId);
   if (!student) return fail(ERRORS.NOT_FOUND, '学生不存在');
 
-  const isOwner = student.owner_openid === openid;
+  const isOwner = student.owner_user_id === userId;
   if (isOwner) {
     return success({ ...student, id: student._id, is_shared: false });
   }
 
-  if (await isFamilyMember(student.owner_openid, openid)) {
+  if (await isFamilyMember(student.owner_user_id, userId)) {
     return success({ ...student, id: student._id, is_shared: true });
   }
 
@@ -157,7 +157,7 @@ async function get(openid, payload) {
   const _ = db.getCommand();
   const sharedSchedule = await db.findOne('schedules', {
     student_id: payload.studentId,
-    shared_with: _.elemMatch({ openid }),
+    shared_with: _.elemMatch({ user_id: userId }),
   });
   if (!sharedSchedule) return fail(ERRORS.FORBIDDEN);
 
@@ -167,15 +167,15 @@ async function get(openid, payload) {
 /**
  * 修改学生信息（owner 或家庭成员）
  */
-async function update(openid, payload) {
+async function update(userId, payload) {
   validator.requireFields(payload, ['studentId']);
 
   const student = await db.getOne('students', payload.studentId);
   if (!student) return fail(ERRORS.NOT_FOUND, '学生不存在');
-  const canManageStudent = student.owner_openid === openid || await isFamilyMember(student.owner_openid, openid);
+  const canManageStudent = student.owner_user_id === userId || await isFamilyMember(student.owner_user_id, userId);
   if (!canManageStudent) return fail(ERRORS.FORBIDDEN);
 
-  logger.info(FN, 'update', { openid, studentId: payload.studentId });
+  logger.info(FN, 'update', { user_id: userId, studentId: payload.studentId });
 
   // 只允许更新这些字段
   const allowed = ['name', 'school_name', 'class_name', 'student_no', 'grade', 'gender', 'avatar_url'];
@@ -207,15 +207,15 @@ async function update(openid, payload) {
  * 删除学生（owner 或家庭成员）
  * 同时级联删除该学生下的所有课表和课程，不删干净不行
  */
-async function remove(openid, payload) {
+async function remove(userId, payload) {
   validator.requireFields(payload, ['studentId']);
 
   const student = await db.getOne('students', payload.studentId);
   if (!student) return fail(ERRORS.NOT_FOUND, '学生不存在');
-  const canManageStudent = student.owner_openid === openid || await isFamilyMember(student.owner_openid, openid);
+  const canManageStudent = student.owner_user_id === userId || await isFamilyMember(student.owner_user_id, userId);
   if (!canManageStudent) return fail(ERRORS.FORBIDDEN);
 
-  logger.info(FN, 'delete', { openid, studentId: payload.studentId });
+  logger.info(FN, 'delete', { user_id: userId, studentId: payload.studentId });
 
   // 查找该学生的所有课表
   const schedules = await db.getList('schedules', { student_id: payload.studentId });
@@ -242,15 +242,15 @@ exports.main = async (event, context) => {
   const wxContext = cloud.getWXContext();
 
   try {
-    const openid = getOpenId(wxContext);
+    const { userId } = await resolveCurrentUser(wxContext);
     const { action, payload = {} } = event;
 
     switch (action) {
-      case 'list':   return await list(openid);
-      case 'create': return await create(openid, payload);
-      case 'get':    return await get(openid, payload);
-      case 'update': return await update(openid, payload);
-      case 'delete': return await remove(openid, payload);
+      case 'list':   return await list(userId);
+      case 'create': return await create(userId, payload);
+      case 'get':    return await get(userId, payload);
+      case 'update': return await update(userId, payload);
+      case 'delete': return await remove(userId, payload);
       default:       return fail(ERRORS.PARAM_ERROR, `未知的 action: ${action}`);
     }
   } catch (e) {

@@ -3,8 +3,9 @@ import type { ApiResponse } from '../types/index';
 
 declare const CLOUD_ENV: string | undefined;
 
-const DEFAULT_CLOUD_ENV = 'test-d7gxuxk5a8418c629';
+const DEFAULT_CLOUD_ENV = 'cloud1-d5gbyvu3l05e11828';
 const cloudEnv = typeof CLOUD_ENV !== 'undefined' && CLOUD_ENV ? CLOUD_ENV : DEFAULT_CLOUD_ENV;
+export { cloudEnv };
 let initPromise: Promise<void> | null = null;
 
 export async function ensureCloudInitialized(): Promise<void> {

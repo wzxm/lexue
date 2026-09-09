@@ -11,8 +11,8 @@ type BackendStudent = {
   grade?: string;
   gender?: number;
   is_shared?: boolean;
-  owner_openid?: string;
-  shared_from_openid?: string;
+  owner_user_id?: string;
+  shared_from_user_id?: string;
   shared_from_nickname?: string;
   shared_from_avatar_url?: string;
   source?: 'init' | 'user';
@@ -29,8 +29,8 @@ function toFrontendStudent(data: BackendStudent): Student {
     grade: data.grade || '',
     gender: data.gender || 0,
     isShared: !!data.is_shared,
-    ownerOpenId: data.owner_openid || '',
-    sharedFromOpenId: data.shared_from_openid || '',
+    ownerUserId: data.owner_user_id || '',
+    sharedFromUserId: data.shared_from_user_id || '',
     sharedFromNickname: data.shared_from_nickname || '',
     sharedFromAvatar: data.shared_from_avatar_url || '',
     source: data.source ?? 'user',

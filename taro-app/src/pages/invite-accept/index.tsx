@@ -62,7 +62,11 @@ function getInviteAcceptErrorMessage(err: unknown): string {
 
 export default function InviteAcceptPage() {
   const router = useRouter()
-  const inviterOpenId = (router.params?.inviterOpenId || '').toString()
+  const inviterUserId = (
+    router.params?.inviterUserId
+    || router.params?.inviterOpenId
+    || ''
+  ).toString()
 
   const [loading, setLoading] = useState(true)
   const [accepting, setAccepting] = useState(false)
@@ -83,14 +87,14 @@ export default function InviteAcceptPage() {
   })
 
   const loadPreview = async () => {
-    if (!inviterOpenId) {
+    if (!inviterUserId) {
       setLoading(false)
       setErrorMsg('邀请链接无效，缺少必要参数')
       return
     }
     setLoading(true)
     try {
-      const data = await verifyInvite(inviterOpenId)
+      const data = await verifyInvite(inviterUserId)
       setPreview(data)
       setErrorMsg('')
     } catch (err: unknown) {
@@ -101,8 +105,8 @@ export default function InviteAcceptPage() {
   }
 
   const handleAccept = async () => {
-    if (!inviterOpenId || accepting) return
-    if (!userInfo?.openId) {
+    if (!inviterUserId || accepting) return
+    if (!userInfo?.userId) {
       Taro.showModal({
         title: '请先登录',
         content: '接收邀请需要先登录，是否现在登录？',
@@ -120,7 +124,7 @@ export default function InviteAcceptPage() {
     setAccepting(true)
     Taro.showLoading({ title: '处理中', mask: true })
     try {
-      const result = await acceptInvite(inviterOpenId)
+      const result = await acceptInvite(inviterUserId)
       Taro.hideLoading()
 
       // 同步刷新课表 / 学生缓存，保证管理页立即可见共享数据

@@ -1,8 +1,8 @@
 import { create } from 'zustand'
 import type { UserInfo } from '../types/index'
-import { getProfile } from '../api/auth.api'
 import {
-  saveOpenId, loadOpenId, clearOpenId,
+  saveUserId, loadUserId, clearUserId,
+  saveOpenId, clearOpenId,
   saveUserInfo, loadUserInfo, clearUserInfo,
   saveLoginFlag, loadLoginFlag, clearLoginFlag,
 } from '../utils/storage'
@@ -17,17 +17,6 @@ interface AuthState {
   logout: () => void
 }
 
-function isInvalidSessionError(err: unknown): boolean {
-  const message = err instanceof Error ? err.message : String(err || '')
-  return (
-    message.includes('NOT_FOUND') ||
-    message.includes('UNAUTHORIZED') ||
-    message.includes('NO_PERMISSION') ||
-    message.includes('用户不存在') ||
-    message.includes('账号状态异常')
-  )
-}
-
 function sanitizeUserInfo(info: UserInfo | null): UserInfo | null {
   if (!info || !isEphemeralAvatarUrl(info.avatarUrl)) return info
   return { ...info, avatarUrl: '' }
@@ -35,11 +24,12 @@ function sanitizeUserInfo(info: UserInfo | null): UserInfo | null {
 
 function getCachedAuth() {
   const cachedUserInfo = sanitizeUserInfo(loadUserInfo())
-  const cachedOpenId = loadOpenId()
+  const cachedUserId = loadUserId()
   const cachedLoginFlag = loadLoginFlag()
+  const userId = cachedUserInfo?.userId || cachedUserId || ''
   return {
     userInfo: cachedUserInfo,
-    isLoggedIn: cachedLoginFlag || !!cachedOpenId || !!cachedUserInfo,
+    isLoggedIn: cachedLoginFlag || !!userId,
   }
 }
 
@@ -51,6 +41,9 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   setUserInfo: (info) => {
     const safeInfo = sanitizeUserInfo(info) || info
+    if (safeInfo.userId) {
+      saveUserId(safeInfo.userId)
+    }
     if (safeInfo.openId) {
       saveOpenId(safeInfo.openId)
     }
@@ -67,24 +60,12 @@ export const useAuthStore = create<AuthState>((set) => ({
   validateSession: async () => {
     const state = getCachedAuth()
     if (!state.isLoggedIn) return
-
-    try {
-      const rawProfile = await getProfile()
-      const profile = sanitizeUserInfo(rawProfile) || rawProfile
-      set({ userInfo: profile, isLoggedIn: true })
-      if (profile.openId) saveOpenId(profile.openId)
-      saveUserInfo(profile)
-      saveLoginFlag(true)
-    } catch (err) {
-      if (!isInvalidSessionError(err)) return
-      clearOpenId()
-      clearUserInfo()
-      clearLoginFlag()
-      set({ userInfo: null, isLoggedIn: false })
-    }
+    // 登录态由本地缓存维护；只有主动退出或清理小程序缓存才会结束。
+    set(state)
   },
 
   logout: () => {
+    clearUserId()
     clearOpenId()
     clearUserInfo()
     clearLoginFlag()

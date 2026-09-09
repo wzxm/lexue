@@ -127,8 +127,8 @@ export default function ToolsPage () {
         const st = students.find(s => s.id === sid)
         if (st) setCurrentStudent(st)
       }
-      const openId = userInfo?.openId
-      if (openId && schedule.owner_openid === openId) {
+      const userId = userInfo?.userId
+      if (userId && schedule.owner_user_id === userId) {
         await setDefaultSchedule(schedule.id)
       }
       setCurrentSchedule(full)

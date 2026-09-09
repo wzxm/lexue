@@ -1,36 +1,54 @@
 import { cloud } from './cloud';
 import type { UserInfo } from '../types/index';
+import cloudbase from '@cloudbase/js-sdk';
+import { cloudEnv } from './cloud';
 
-export interface LoginPayload {
+const authApp = cloudbase.init({ env: cloudEnv, region: 'ap-shanghai' });
+const auth = authApp.auth();
+let verificationInfo: any = null;
+
+export interface SendSmsCodeResult {
+  phone: string;
+  expiresIn: number;
+}
+
+export interface LoginByPhonePayload {
+  phone: string;
+  smsCode: string;
   nickname?: string;
   avatarUrl?: string;
 }
 
-export async function login(payload: LoginPayload = {}): Promise<UserInfo> {
-  return cloud.call<UserInfo>('auth', {
-    action: 'login',
+export async function sendSmsCode(phone: string): Promise<SendSmsCodeResult> {
+  verificationInfo = await auth.getVerification({ phone_number: `+86 ${phone}` });
+  return { phone: phone.slice(0, 3) + '****' + phone.slice(-4), expiresIn: 300 };
+}
+
+export async function loginByPhone(payload: LoginByPhonePayload): Promise<UserInfo> {
+  if (!verificationInfo) throw new Error('请先获取短信验证码');
+  await auth.signInWithSms({ verificationInfo, verificationCode: payload.smsCode, phoneNum: `+86 ${payload.phone}` });
+  verificationInfo = null;
+  const result = await cloud.call<UserInfo>('auth', {
+    action: 'loginByPhone',
     payload: {
+      phone: payload.phone,
+      sms_code: payload.smsCode,
       nickname: payload.nickname,
       avatar_url: payload.avatarUrl,
     },
   });
+  // 业务登录态由本地缓存维护，不依赖 CloudBase Auth 会话续期。
+  await auth.signOut().catch(() => undefined);
+  return result;
 }
 
-export interface LoginWithPhonePayload extends LoginPayload {
-  phoneCode: string;
+export async function logoutAuth(): Promise<void> {
+  verificationInfo = null;
+  await auth.signOut();
 }
 
-/** 微信授权手机号快捷登录（需配合 getPhoneNumber 返回的 code） */
-export async function loginWithPhone(payload: LoginWithPhonePayload): Promise<UserInfo> {
-  return cloud.call<UserInfo>('auth', {
-    action: 'loginWithPhone',
-    payload: {
-      phoneCode: payload.phoneCode,
-      nickname: payload.nickname,
-      avatar_url: payload.avatarUrl,
-    },
-  });
-}
+/** @deprecated 使用 loginByPhone */
+export const loginWithPhone = loginByPhone;
 
 export async function getProfile(): Promise<UserInfo> {
   return cloud.call<UserInfo>('auth', { action: 'getProfile', payload: {} });

@@ -8,7 +8,7 @@ cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
 const db = require('../../shared/db');
 const { ERRORS, success, fail } = require('../../shared/errors');
-const { getOpenId, requireOwner, requireMember, requireEdit } = require('../../shared/auth');
+const { resolveCurrentUser, requireOwner, requireMember, requireEdit } = require('../../shared/auth');
 const { isFamilyMember, listFamilyRelations } = require('../../shared/family');
 const validator = require('../../shared/validator');
 const logger = require('../../shared/logger');
@@ -109,12 +109,12 @@ async function generateUniqueInviteCode() {
  * 获取当前用户可见的所有课表
  * 包括：自己创建的 + 别人共享给自己的
  */
-async function list(openid, payload = {}) {
+async function list(userId, payload = {}) {
   const studentId = payload.studentId || payload.student_id || '';
-  logger.info(FN, 'list', { openid, studentId });
+  logger.info(FN, 'list', { user_id: userId, studentId });
 
   // 自己创建的课表
-  const ownWhere = { owner_openid: openid };
+  const ownWhere = { owner_user_id: userId };
   if (studentId) ownWhere.student_id = studentId;
   const ownSchedules = await db.getList('schedules', ownWhere, {
     orderBy: { field: 'createTime', direction: 'desc' },
@@ -123,8 +123,8 @@ async function list(openid, payload = {}) {
   // 共享给自己的课表（在 shared_with 数组中有自己的 openid）
   const _ = db.getCommand();
   const sharedWhere = {
-    'shared_with': _.elemMatch({ openid }),
-    owner_openid: _.neq(openid), // 排除自己创建的（避免重复）
+    'shared_with': _.elemMatch({ user_id: userId }),
+    owner_user_id: _.neq(userId), // 排除自己创建的（避免重复）
   };
   if (studentId) sharedWhere.student_id = studentId;
   const sharedSchedules = await db.getList('schedules', sharedWhere);
@@ -140,7 +140,7 @@ async function list(openid, payload = {}) {
 /**
  * 创建课表
  */
-async function create(openid, payload) {
+async function create(userId, payload) {
   validator.requireFields(payload, ['student_id', 'name', 'semester', 'periods', 'period_config', 'start_date']);
   validator.maxLength(payload.name, 50, '课表名称');
   validator.maxLength(payload.semester, 20, '学期');
@@ -148,35 +148,35 @@ async function create(openid, payload) {
   // 检查学生存在且属于自己
   const student = await db.getOne('students', payload.student_id);
   if (!student) return fail(ERRORS.NOT_FOUND, '学生不存在');
-  const canManageStudent = student.owner_openid === openid || await isFamilyMember(student.owner_openid, openid);
+  const canManageStudent = student.owner_user_id === userId || await isFamilyMember(student.owner_user_id, userId);
   if (!canManageStudent) return fail(ERRORS.FORBIDDEN, '没有权限为此学生创建课表');
 
-  logger.info(FN, 'create', { openid, studentId: payload.student_id });
+  logger.info(FN, 'create', { user_id: userId, studentId: payload.student_id });
 
   // 新课表创建后自动成为默认课表，先把该学生其他课表取消默认
   await db.updateWhere('schedules', {
-    owner_openid: student.owner_openid,
+    owner_user_id: student.owner_user_id,
     student_id: payload.student_id,
   }, { is_default: false });
 
   const inviteCode = await generateUniqueInviteCode();
   if (!inviteCode) {
-    logger.error(FN, 'create:inviteCodeFailed', { openid, studentId: payload.student_id });
+    logger.error(FN, 'create:inviteCodeFailed', { user_id: userId, studentId: payload.student_id });
     return fail(ERRORS.INTERNAL_ERROR, '生成邀请码失败，请重试');
   }
 
   validatePeriodShape(payload.periods, payload.period_config);
   validateStartDate(payload.start_date);
 
-  const familyRelations = await listFamilyRelations(student.owner_openid);
+  const familyRelations = await listFamilyRelations(student.owner_user_id);
   const sharedWith = familyRelations.map((relation) => ({
-    openid: relation.member_openid,
+    user_id: relation.member_user_id,
     permission: 'edit',
     join_time: relation.createTime || new Date(),
   }));
 
   const { _id } = await db.create('schedules', {
-    owner_openid: student.owner_openid,
+    owner_user_id: student.owner_user_id,
     student_id: payload.student_id,
     name: payload.name,
     semester: payload.semester,
@@ -198,11 +198,11 @@ async function create(openid, payload) {
 /**
  * 获取课表详情（含课程列表）
  */
-async function get(openid, payload) {
+async function get(userId, payload) {
   validator.requireFields(payload, ['scheduleId']);
 
   // 需要是成员（owner 或 shared_with）才能查看
-  const schedule = await requireMember(openid, payload.scheduleId);
+  const schedule = await requireMember(userId, payload.scheduleId);
 
   // 拉取该课表下的所有课程
   const courses = await db.getList('courses', { schedule_id: payload.scheduleId }, {
@@ -217,12 +217,12 @@ async function get(openid, payload) {
 /**
  * 修改课表（需要有编辑权限）
  */
-async function update(openid, payload) {
+async function update(userId, payload) {
   validator.requireFields(payload, ['scheduleId']);
 
-  const schedule = await requireEdit(openid, payload.scheduleId);
+  const schedule = await requireEdit(userId, payload.scheduleId);
 
-  logger.info(FN, 'update', { openid, scheduleId: payload.scheduleId });
+  logger.info(FN, 'update', { user_id: userId, scheduleId: payload.scheduleId });
 
   const allowed = ['name', 'semester', 'remark', 'total_weeks', 'periods', 'period_config', 'view_mode', 'start_date'];
   const updateData = {};
@@ -259,12 +259,12 @@ async function update(openid, payload) {
   if (payload.student_id !== undefined) {
     const student = await db.getOne('students', payload.student_id);
     if (!student) return fail(ERRORS.NOT_FOUND, '学生不存在');
-    if (student.owner_openid !== schedule.owner_openid) return fail(ERRORS.FORBIDDEN, '无权关联到该学生');
+    if (student.owner_user_id !== schedule.owner_user_id) return fail(ERRORS.FORBIDDEN, '无权关联到该学生');
     updateData.student_id = payload.student_id;
 
     if (schedule.is_default && schedule.student_id !== payload.student_id) {
       await db.updateWhere('schedules', {
-        owner_openid: schedule.owner_openid,
+        owner_user_id: schedule.owner_user_id,
         student_id: payload.student_id,
       }, { is_default: false });
       updateData.is_default = true;
@@ -279,12 +279,12 @@ async function update(openid, payload) {
  * 删除课表（只有 owner 可以删）
  * 级联删除课程和提醒记录
  */
-async function remove(openid, payload) {
+async function remove(userId, payload) {
   validator.requireFields(payload, ['scheduleId']);
 
-  await requireEdit(openid, payload.scheduleId);
+  await requireEdit(userId, payload.scheduleId);
 
-  logger.info(FN, 'delete', { openid, scheduleId: payload.scheduleId });
+  logger.info(FN, 'delete', { user_id: userId, scheduleId: payload.scheduleId });
 
   // 删除课程
   await db.removeWhere('courses', { schedule_id: payload.scheduleId });
@@ -302,16 +302,16 @@ async function remove(openid, payload) {
  * 设置默认课表（只有 owner 可以设置）
  * 同一用户同一学生只能有一个默认课表
  */
-async function setDefault(openid, payload) {
+async function setDefault(userId, payload) {
   validator.requireFields(payload, ['scheduleId']);
 
-  const schedule = await requireEdit(openid, payload.scheduleId);
+  const schedule = await requireEdit(userId, payload.scheduleId);
 
-  logger.info(FN, 'setDefault', { openid, scheduleId: payload.scheduleId });
+  logger.info(FN, 'setDefault', { user_id: userId, scheduleId: payload.scheduleId });
 
   // 先把该学生的所有课表取消默认
   await db.updateWhere('schedules', {
-    owner_openid: schedule.owner_openid,
+    owner_user_id: schedule.owner_user_id,
     student_id: schedule.student_id,
   }, { is_default: false });
 
@@ -323,10 +323,10 @@ async function setDefault(openid, payload) {
 /**
  * 刷新邀请码（仅 owner 可操作）
  */
-async function refreshInviteCode(openid, payload) {
+async function refreshInviteCode(userId, payload) {
   validator.requireFields(payload, ['scheduleId']);
-  await requireOwner(openid, payload.scheduleId);
-  logger.info(FN, 'refreshInviteCode', { openid, scheduleId: payload.scheduleId });
+  await requireOwner(userId, payload.scheduleId);
+  logger.info(FN, 'refreshInviteCode', { user_id: userId, scheduleId: payload.scheduleId });
 
   const inviteCode = await generateUniqueInviteCode();
   if (!inviteCode) {
@@ -342,17 +342,17 @@ exports.main = async (event, context) => {
   const wxContext = cloud.getWXContext();
 
   try {
-    const openid = getOpenId(wxContext);
+    const { userId } = await resolveCurrentUser(wxContext);
     const { action, payload = {} } = event;
 
     switch (action) {
-      case 'list':       return await list(openid, payload);
-      case 'create':     return await create(openid, payload);
-      case 'get':        return await get(openid, payload);
-      case 'update':     return await update(openid, payload);
-      case 'delete':     return await remove(openid, payload);
-      case 'setDefault': return await setDefault(openid, payload);
-      case 'refreshInviteCode': return await refreshInviteCode(openid, payload);
+      case 'list':       return await list(userId, payload);
+      case 'create':     return await create(userId, payload);
+      case 'get':        return await get(userId, payload);
+      case 'update':     return await update(userId, payload);
+      case 'delete':     return await remove(userId, payload);
+      case 'setDefault': return await setDefault(userId, payload);
+      case 'refreshInviteCode': return await refreshInviteCode(userId, payload);
       default:           return fail(ERRORS.PARAM_ERROR, `未知的 action: ${action}`);
     }
   } catch (e) {

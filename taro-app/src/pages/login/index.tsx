@@ -1,10 +1,10 @@
-import { View, Text, Button } from '@tarojs/components'
-import { useRef, useState } from 'react'
+import { View, Text, Button, Input } from '@tarojs/components'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Taro, { useDidShow } from '@tarojs/taro'
-import { login, loginWithPhone } from '../../api/auth.api'
-import { LOGIN_MODE } from '../../constants/auth'
+import { loginByPhone, sendSmsCode } from '../../api/auth.api'
 import { useAuthStore } from '../../store/auth.store'
 import { ROUTES } from '../../constants/routes'
+import { loadSmsCooldownUntil, saveSmsCooldownUntil } from '../../utils/storage'
 import './index.scss'
 
 const FEATURES = [
@@ -13,37 +13,78 @@ const FEATURES = [
   { icon: '\ue603', label: '智能识别' },
 ] as const
 
+const SMS_COOLDOWN_SEC = 60
+
 const USER_AGREEMENT_PDF =
-  'cloud://test-d7gxuxk5a8418c629.7465-test-d7gxuxk5a8418c629-1437432577/prototype/《用户协议》.pdf'
+  'cloud://cloud1-d5gbyvu3l05e11828.636c-cloud1-d5gbyvu3l05e11828-1483343796/prototype/user-agreement.pdf'
 const PRIVACY_POLICY_PDF =
-  'cloud://test-d7gxuxk5a8418c629.7465-test-d7gxuxk5a8418c629-1437432577/prototype/《隐私政策》.pdf'
+  'cloud://cloud1-d5gbyvu3l05e11828.636c-cloud1-d5gbyvu3l05e11828-1483343796/prototype/privacy-policy.pdf'
+
+function calcRemainingSec(untilMs: number) {
+  return Math.max(0, Math.ceil((untilMs - Date.now()) / 1000))
+}
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false)
+  const [sendingCode, setSendingCode] = useState(false)
+  const [countdown, setCountdown] = useState(0)
   const [agreed, setAgreed] = useState(false)
+  const [phone, setPhone] = useState('')
+  const [smsCode, setSmsCode] = useState('')
+  const [loginError, setLoginError] = useState('')
   const redirectingRef = useRef(false)
+  const countdownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const setUserInfo = useAuthStore(s => s.setUserInfo)
   const isLoggedIn = useAuthStore(s => s.isLoggedIn)
-  const loginDisabled = loading || !agreed
+  const loginDisabled = loading || !agreed || !phone || !smsCode
   const showDisabledStyle = loginDisabled
-  const isPhoneMode = LOGIN_MODE === 'phone'
+  const codeBtnDisabled = sendingCode || countdown > 0 || !/^1[3-9]\d{9}$/.test(phone)
+
+  const clearCountdownTimer = useCallback(() => {
+    if (countdownTimerRef.current) {
+      clearInterval(countdownTimerRef.current)
+      countdownTimerRef.current = null
+    }
+  }, [])
+
+  const startCountdown = useCallback((untilMs: number) => {
+    clearCountdownTimer()
+    saveSmsCooldownUntil(untilMs)
+    const tick = () => {
+      const remain = calcRemainingSec(untilMs)
+      setCountdown(remain)
+      if (remain <= 0) {
+        clearCountdownTimer()
+      }
+    }
+    tick()
+    countdownTimerRef.current = setInterval(tick, 1000)
+  }, [clearCountdownTimer])
+
+  useEffect(() => {
+    const until = loadSmsCooldownUntil()
+    if (until && until > Date.now()) {
+      startCountdown(until)
+    }
+    return clearCountdownTimer
+  }, [clearCountdownTimer, startCountdown])
 
   const afterLogin = () => {
     if (redirectingRef.current) return
     redirectingRef.current = true
+    const clearRedirecting = () => {
+      redirectingRef.current = false
+    }
     const pages = Taro.getCurrentPages()
     if (pages.length > 1) {
-      Taro.navigateBack().finally(() => {
-        redirectingRef.current = false
-      })
+      Taro.navigateBack().then(clearRedirecting, clearRedirecting)
     } else {
-      Taro.reLaunch({ url: ROUTES.SCHEDULE }).finally(() => {
-        redirectingRef.current = false
-      })
+      Taro.reLaunch({ url: ROUTES.SCHEDULE }).then(clearRedirecting, clearRedirecting)
     }
   }
 
-  const handleLoginSuccess = (userInfo: Awaited<ReturnType<typeof login>>) => {
+  const handleLoginSuccess = (userInfo: Awaited<ReturnType<typeof loginByPhone>>) => {
+    setLoginError('')
     setUserInfo(userInfo)
     afterLogin()
   }
@@ -75,40 +116,63 @@ export default function LoginPage() {
     }
   }
 
-  const onWechatLogin = async () => {
-    if (loading) return
+  const onSendCode = async () => {
+    if (codeBtnDisabled) return
     if (!ensureAgreed()) return
+    if (!/^1[3-9]\d{9}$/.test(phone)) {
+      Taro.showToast({ title: '请输入正确的手机号码', icon: 'none' })
+      return
+    }
 
-    setLoading(true)
+    setSendingCode(true)
     try {
-      const userInfo = await login()
-      handleLoginSuccess(userInfo)
+      await sendSmsCode(phone)
+      startCountdown(Date.now() + SMS_COOLDOWN_SEC * 1000)
+      await Taro.showModal({
+        title: '验证码已发送',
+        content: '请留意【腾讯云】开头的短信验证码，课表管家登录/注册验证服务由腾讯云提供。',
+        showCancel: false,
+        confirmText: '知道了',
+      })
     } catch (err: any) {
-      Taro.showToast({ title: err.message || '登录失败，请重试', icon: 'none' })
+      Taro.showToast({ title: err?.message || '发送失败，请稍后重试', icon: 'none' })
     } finally {
-      setLoading(false)
+      setSendingCode(false)
     }
   }
 
-  const onPhoneLogin = async (e: any) => {
+  const onPhoneLogin = async () => {
     if (loading) return
     if (!ensureAgreed()) return
 
-    const detail = e?.detail || {}
-    if (detail.errMsg !== 'getPhoneNumber:ok' || !detail.code) {
+    if (!/^1[3-9]\d{9}$/.test(phone)) {
+      Taro.showToast({ title: '请输入正确的手机号码', icon: 'none' })
+      return
+    }
+    if (!/^\d{6}$/.test(smsCode)) {
+      Taro.showToast({ title: '请输入 6 位短信验证码', icon: 'none' })
       return
     }
 
     setLoading(true)
+    setLoginError('')
     try {
-      const userInfo = await loginWithPhone({ phoneCode: detail.code })
+      const userInfo = await loginByPhone({ phone, smsCode })
       handleLoginSuccess(userInfo)
     } catch (err: any) {
-      Taro.showToast({ title: err.message || '登录失败，请重试', icon: 'none' })
+      const message = err?.message || '登录失败，请重试'
+      setLoginError(message)
+      Taro.showToast({ title: message, icon: 'none' })
     } finally {
       setLoading(false)
     }
   }
+
+  const codeBtnText = sendingCode
+    ? '发送中...'
+    : countdown > 0
+      ? `${countdown}s`
+      : '获取验证码'
 
   return (
     <View className='login-page'>
@@ -118,7 +182,6 @@ export default function LoginPage() {
             <Text className='iconfont logo-icon-inner'>{'\ue696'}</Text>
           </View>
           <Text className='app-name'>课表管家</Text>
-          {/* <Text className='app-slogan'>让每个家庭的课表管理更轻松</Text> */}
 
           <View className='features'>
             {FEATURES.map(item => (
@@ -132,6 +195,48 @@ export default function LoginPage() {
 
         <View className='login-card'>
           <Text className='login-title'>登录后可管理课表</Text>
+
+          <Input
+            className='login-input'
+            type='number'
+            maxlength={11}
+            placeholder='请输入手机号码'
+            value={phone}
+            onInput={e => {
+              setPhone(e.detail.value)
+              setLoginError('')
+            }}
+          />
+          <View className='code-row'>
+            <Input
+              className='login-input code-input'
+              type='number'
+              maxlength={6}
+              placeholder='请输入短信验证码'
+              value={smsCode}
+              onInput={e => {
+                setSmsCode(e.detail.value)
+                setLoginError('')
+              }}
+            />
+            <Button
+              className={`code-btn ${codeBtnDisabled ? 'code-btn--disabled' : ''}`}
+              disabled={codeBtnDisabled}
+              loading={sendingCode}
+              onClick={onSendCode}
+            >
+              {codeBtnText}
+            </Button>
+          </View>
+          {loginError ? <Text className='login-error'>{loginError}</Text> : null}
+          <Button
+            className={`login-btn ${showDisabledStyle ? 'login-btn--disabled' : ''}`}
+            onClick={onPhoneLogin}
+            loading={loading}
+            disabled={loginDisabled}
+          >
+            <Text className='login-btn-text'>手机号登录</Text>
+          </Button>
 
           <View className='agreement' onClick={() => setAgreed(!agreed)}>
             <View className={`checkbox ${agreed ? 'checkbox--checked' : ''}`}>
@@ -160,40 +265,7 @@ export default function LoginPage() {
               </Text>
             </Text>
           </View>
-
-          {isPhoneMode ? (
-            <Button
-              className={`login-btn ${showDisabledStyle ? 'login-btn--disabled' : ''}`}
-              openType='getPhoneNumber'
-              onGetPhoneNumber={onPhoneLogin}
-              loading={loading}
-              disabled={loginDisabled}
-            >
-              {!loading ? (
-                <View className='login-btn-content'>
-                  <Text className='iconfont login-btn-icon login-btn-icon--phone'>{'\ue642'}</Text>
-                  <Text className='login-btn-text'>手机号快捷登录</Text>
-                </View>
-              ) : null}
-            </Button>
-          ) : (
-            <Button
-              className={`login-btn ${showDisabledStyle ? 'login-btn--disabled' : ''}`}
-              onClick={onWechatLogin}
-              loading={loading}
-              disabled={loginDisabled}
-            >
-              {!loading ? (
-                <View className='login-btn-content'>
-                  <View className='login-btn-icon login-btn-icon--wechat' />
-                  <Text className='login-btn-text'>微信一键登录</Text>
-                </View>
-              ) : null}
-            </Button>
-          )}
         </View>
-
-        {/* <Text className='bottom-text'>无需注册账号，基于微信安全登录</Text> */}
       </View>
     </View>
   )

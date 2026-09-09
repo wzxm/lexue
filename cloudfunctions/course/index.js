@@ -9,7 +9,7 @@ cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
 const db = require('../../shared/db');
 const { ERRORS, success, fail } = require('../../shared/errors');
-const { getOpenId, requireMember, requireEdit } = require('../../shared/auth');
+const { resolveCurrentUser, requireMember, requireEdit } = require('../../shared/auth');
 const validator = require('../../shared/validator');
 const logger = require('../../shared/logger');
 const { validateCourseColor } = require('../../shared/courseColors');
@@ -42,7 +42,7 @@ function toCourseDoc(schedule, scheduleId, course, weeks) {
   return {
     schedule_id: scheduleId,
     student_id: schedule.student_id,
-    owner_openid: schedule.owner_openid,
+    owner_user_id: schedule.owner_user_id,
     name: course.name,
     teacher: course.teacher || '',
     room: course.room || '',
@@ -69,11 +69,11 @@ function validateCourseInput(course, index) {
 /**
  * 获取课表下所有课程
  */
-async function list(openid, payload) {
+async function list(userId, payload) {
   validator.requireFields(payload, ['scheduleId']);
 
   // 需要是课表成员才能查看
-  await requireMember(openid, payload.scheduleId);
+  await requireMember(userId, payload.scheduleId);
 
   const courses = await db.getList('courses', { schedule_id: payload.scheduleId }, {
     orderBy: { field: 'day_of_week', direction: 'asc' },
@@ -125,7 +125,7 @@ async function checkConflict(scheduleId, dayOfWeek, slot, weeks, excludeCourseId
 /**
  * 添加单个课程
  */
-async function create(openid, payload) {
+async function create(userId, payload) {
   validator.requireFields(payload, ['schedule_id', 'name', 'day_of_week', 'slot', 'color']);
   validator.maxLength(payload.name, 30, '课程名称');
   validator.enumValue(payload.day_of_week, VALID_DAYS, 'day_of_week');
@@ -133,7 +133,7 @@ async function create(openid, payload) {
   const color = validateCourseColor(payload.color, 'color');
 
   // 需要编辑权限，同时拿到所属课表用于补齐归属字段
-  const schedule = await requireEdit(openid, payload.schedule_id);
+  const schedule = await requireEdit(userId, payload.schedule_id);
   const normalizedWeeks = Array.isArray(payload.weeks) && payload.weeks.length > 0
     ? payload.weeks
     : buildAllWeeks(schedule.total_weeks);
@@ -152,12 +152,12 @@ async function create(openid, payload) {
     return fail(ERRORS.PARAM_ERROR, `课程冲突：${conflict.name}（${weekInfo}）已占用此时间段`);
   }
 
-  logger.info(FN, 'create', { openid, scheduleId: payload.schedule_id, name: payload.name });
+  logger.info(FN, 'create', { user_id: userId, scheduleId: payload.schedule_id, name: payload.name });
 
   const { _id } = await db.create('courses', {
     schedule_id: payload.schedule_id,
     student_id: schedule.student_id,
-    owner_openid: schedule.owner_openid,
+    owner_user_id: schedule.owner_user_id,
     name: payload.name,
     teacher: payload.teacher || '',
     room: payload.room || '',
@@ -176,16 +176,16 @@ async function create(openid, payload) {
 /**
  * 修改课程（需要编辑权限）
  */
-async function update(openid, payload) {
+async function update(userId, payload) {
   validator.requireFields(payload, ['courseId']);
 
   const course = await db.getOne('courses', payload.courseId);
   if (!course) return fail(ERRORS.NOT_FOUND, '课程不存在');
 
   // 通过课程的 schedule_id 校验编辑权限
-  await requireEdit(openid, course.schedule_id);
+  await requireEdit(userId, course.schedule_id);
 
-  logger.info(FN, 'update', { openid, courseId: payload.courseId });
+  logger.info(FN, 'update', { user_id: userId, courseId: payload.courseId });
 
   if (payload.day_of_week !== undefined) validator.enumValue(payload.day_of_week, VALID_DAYS, 'day_of_week');
   if (payload.slot !== undefined) validator.enumValue(payload.slot, VALID_SLOTS, 'slot');
@@ -229,15 +229,15 @@ async function update(openid, payload) {
 /**
  * 删除课程（需要编辑权限）
  */
-async function remove(openid, payload) {
+async function remove(userId, payload) {
   validator.requireFields(payload, ['courseId']);
 
   const course = await db.getOne('courses', payload.courseId);
   if (!course) return fail(ERRORS.NOT_FOUND, '课程不存在');
 
-  await requireEdit(openid, course.schedule_id);
+  await requireEdit(userId, course.schedule_id);
 
-  logger.info(FN, 'delete', { openid, courseId: payload.courseId });
+  logger.info(FN, 'delete', { user_id: userId, courseId: payload.courseId });
 
   // 删除课程相关的提醒
   await db.removeWhere('reminders', { course_id: payload.courseId });
@@ -250,7 +250,7 @@ async function remove(openid, payload) {
  * 批量添加课程
  * 用于一次性导入整个课表，比逐个添加人性化多了
  */
-async function batchCreate(openid, payload) {
+async function batchCreate(userId, payload) {
   validator.requireFields(payload, ['schedule_id', 'courses']);
 
   if (!Array.isArray(payload.courses) || payload.courses.length === 0) {
@@ -260,9 +260,9 @@ async function batchCreate(openid, payload) {
     return fail(ERRORS.PARAM_ERROR, '单次批量添加不能超过100个课程');
   }
 
-  const schedule = await requireEdit(openid, payload.schedule_id);
+  const schedule = await requireEdit(userId, payload.schedule_id);
 
-  logger.info(FN, 'batchCreate', { openid, scheduleId: payload.schedule_id, count: payload.courses.length });
+  logger.info(FN, 'batchCreate', { user_id: userId, scheduleId: payload.schedule_id, count: payload.courses.length });
 
   // 逐个校验课程数据
   for (let i = 0; i < payload.courses.length; i++) {
@@ -314,7 +314,7 @@ async function batchCreate(openid, payload) {
     const { _id } = await db.create('courses', {
       schedule_id: payload.schedule_id,
       student_id: schedule.student_id,
-      owner_openid: schedule.owner_openid,
+      owner_user_id: schedule.owner_user_id,
       name: c.name,
       teacher: c.teacher || '',
       room: c.room || '',
@@ -336,7 +336,7 @@ async function batchCreate(openid, payload) {
 /**
  * AI 识别批量导入课程：同一星期同一节次且周数重叠时，新课程整条覆盖旧课程。
  */
-async function batchImportWithOverwrite(openid, payload) {
+async function batchImportWithOverwrite(userId, payload) {
   validator.requireFields(payload, ['schedule_id', 'courses']);
 
   if (!Array.isArray(payload.courses) || payload.courses.length === 0) {
@@ -346,14 +346,14 @@ async function batchImportWithOverwrite(openid, payload) {
     return fail(ERRORS.PARAM_ERROR, '单次批量添加不能超过100个课程');
   }
 
-  const schedule = await requireEdit(openid, payload.schedule_id);
+  const schedule = await requireEdit(userId, payload.schedule_id);
 
   for (let i = 0; i < payload.courses.length; i++) {
     const invalid = validateCourseInput(payload.courses[i], i);
     if (invalid) return invalid;
   }
 
-  logger.info(FN, 'batchImportWithOverwrite', { openid, scheduleId: payload.schedule_id, count: payload.courses.length });
+  logger.info(FN, 'batchImportWithOverwrite', { user_id: userId, scheduleId: payload.schedule_id, count: payload.courses.length });
 
   const imports = payload.courses.map(course => ({
     source: course,
@@ -388,8 +388,8 @@ async function batchImportWithOverwrite(openid, payload) {
 /**
  * 当前用户的自定义课程名称预设列表
  */
-async function listPresets(openid) {
-  const rows = await db.getList('course_name_presets', { openid }, {
+async function listPresets(userId) {
+  const rows = await db.getList('course_name_presets', { user_id: userId }, {
     orderBy: { field: 'created_at', direction: 'desc' },
   });
   const presets = rows.map(r => ({
@@ -403,7 +403,7 @@ async function listPresets(openid) {
 /**
  * 添加自定义课程名称预设（同用户同学龄段去重）
  */
-async function addPreset(openid, payload) {
+async function addPreset(userId, payload) {
   validator.requireFields(payload, ['name', 'grade_level']);
   const name = String(payload.name).trim();
   if (!name) {
@@ -413,7 +413,7 @@ async function addPreset(openid, payload) {
   validator.enumValue(payload.grade_level, GRADE_LEVELS, 'grade_level');
 
   const dup = await db.findOne('course_name_presets', {
-    openid,
+    user_id: userId,
     grade_level: payload.grade_level,
     name,
   });
@@ -421,10 +421,10 @@ async function addPreset(openid, payload) {
     return fail(ERRORS.PARAM_ERROR, '该学龄段下已有同名课程');
   }
 
-  logger.info(FN, 'addPreset', { openid, name, grade_level: payload.grade_level });
+  logger.info(FN, 'addPreset', { user_id: userId, name, grade_level: payload.grade_level });
 
   const { _id } = await db.create('course_name_presets', {
-    openid,
+    user_id: userId,
     name,
     grade_level: payload.grade_level,
     created_at: new Date(),
@@ -440,17 +440,17 @@ async function addPreset(openid, payload) {
 /**
  * 删除自定义课程名称预设
  */
-async function deletePreset(openid, payload) {
+async function deletePreset(userId, payload) {
   validator.requireFields(payload, ['presetId']);
   const doc = await db.getOne('course_name_presets', payload.presetId);
   if (!doc) {
     // 删除接口设计为幂等：目标不存在也视为删除成功，避免前端重试/双击产生业务报错
     return success(null);
   }
-  if (doc.openid !== openid) {
+  if (doc.user_id !== userId) {
     return fail(ERRORS.FORBIDDEN, '无权删除此预设');
   }
-  logger.info(FN, 'deletePreset', { openid, presetId: payload.presetId });
+  logger.info(FN, 'deletePreset', { user_id: userId, presetId: payload.presetId });
   await db.remove('course_name_presets', payload.presetId);
   return success(null);
 }
@@ -460,19 +460,19 @@ exports.main = async (event, context) => {
   const wxContext = cloud.getWXContext();
 
   try {
-    const openid = getOpenId(wxContext);
+    const { userId } = await resolveCurrentUser(wxContext);
     const { action, payload = {} } = event;
 
     switch (action) {
-      case 'list':        return await list(openid, payload);
-      case 'create':      return await create(openid, payload);
-      case 'update':      return await update(openid, payload);
-      case 'delete':      return await remove(openid, payload);
-      case 'batchCreate': return await batchCreate(openid, payload);
-      case 'batchImportWithOverwrite': return await batchImportWithOverwrite(openid, payload);
-      case 'listPresets': return await listPresets(openid);
-      case 'addPreset':   return await addPreset(openid, payload);
-      case 'deletePreset': return await deletePreset(openid, payload);
+      case 'list':        return await list(userId, payload);
+      case 'create':      return await create(userId, payload);
+      case 'update':      return await update(userId, payload);
+      case 'delete':      return await remove(userId, payload);
+      case 'batchCreate': return await batchCreate(userId, payload);
+      case 'batchImportWithOverwrite': return await batchImportWithOverwrite(userId, payload);
+      case 'listPresets': return await listPresets(userId);
+      case 'addPreset':   return await addPreset(userId, payload);
+      case 'deletePreset': return await deletePreset(userId, payload);
       default:            return fail(ERRORS.PARAM_ERROR, `未知的 action: ${action}`);
     }
   } catch (e) {

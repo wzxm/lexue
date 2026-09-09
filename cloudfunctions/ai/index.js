@@ -9,7 +9,7 @@ const cloud = require('wx-server-sdk');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
 const { ERRORS, success, fail } = require('../../shared/errors');
-const { getOpenId, requireEdit } = require('../../shared/auth');
+const { resolveCurrentUser, requireEdit } = require('../../shared/auth');
 const validator = require('../../shared/validator');
 const logger = require('../../shared/logger');
 const { resolveCourseColor } = require('../../shared/courseColors');
@@ -615,13 +615,13 @@ function buildSuccessFromFinalized(finalized, extras = {}) {
   });
 }
 
-async function recognizeScheduleImage(openid, payload) {
+async function recognizeScheduleImage(userId, payload) {
   validator.requireFields(payload, ['scheduleId', 'fileId']);
-  const schedule = await requireEdit(openid, payload.scheduleId);
+  const schedule = await requireEdit(userId, payload.scheduleId);
   const profile = resolveVisionProfile();
 
   logger.info(FN, 'recognizeScheduleImage', {
-    openid,
+    userId,
     scheduleId: payload.scheduleId,
     provider: profile.provider,
     model: profile.model,
@@ -679,12 +679,12 @@ exports.main = async (event, context) => {
   const wxContext = cloud.getWXContext();
 
   try {
-    const openid = getOpenId(wxContext);
+    const { userId } = await resolveCurrentUser(wxContext);
     const { action, payload = {} } = event;
 
     switch (action) {
       case 'recognizeScheduleImage':
-        return await recognizeScheduleImage(openid, payload);
+        return await recognizeScheduleImage(userId, payload);
       default:
         return fail(ERRORS.PARAM_ERROR, `未知的 action: ${action}`);
     }

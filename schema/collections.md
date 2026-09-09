@@ -4,18 +4,41 @@
 
 | 字段名 | 类型 | 必填 | 说明 |
 |--------|------|------|------|
-| _id | string | 是 | 云数据库自动生成的文档ID |
-| openid | string | 是 | 微信用户唯一标识 |
-| phone | string | 否 | 手机号码（11 位大陆手机号；`loginWithPhone` 授权后写入；`login` 模式不强制，未绑定时无此字段） |
+| _id | string | 是 | 稳定账户 ID（userId），云数据库自动生成 |
+| phone | string | 是 | 11 位大陆手机号，唯一登录标识 |
+| openid | string | 是 | 当前绑定的微信 OPENID，唯一 |
+| unionid | string | 否 | 微信 UnionID |
 | status | string | 否 | 账号状态：`active`（默认）/ `disabled` / `deleted` |
 | nickname | string | 否 | 用户昵称 |
-| avatar_url | string | 否 | 用户头像URL |
+| avatar_url | string | 否 | 用户头像 URL |
+| settings | object | 否 | 用户设置，见下 |
+| settings.notify_enabled | boolean | 否 | 是否开启通知 |
+| settings.notify_advance_minutes | number | 否 | 默认提前提醒分钟数 |
+| settings.hide_weekend | boolean | 否 | 是否隐藏周末 |
+| settings.student_settings | object | 否 | 按学生 ID 的提醒配置 |
 | subscribe_tokens | array | 否 | 订阅消息授权记录，元素结构见下 |
-| subscribe_tokens[].template_id | string | 是 | 订阅消息模板ID |
-| subscribe_tokens[].result | string | 是 | 授权结果（`accept` / `reject` / `ban`） |
+| subscribe_tokens[].template_id | string | 是 | 订阅消息模板 ID |
+| subscribe_tokens[].result | string | 是 | 授权结果（`accept` / `reject` / `ban` / `used`） |
 | subscribe_tokens[].updated_at | date | 是 | 授权时间 |
 | created_at | date | 是 | 注册时间 |
 | updated_at | date | 是 | 最后更新时间 |
+
+---
+
+## sms_codes（短信验证码）
+
+| 字段名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| _id | string | 是 | 文档 ID |
+| phone | string | 是 | 目标手机号 |
+| code_hash | string | 是 | HMAC-SHA256 哈希，禁止存明文 |
+| expires_at | date | 是 | 过期时间（默认 5 分钟） |
+| used_at | date | 否 | 核销时间 |
+| attempt_count | number | 是 | 错误尝试次数，默认 0 |
+| status | string | 是 | `active` / `used` / `locked` / `superseded` / `failed` |
+| request_openid | string | 否 | 发码时的微信 OPENID（限流用） |
+| provider_message | string | 否 | 供应商失败信息（截断存储） |
+| created_at | date | 是 | 创建时间 |
 
 ---
 
@@ -23,8 +46,8 @@
 
 | 字段名 | 类型 | 必填 | 说明 |
 |--------|------|------|------|
-| _id | string | 是 | 云数据库自动生成的文档ID |
-| owner_openid | string | 是 | 创建者的 openid |
+| _id | string | 是 | 云数据库自动生成的文档 ID |
+| owner_user_id | string | 是 | 创建者的 userId（users._id） |
 | name | string | 是 | 学生姓名 |
 | class_name | string | 否 | 班级名称 |
 | student_no | string | 否 | 学号 |
@@ -40,22 +63,22 @@
 
 | 字段名 | 类型 | 必填 | 说明 |
 |--------|------|------|------|
-| _id | string | 是 | 云数据库自动生成的文档ID |
-| owner_openid | string | 是 | 创建者的 openid |
-| student_id | string | 是 | 关联的学生ID |
-| name | string | 是 | 课表名称（如：2024春季学期） |
+| _id | string | 是 | 云数据库自动生成的文档 ID |
+| owner_user_id | string | 是 | 创建者的 userId |
+| student_id | string | 是 | 关联的学生 ID |
+| name | string | 是 | 课表名称（如：2024 春季学期） |
 | semester | string | 否 | 学期标识 |
-| total_weeks | number | 否 | 本学期总周数（1-30，默认20） |
+| total_weeks | number | 否 | 本学期总周数（1-30，默认 20） |
 | periods | array | 否 | 课节配置列表（每项含 index/startTime/endTime/label） |
 | period_config | object | 是 | 课节分组配置（morning_count/afternoon_count/evening_count） |
 | period_config.morning_count | number | 是 | 上午课节数（1-6） |
 | period_config.afternoon_count | number | 是 | 下午课节数（1-6） |
 | period_config.evening_count | number | 是 | 晚上课节数（0-4） |
-| invite_code | string | 是 | 8位唯一邀请码（用于分享课表） |
+| invite_code | string | 是 | 8 位唯一邀请码（用于分享课表） |
 | view_mode | string | 否 | 视图模式（'week' \| 'day'，默认 'week'） |
 | is_default | boolean | 是 | 是否为当前显示课表，默认 false，同一学生下只有一个为 true |
 | shared_with | array | 否 | 已共享的用户列表，元素结构见下 |
-| shared_with[].openid | string | 是 | 共享用户的 openid |
+| shared_with[].user_id | string | 是 | 共享用户的 userId |
 | shared_with[].permission | string | 是 | 课表级权限（`edit` / `view`） |
 | shared_with[].join_time | date | 是 | 加入时间 |
 | created_at | date | 是 | 创建时间 |
@@ -67,10 +90,10 @@
 
 | 字段名 | 类型 | 必填 | 说明 |
 |--------|------|------|------|
-| _id | string | 是 | 云数据库自动生成的文档ID |
-| schedule_id | string | 是 | 关联的课表ID |
-| student_id | string | 是 | 关联的学生ID |
-| owner_openid | string | 是 | 创建者的 openid |
+| _id | string | 是 | 云数据库自动生成的文档 ID |
+| schedule_id | string | 是 | 关联的课表 ID |
+| student_id | string | 是 | 关联的学生 ID |
+| owner_user_id | string | 是 | 创建者的 userId |
 | name | string | 是 | 课程名称 |
 | day_of_week | number | 是 | 星期几（1=周一，2=周二，...，7=周日） |
 | slot | number | 是 | 第几节课（1-12） |
@@ -89,8 +112,8 @@
 
 | 字段名 | 类型 | 必填 | 说明 |
 |--------|------|------|------|
-| _id | string | 是 | 云数据库自动生成的文档ID |
-| openid | string | 是 | 创建者 openid（归属隔离） |
+| _id | string | 是 | 云数据库自动生成的文档 ID |
+| user_id | string | 是 | 创建者 userId（归属隔离） |
 | name | string | 是 | 自定义课程名称 |
 | grade_level | string | 是 | 所属学龄段（elementary/middle/high/college） |
 | created_at | date | 是 | 创建时间 |
@@ -101,11 +124,11 @@
 
 | 字段名 | 类型 | 必填 | 说明 |
 |--------|------|------|------|
-| _id | string | 是 | 云数据库自动生成的文档ID |
-| owner_openid | string | 是 | 家庭主创建者 openid |
-| member_openid | string | 是 | 成员 openid |
+| _id | string | 是 | 云数据库自动生成的文档 ID |
+| owner_user_id | string | 是 | 家庭主创建者 userId |
+| member_user_id | string | 是 | 成员 userId |
 | member_nickname | string | 否 | 成员昵称 |
-| member_avatar | string | 否 | 成员头像URL |
+| member_avatar | string | 否 | 成员头像 URL |
 | role | string | 否 | 成员角色（如：爸爸、妈妈、爷爷） |
 | created_at | date | 是 | 加入时间 |
 
@@ -115,11 +138,11 @@
 
 | 字段名 | 类型 | 必填 | 说明 |
 |--------|------|------|------|
-| _id | string | 是 | 云数据库自动生成的文档ID |
-| code | string | 是 | 6位随机口令（大写字母+数字） |
+| _id | string | 是 | 云数据库自动生成的文档 ID |
+| code | string | 是 | 6 位随机口令（大写字母+数字） |
 | type | string | 是 | 口令类型，当前仅使用 `code` |
-| schedule_id | string | 是 | 要分享的课表ID |
-| creator_openid | string | 是 | 创建口令的用户 openid |
+| schedule_id | string | 是 | 要分享的课表 ID |
+| creator_user_id | string | 是 | 创建口令的用户 userId |
 | used_count | number | 是 | 已使用次数，默认 0（仅统计用途，不影响可用性） |
 | created_at | date | 是 | 创建时间 |
 
@@ -131,14 +154,14 @@
 
 | 字段名 | 类型 | 必填 | 说明 |
 |--------|------|------|------|
-| _id | string | 是 | 云数据库自动生成的文档ID |
-| openid | string | 是 | 接收提醒的用户 openid |
-| student_id | string | 是 | 关联的学生ID |
-| course_id | string | 是 | 关联的课程ID |
+| _id | string | 是 | 云数据库自动生成的文档 ID |
+| user_id | string | 是 | 接收提醒的用户 userId |
+| student_id | string | 是 | 关联的学生 ID |
+| course_id | string | 是 | 关联的课程 ID |
 | course_name | string | 是 | 课程名称（冗余存储，防止课程被删后丢失） |
 | date | string | 是 | 提醒日期（格式：YYYY-MM-DD） |
 | trigger_time | date | 是 | 触发时间（精确到分钟） |
-| status | string | 是 | 状态：pending / sent / failed |
+| status | string | 是 | 状态：pending / sent / failed / skipped |
 | created_at | date | 是 | 创建时间 |
 | sent_at | date | 否 | 实际发送时间 |
 
@@ -148,10 +171,10 @@
 
 | 字段名 | 类型 | 必填 | 说明 |
 |--------|------|------|------|
-| _id | string | 是 | 云数据库自动生成的文档ID |
-| openid | string | 是 | 用户 openid |
+| _id | string | 是 | 云数据库自动生成的文档 ID |
+| user_id | string | 是 | 用户 userId |
 | tool_type | string | 是 | 工具类型（如：homework、exam、note） |
-| student_id | string | 否 | 关联的学生ID（可选） |
+| student_id | string | 否 | 关联的学生 ID（可选） |
 | title | string | 是 | 标题 |
 | content | string | 否 | 内容/备注 |
 | due_date | string | 否 | 截止日期（格式：YYYY-MM-DD） |

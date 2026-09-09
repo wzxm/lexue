@@ -36,7 +36,7 @@ npm run deploy:auth     # 部署单个
 - **WeekDay**：1=周一 … 7=周日
 - **FamilyRole**：`owner` | `edit` | `view`
 - **样式**：Tailwind 工具类 + Sass(.scss)，`pxtransform` 自动 px→rpx
-- **云环境 ID**：`test-d7gxuxk5a8418c629`
+- **云环境 ID**：`cloud1-d5gbyvu3l05e11828`
 - **包管理**：前端 pnpm，根目录 npm，别混用
 
 ## CloudBase 规范查阅

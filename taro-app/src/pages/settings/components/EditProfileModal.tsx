@@ -57,8 +57,8 @@ function EditProfileModal({ visible, onClose }: EditProfileModalProps) {
     try {
       Taro.showLoading({ title: '上传中...' })
       const ext = tempPath.split('.').pop() || 'jpg'
-      const openIdPrefix = userInfo?.openId?.slice(0, 8) || 'user'
-      const cloudPath = `user-avatar/${openIdPrefix}-${Date.now()}-${Math.floor(Math.random() * 10000)}.${ext}`
+      const idPrefix = userInfo?.userId?.slice(0, 8) || userInfo?.openId?.slice(0, 8) || 'user'
+      const cloudPath = `user-avatar/${idPrefix}-${Date.now()}-${Math.floor(Math.random() * 10000)}.${ext}`
       const uploadRes = await Taro.cloud.uploadFile({
         cloudPath,
         filePath: tempPath,

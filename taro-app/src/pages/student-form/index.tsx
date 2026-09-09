@@ -122,8 +122,8 @@ export default function StudentFormPage() {
       setAvatarUploading(true)
       Taro.showLoading({ title: '上传中...' })
       const ext = filePath.split('.').pop() || 'jpg'
-      const openIdPrefix = userInfo?.openId?.slice(0, 8) || 'guest'
-      const cloudPath = `student-avatar/${openIdPrefix}-${Date.now()}-${Math.floor(Math.random() * 10000)}.${ext}`
+      const idPrefix = userInfo?.userId?.slice(0, 8) || userInfo?.openId?.slice(0, 8) || 'guest'
+      const cloudPath = `student-avatar/${idPrefix}-${Date.now()}-${Math.floor(Math.random() * 10000)}.${ext}`
       const uploadRes = await Taro.cloud.uploadFile({
         cloudPath,
         filePath,
