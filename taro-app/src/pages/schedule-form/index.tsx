@@ -22,23 +22,23 @@ const DEFAULT_SEMESTER_INDEX = Math.max(
   0
 );
 
-// 上午默认时间段：08:10 起，每节 40 分钟，课间 10 分钟
+// 上午默认时间段：08:20 起，每节 40 分钟
 const MORNING_SLOTS = [
-  { startTime: "08:10", endTime: "08:50" },
-  { startTime: "09:00", endTime: "09:40" },
-  { startTime: "09:50", endTime: "10:30" },
-  { startTime: "10:40", endTime: "11:20" },
-  { startTime: "11:30", endTime: "12:10" },
-  { startTime: "12:20", endTime: "13:00" },
+  { startTime: "08:20", endTime: "09:00" },
+  { startTime: "09:30", endTime: "10:10" },
+  { startTime: "10:25", endTime: "11:05" },
+  { startTime: "11:20", endTime: "12:00" },
+  { startTime: "12:15", endTime: "12:55" },
+  { startTime: "13:10", endTime: "13:50" },
 ];
-// 下午默认时间段：14:00 起，每节 40 分钟，课间 10 分钟
+// 下午默认时间段：14:20 起，每节 40 分钟
 const AFTERNOON_SLOTS = [
-  { startTime: "14:00", endTime: "14:40" },
-  { startTime: "14:50", endTime: "15:30" },
-  { startTime: "15:40", endTime: "16:20" },
-  { startTime: "16:30", endTime: "17:10" },
-  { startTime: "17:20", endTime: "18:00" },
-  { startTime: "18:10", endTime: "18:50" },
+  { startTime: "14:20", endTime: "15:00" },
+  { startTime: "15:15", endTime: "15:55" },
+  { startTime: "16:10", endTime: "16:50" },
+  { startTime: "17:05", endTime: "17:45" },
+  { startTime: "18:00", endTime: "18:40" },
+  { startTime: "18:55", endTime: "19:35" },
 ];
 // 晚上默认时间段
 const EVENING_SLOTS = [
