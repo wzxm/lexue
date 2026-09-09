@@ -66,7 +66,9 @@ npm run deploy:init-db      # 部署一次性初始化函数（首次环境初�
 3. 到 [访问密钥](https://console.cloud.tencent.com/cam/capi) 创建或复用 `SecretId` / `SecretKey`，建议使用只授权 OCR 调用权限的子账号密钥。
 4. 确认账号余额、免费额度或计费方式正常，否则云函数会自动回退到图片 AI 识别。
 
-`ai` 云函数需要给足运行时间，仓库里的 `cloudfunctions/ai/config.json` 已配置 `"timeout": 60`。如果线上仍看到 `Invoking task timed out after 3 seconds`，说明云端函数超时时间还停留在默认 3 秒，需要重新部署 `ai` 云函数，或在云开发控制台把 `ai` 函数超时时间手动改到 60 秒。
+`ai` 云函数需要给足运行时间，云端默认超时只有 3 秒，视觉模型必然跑不完，报 `Invoking task timed out after 3 seconds`。**超时时间只能在云开发控制台手动设置**：云开发 → 云函数 → `ai` → 函数配置 → 编辑 → 超时时间改成 60 秒。
+
+`cloudfunctions/ai/config.json` 里的 `"timeout": 60` 只是给部署脚本读来做提醒，微信云函数的 `config.json` 只认 `permissions` 和 `triggers`，`miniprogram-ci` 的上传接口也没有下发超时的参数，所以重新部署**不会**改变线上超时。
 
 需要在云开发控制台给 `ai` 云函数配置环境变量：
 

@@ -45,6 +45,22 @@ function isOneOffFunction(fnName) {
   return ONE_OFF_FUNCTIONS.has(fnName)
 }
 
+/**
+ * 读取 config.json 里声明的期望超时时间。
+ * miniprogram-ci 的上传接口不下发超时，微信云函数的 config.json 也只认 permissions/triggers，
+ * 所以这里只能读出来提醒人去控制台改，改不了。
+ */
+function readDeclaredTimeout(fnName) {
+  const configPath = path.join(CF_ROOT, fnName, 'config.json')
+  if (!fs.existsSync(configPath)) return null
+  try {
+    const timeout = JSON.parse(fs.readFileSync(configPath, 'utf8')).timeout
+    return Number.isFinite(timeout) ? timeout : null
+  } catch {
+    return null
+  }
+}
+
 // ─── 工具函数 ─────────────────────────────────────────────────────────────────
 function log(msg) { process.stdout.write(msg) }
 function ok()     { console.log(' ✅') }
@@ -305,6 +321,16 @@ async function main() {
   console.log('\n─────────────────────────────────')
   if (results.success.length > 0) {
     console.log(`✅ 成功 (${results.success.length}): ${results.success.join(', ')}`)
+  }
+
+  const timeoutReminders = results.success
+    .map(fnName => [fnName, readDeclaredTimeout(fnName)])
+    .filter(([, timeout]) => timeout)
+  if (timeoutReminders.length > 0) {
+    console.log('\n⚠️  以下云函数需要非默认超时，但上传接口无法下发，请确认云开发控制台已设置：')
+    for (const [fnName, timeout] of timeoutReminders) {
+      console.log(`   ${fnName}: 需要 ${timeout}s（云端默认 3s）→ 云开发控制台 → 云函数 → ${fnName} → 函数配置 → 超时时间`)
+    }
   }
   if (results.fail.length > 0) {
     console.log(`❌ 失败 (${results.fail.length}): ${results.fail.join(', ')}`)
