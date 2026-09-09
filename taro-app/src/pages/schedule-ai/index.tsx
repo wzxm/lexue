@@ -3,18 +3,19 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import Taro, { useRouter } from '@tarojs/taro'
 import { recognizeScheduleImage } from '../../api/ai.api'
 import { batchImportCoursesWithOverwrite } from '../../api/course.api'
-import { getSchedule } from '../../api/schedule.api'
+import { getSchedule, updateSchedule } from '../../api/schedule.api'
 import { useScheduleStore, buildGrid } from '../../store/schedule.store'
 import { useAuthStore } from '../../store/auth.store'
 import { ROUTES } from '../../constants/routes'
 import { DEFAULT_PERIODS } from '../../constants/periods'
 import { DEFAULT_COURSE_COLOR, COURSE_COLORS } from '../../constants/colors'
 import { getCurrentWeekOffset, getWeekDates, formatDate } from '../../utils/date'
+import { normalizeRecognitionPeriods, recognitionPeriodConfig } from '../../utils/recognitionPeriods'
 import { chooseMediaSource } from '../../utils/media'
 import { buildAllWeeks, buildOffWeekSlotKeys, findCoursesAtSlot, formatWeeksSummary } from '../../utils/weeks'
 import ScheduleGrid from '../schedule/components/ScheduleGrid'
 import CourseEditModal from './components/CourseEditModal'
-import type { Course, Schedule } from '../../types/index'
+import type { Course, Period, Schedule } from '../../types/index'
 import '../schedule/index.scss'
 import './index.scss'
 
@@ -40,10 +41,12 @@ export default function ScheduleAiPage() {
   const [fileId, setFileId] = useState('')
   const [loading, setLoading] = useState(false)
   const [recognizing, setRecognizing] = useState(false)
+  const importingRef = useRef(false)
   const [warnings, setWarnings] = useState<string[]>([])
   const [aiConfidence, setAiConfidence] = useState<'high' | 'medium' | 'low' | ''>('')
   const [reviewItems, setReviewItems] = useState<string[]>([])
   const [draftCourses, setDraftCourses] = useState<Omit<Course, 'id'>[]>([])
+  const [recognizedPeriods, setRecognizedPeriods] = useState<Period[]>([])
   const [previewFilePath, setPreviewFilePath] = useState('')
   const [previewImageVisible, setPreviewImageVisible] = useState(false)
   const [previewWeekOffset, setPreviewWeekOffset] = useState(0)
@@ -62,6 +65,7 @@ export default function ScheduleAiPage() {
 
   const totalWeeks = schedule?.total_weeks || schedule?.totalWeeks || 20
   const periods = schedule?.periods?.length ? schedule.periods : DEFAULT_PERIODS
+  const previewPeriods = recognizedPeriods.length ? recognizedPeriods : periods
   const hideWeekend = userInfo?.settings?.hide_weekend ?? false
   const normalizedDraftCourses = useMemo(() => {
     const weeksFallback = buildAllWeeks(totalWeeks)
@@ -84,8 +88,9 @@ export default function ScheduleAiPage() {
     return {
       ...schedule,
       courses: previewCourses,
+      periods: previewPeriods,
     }
-  }, [schedule, previewCourses])
+  }, [schedule, previewCourses, previewPeriods])
 
   useEffect(() => {
     if (!schedule) return
@@ -235,7 +240,8 @@ export default function ScheduleAiPage() {
           mimeType,
         })
 
-      const schedulePeriods = schedule?.periods?.length || 0
+      const validPeriods = normalizeRecognitionPeriods(result.periods, Math.max(0, ...(result.courses || []).map(c => c.slot)))
+      const schedulePeriods = validPeriods.length || schedule?.periods?.length || 0
       const maxWeeks = totalWeeks
       const normalized = (result.courses || [])
         .map((course, index) => {
@@ -256,6 +262,7 @@ export default function ScheduleAiPage() {
         .filter(course => course.name && course.day_of_week >= 1 && course.day_of_week <= 7 && course.slot >= 1 && course.slot <= Math.max(1, schedulePeriods || 12))
 
       setWarnings(result.warnings || [])
+      setRecognizedPeriods(validPeriods)
       setAiConfidence(result.confidence || '')
       setReviewItems((result.reviewItems || []).map(item => item.message).filter(Boolean))
       setDraftCourses(normalized)
@@ -280,20 +287,36 @@ export default function ScheduleAiPage() {
   }
 
   const handleConfirmImport = async () => {
-    if (!scheduleId) return
+    if (!scheduleId || importingRef.current) return
     if (!normalizedDraftCourses.length) {
       Taro.showToast({ title: '没有可导入的课程', icon: 'none' })
       return
     }
+    importingRef.current = true
+    let coursesImported = false
+    let timeUpdateFailed = false
     try {
       Taro.showLoading({ title: '导入中', mask: true })
       await batchImportCoursesWithOverwrite(scheduleId, normalizedDraftCourses)
+      coursesImported = true
+      if (recognizedPeriods.length) {
+        try {
+          await updateSchedule(scheduleId, {
+            periods: recognizedPeriods,
+            period_config: recognitionPeriodConfig(recognizedPeriods.length, schedule),
+          })
+        } catch {
+          timeUpdateFailed = true
+        }
+      }
       const full = await getSchedule(scheduleId)
       setCurrentSchedule(full)
       Taro.hideLoading()
       Taro.showModal({
-        title: '导入成功',
-        content: '课程导入成功，若大模型识别有误，您可点击具体课程进行修改。',
+        title: timeUpdateFailed ? '课程已导入' : '导入成功',
+        content: timeUpdateFailed
+          ? '课程已导入，但课节时间更新失败，请在课表设置中核对并修改时间。'
+          : recognizedPeriods.length ? '课程与课节时间已同步，请核对识别结果。' : '课程导入成功，未识别到完整课节时间，已保留原配置。',
         showCancel: false,
         confirmText: '知道了',
         success: () => {
@@ -302,7 +325,18 @@ export default function ScheduleAiPage() {
       })
     } catch (err: any) {
       Taro.hideLoading()
-      Taro.showToast({ title: err?.message || '导入失败', icon: 'none' })
+      if (coursesImported) {
+        await Taro.showModal({
+          title: '课程已导入',
+          content: timeUpdateFailed ? '课节时间更新失败，且课表刷新失败，请返回课表重新加载并核对时间。' : '课表刷新失败，请返回课表重新加载，勿重复导入。',
+          showCancel: false,
+        })
+        jumpToSchedule()
+      } else {
+        Taro.showToast({ title: err?.message || '导入失败', icon: 'none' })
+      }
+    } finally {
+      importingRef.current = false
     }
   }
 
@@ -378,7 +412,7 @@ export default function ScheduleAiPage() {
                 weekNum={previewWeekNum}
                 weekDates={previewWeekDates}
                 today={previewToday}
-                periods={periods}
+                periods={previewPeriods}
                 grid={previewGrid}
                 totalWeeks={totalWeeks}
                 startDate={schedule?.start_date || schedule?.startDate}
@@ -395,6 +429,7 @@ export default function ScheduleAiPage() {
             ) : (
               <Text className='tip'>当前课表信息未加载完成，稍后再试。</Text>
             )}
+            <Text className='preview-hint'>{recognizedPeriods.length ? '已识别并将覆盖课节时间' : '未识别到课节时间，将保留原配置'}</Text>
           </View>
 
           <View className='bottom-bar'>
@@ -418,7 +453,7 @@ export default function ScheduleAiPage() {
             visible={!!editingCourse}
             course={editingCourse?.course || null}
             courseIndex={editingCourse?.index ?? -1}
-            periods={schedule?.periods?.length || 8}
+            periods={previewPeriods.length}
             totalWeeks={totalWeeks}
             onSave={(index, updated) => {
               const newCourses = [...draftCourses]

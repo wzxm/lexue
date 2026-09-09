@@ -21,7 +21,8 @@ interface ScheduleState {
 
 /** 计算课表二维网格 grid[period-1][weekday-1] */
 export function buildGrid(schedule: Schedule | null, weekOffset: number): ScheduleGrid {
-  const grid: ScheduleGrid = Array.from({ length: PERIOD_COUNT }, () =>
+  const periodCount = schedule?.periods?.length || PERIOD_COUNT
+  const grid: ScheduleGrid = Array.from({ length: periodCount }, () =>
     new Array(WEEKDAY_COUNT).fill(null)
   )
   if (!schedule) return grid
@@ -31,7 +32,7 @@ export function buildGrid(schedule: Schedule | null, weekOffset: number): Schedu
   for (const course of courses) {
     const weekdayIdx = course.day_of_week - 1
     const periodIdx = course.slot - 1
-    if (periodIdx >= 0 && periodIdx < PERIOD_COUNT && weekdayIdx >= 0 && weekdayIdx < WEEKDAY_COUNT) {
+    if (periodIdx >= 0 && periodIdx < periodCount && weekdayIdx >= 0 && weekdayIdx < WEEKDAY_COUNT) {
       if (!course.weeks || course.weeks.length === 0) {
         grid[periodIdx][weekdayIdx] = course
       } else if (course.weeks.includes(currentWeek)) {

@@ -97,10 +97,10 @@ function buildPrompt(schedule) {
   const maxSlot = Math.min(Math.max(periods.length || 0, 1), MAX_COURSES);
   return [
     '你是学校课程表图片识别助手。只输出严格 JSON，不要 Markdown、解释或代码块。',
-    '{ "courses": [ { "name": "...", "day_of_week": 1, "slot": 1, "teacher": "", "room": "", "contact": "", "remark": "" } ], "warnings": [] }',
+    '{ "periods": [ { "index": 1, "startTime": "08:10", "endTime": "08:50", "label": "第1节" } ], "courses": [ { "name": "...", "day_of_week": 1, "slot": 1, "teacher": "", "room": "", "contact": "", "remark": "" } ], "warnings": [] }',
     '规则：',
     '1. 表头星期（一/周一/星期一）映射 day_of_week=1-7。',
-    '2. 左侧节次（第1节、1、第一节）映射 slot；不要把时间段识别成课程。',
+    '2. 识别左侧每个节次的开始和结束时间，写入 periods，时间统一为 HH:mm；无法确认时不要编造。左侧节次（第1节、1、第一节）映射 slot；不要把时间段识别成课程。',
     `3. slot 范围 1-${maxSlot}。每个有课的单元格只输出一条课程，day_of_week 和 slot 对应它所在的列和行。跨多节的合并格按实际覆盖的节次分别输出。`,
     '4. name 原样保留单元格文字，包括括号。同一格里的单周/双周（如"体育(单周) 英语(双周)""心理(单周)/综合实践(双周)"）必须写在同一条 name 里，不要拆成两条，也不要输出 weeks。',
     '5. 单元格里的教师、教室、电话分别填 teacher/room/contact；不确定则空字符串。不要输出 weeks、color。',
