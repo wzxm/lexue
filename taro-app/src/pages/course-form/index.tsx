@@ -57,6 +57,7 @@ function formatWeeksSummary(weeks: number[], totalWeeks: number): string {
 
 function resolveGradeLevelFromStudentGrade(grade?: string): GradeLevel {
   const text = (grade || '').trim()
+  if (text.includes('幼儿园')) return 'elementary'
   if (text.includes('小学')) return 'elementary'
   if (text.includes('初中')) return 'middle'
   if (text.includes('高中')) return 'high'

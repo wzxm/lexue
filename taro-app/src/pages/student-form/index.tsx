@@ -9,12 +9,14 @@ import { chooseMediaSource } from '../../utils/media'
 import './index.scss'
 
 const GRADE_OPTIONS = [
+  '幼儿园，小班', '幼儿园，中班', '幼儿园，大班',
   '小学，一年级', '小学，二年级', '小学，三年级', '小学，四年级', '小学，五年级', '小学，六年级',
   '初中，一年级', '初中，二年级', '初中，三年级',
   '高中，一年级', '高中，二年级', '高中，三年级',
   '大学，本科一年级', '大学，本科二年级', '大学，本科三年级', '大学，本科四年级',
   '大学，硕士一年级', '大学，硕士二年级', '大学，博士一年级', '大学，博士二年级', '大学，博士三年级',
 ]
+const DEFAULT_GRADE = '小学，一年级'
 const MAX_AVATAR_SIZE = 2 * 1024 * 1024
 
 export default function StudentFormPage() {
@@ -32,9 +34,9 @@ export default function StudentFormPage() {
   const [school, setSchool] = useState('')
   const [className, setClassName] = useState('')
   const [studentNo, setStudentNo] = useState('')
-  const [grade, setGrade] = useState('小学，一年级')
+  const [grade, setGrade] = useState(DEFAULT_GRADE)
   const [gender, setGender] = useState<number>(1) // 1=男, 2=女
-  const [gradeIndex, setGradeIndex] = useState(0)
+  const [gradeIndex, setGradeIndex] = useState(GRADE_OPTIONS.indexOf(DEFAULT_GRADE))
   const [avatar, setAvatar] = useState('')
   const [loading, setLoading] = useState(false)
   const [avatarUploading, setAvatarUploading] = useState(false)
@@ -48,12 +50,12 @@ export default function StudentFormPage() {
         setSchool(student.school || '')
         setClassName(student.className || '')
         setStudentNo(student.studentNo || '')
-        setGrade(student.grade || '小学，一年级')
+        setGrade(student.grade || DEFAULT_GRADE)
         setGender(student.gender || 1)
         setAvatar(student.avatar || '')
 
         const gIdx = GRADE_OPTIONS.indexOf(student.grade)
-        setGradeIndex(gIdx >= 0 ? gIdx : 0)
+        setGradeIndex(gIdx >= 0 ? gIdx : GRADE_OPTIONS.indexOf(DEFAULT_GRADE))
       }
     }
     Taro.setNavigationBarTitle({ title: mode === 'edit' ? '学生信息' : '学生信息' })
