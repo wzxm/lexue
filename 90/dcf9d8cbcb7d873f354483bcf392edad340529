@@ -1,0 +1,54 @@
+taro-app/src/pages/settings/settingsMenu.ts
+  s_dff91d7c903b7b::t_3557b3734afc51 20
+taro-app/src/pages/schedule/index.tsx
+  s_af14581e4a68e2::t_4e56a1cc3aa03f 661
+taro-app/src/pages/family-manage/index.config.ts
+  s_dff91d7c903b7b::t_56c1dcc1d55223 2
+taro-app/src/utils/goScheduleWithFamilyInvite.ts
+  s_dff91d7c903b7b::t_892adea75dabea 1-9
+taro-app/src/pages/schedule-ai/index.tsx
+  s_dff91d7c903b7b::t_053e3e41d12019 319-324,326,330
+  s_dff91d7c903b7b::t_1ce8ac5aec146e 10
+  s_dff91d7c903b7b::t_8eb018203bbc87 153-159,161-163
+  s_dff91d7c903b7b::t_6cc6d175969074 316
+taro-app/src/styles/iconfont.scss
+  h_1811824342b47a 4,6,8
+taro-app/src/pages/family-manage/index.tsx
+  s_dff91d7c903b7b::t_38f11b734a8cfe 76
+taro-app/src/pages/copy-schedule/index.tsx
+  s_dff91d7c903b7b::t_7b0bd378dd9405 154
+  s_dff91d7c903b7b::t_ea1f3e431605e6 9
+taro-app/src/pages/schedule/components/ScheduleGrid.scss
+  h_1811824342b47a 18,24
+  s_af14581e4a68e2::t_49c310f79c7557 19-20
+  s_af14581e4a68e2::t_7c5bf468892dda 13,17,21-22,25
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "90dcf9d8cbcb7d873f354483bcf392edad340529",
+  "prompts": {},
+  "humans": {
+    "h_1811824342b47a": {
+      "author": "王哲 <wangzhe@mogulinker.com>"
+    }
+  },
+  "sessions": {
+    "s_af14581e4a68e2": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "d747801c-0c8c-494a-8ed3-7ffcf30577c3",
+        "model": "grok-4.6"
+      },
+      "human_author": "王哲 <wangzhe@mogulinker.com>"
+    },
+    "s_dff91d7c903b7b": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "85cb089a-8c79-49c7-b32b-c5ea9c56ffa5",
+        "model": "composer-2.5"
+      },
+      "human_author": "王哲 <wangzhe@mogulinker.com>"
+    }
+  }
+}
