@@ -5,6 +5,7 @@ import * as familyApi from '../../api/family.api'
 import type { MemberInfo } from '../../api/family.api'
 import { useAuthStore } from '../../store/auth.store'
 import { ROUTES } from '../../constants/routes'
+import shareCover from '../../assets/share.png'
 import './index.scss'
 
 const AVATAR_COLORS = ['#A0A4F0', '#E8C86A', '#7EC8A0', '#E88A8A', '#8AB4E8', '#D4A0E8']
@@ -31,7 +32,8 @@ export default function FamilyManagePage() {
   const [highlightInvite, setHighlightInvite] = useState(false)
 
   useShareAppMessage(() => ({
-    title: `${userInfo?.nickname || '家人'}邀请你加入课表管家家庭共享`,
+    title: `${userInfo?.nickname || '家人'}邀请你加入家庭共享课表`,
+    imageUrl: shareCover,
     path: `${ROUTES.INVITE_ACCEPT}?inviterUserId=${currentUserId}`,
   }))
 
