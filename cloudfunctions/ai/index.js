@@ -13,6 +13,7 @@ const { resolveCurrentUser, requireEdit } = require('../../shared/auth');
 const validator = require('../../shared/validator');
 const logger = require('../../shared/logger');
 const { resolveCourseColor } = require('../../shared/courseColors');
+const { normalizePeriods } = require('./periodTimes');
 const https = require('https');
 const http = require('http');
 
@@ -93,20 +94,23 @@ function getSchedulePromptContext(schedule) {
 }
 
 function buildPrompt(schedule) {
-  const { periods, periodLines } = getSchedulePromptContext(schedule);
-  const maxSlot = Math.min(Math.max(periods.length || 0, 1), MAX_COURSES);
+  const { periods } = getSchedulePromptContext(schedule);
+  const configuredCount = Math.min(Math.max(periods.length || 0, 0), MAX_COURSES);
   return [
     '你是学校课程表图片识别助手。只输出严格 JSON，不要 Markdown、解释或代码块。',
-    '{ "periods": [ { "index": 1, "startTime": "08:10", "endTime": "08:50", "label": "第1节" } ], "courses": [ { "name": "...", "day_of_week": 1, "slot": 1, "teacher": "", "room": "", "contact": "", "remark": "" } ], "warnings": [] }',
+    '{ "periods": [ { "index": 1, "startTime": "07:05", "endTime": "07:45", "label": "上午1" } ], "courses": [ { "name": "...", "day_of_week": 1, "slot": 1, "teacher": "", "room": "", "contact": "", "remark": "" } ], "warnings": [] }',
     '规则：',
     '1. 表头星期（一/周一/星期一）映射 day_of_week=1-7。',
-    '2. 识别左侧每个节次的开始和结束时间，写入 periods，时间统一为 HH:mm；无法确认时不要编造。左侧节次（第1节、1、第一节）映射 slot；不要把时间段识别成课程。',
-    `3. slot 范围 1-${maxSlot}。每个有课的单元格只输出一条课程，day_of_week 和 slot 对应它所在的列和行。跨多节的合并格按实际覆盖的节次分别输出。`,
-    '4. name 原样保留单元格文字，包括括号。同一格里的单周/双周（如"体育(单周) 英语(双周)""心理(单周)/综合实践(双周)"）必须写在同一条 name 里，不要拆成两条，也不要输出 weeks。',
-    '5. 单元格里的教师、教室、电话分别填 teacher/room/contact；不确定则空字符串。不要输出 weeks、color。',
-    '6. 忽略整行作息（午餐、午休、大课间、眼保健操、升旗、早操）以及空白格、斜杠占位、标题、页脚。行标签（早读、第1节）不是课程名；该行单元格里的具体科目仍要输出。',
-    periodLines.length ? `7. 参考节次：${periodLines.join('；')}。` : '7. 按左侧节次序号识别 slot。',
-    '8. 不确定就不要编造，把原因写入 warnings；对模糊项在 remark 开头加 "[待确认]"。',
+    '2. periods 必须从图片左侧节次列读取开始/结束时间，禁止套用当前课表已有时间，也禁止使用本提示里的示例时间。左侧常见写法是「第1节 / 第一节 / 上午1」「08:35-09:15」「8:20~9:00」「8:20—8:30」，把 - — ~ ～ 时间段拆成 startTime、endTime，统一 HH:mm。',
+    '3. 上课节次写入 periods：第N节、第一节、上午N、下午N、晚上N。大课间、眼保健操、午休、午餐、课后托管等整行作息不要进入 periods，也不要占 slot。早读/午读/晚读若格子里有班会、安全教育等具体科目，要作为上课节次保留并占 slot；若整行空白则忽略。',
+    `4. slot 范围 1-${MAX_COURSES}。每个有课的单元格只输出一条课程，day_of_week 和 slot 对应它所在的列和上课节次（跳过作息行后从 1 连续编号）。跨多节的合并格按实际覆盖的节次分别输出。`,
+    '5. name 原样保留单元格文字，包括括号。同一格里的单周/双周（如"体育(单周) 英语(双周)""心理(单周)/综合实践(双周)"）必须写在同一条 name 里，不要拆成两条，也不要输出 weeks。',
+    '6. 单元格里的教师、教室、电话分别填 teacher/room/contact；不确定则空字符串。不要输出 weeks、color。',
+    '7. 忽略整行作息以及空白格、斜杠占位、标题、页脚。行标签（早读、第1节）不是课程名；该行单元格里的具体科目仍要输出。',
+    configuredCount
+      ? `8. 当前课表大约配置了 ${configuredCount} 节，仅供理解密度；图片里的上课节数和时间一律以原图为准，不要补齐或套用已有时间。`
+      : '8. 按左侧上课节次连续编号 slot。',
+    '9. 不确定就不要编造课程名；时间能看清就必须输出。模糊项在 remark 开头加 "[待确认]"，原因写入 warnings。',
   ].join('\n');
 }
 
@@ -259,10 +263,10 @@ function findSameSlotCourses(list, dayOfWeek, slot) {
 
 function validateAndFinalizeRecognition(data, schedule, source = 'vision') {
   const { periods: schedulePeriods, totalWeeks } = getSchedulePromptContext(schedule);
-  const maxSlot = Math.min(Math.max((Array.isArray(data && data.periods) && data.periods.length) || schedulePeriods.length || MAX_COURSES, 1), MAX_COURSES);
+  const periods = normalizePeriods((data && data.periods) || []);
+  const maxSlot = Math.min(Math.max(periods.length || schedulePeriods.length || MAX_COURSES, 1), MAX_COURSES);
   const expandedCourses = expandAlternatingWeekCourses((data && data.courses) || [], totalWeeks || 20);
   const normalized = normalizeCourses(expandedCourses, totalWeeks || 20, maxSlot);
-  const periods = normalizePeriods((data && data.periods) || []);
   const warnings = [...normalized.warnings, ...((data && Array.isArray(data.warnings)) ? data.warnings.map(String) : [])];
   const reviewItems = [];
   const result = [];
@@ -316,6 +320,9 @@ function validateAndFinalizeRecognition(data, schedule, source = 'vision') {
   const confidence = result.length >= 10 && reviewItems.length === 0 && pendingCount === 0
     ? 'high'
     : (result.length >= 5 && reviewItems.length <= 3 ? 'medium' : 'low');
+  if (!periods.length && result.length) {
+    warnings.push('未能解析课节时间，将保留原课表作息；请检查原图左侧上课时间是否清晰。');
+  }
 
   return {
     courses: cleanupCourses(result),
@@ -343,44 +350,6 @@ const SUBJECT_COMPLETIONS = {
 
 function completeSubjectName(name) {
   return SUBJECT_COMPLETIONS[name] || name;
-}
-
-function normalizeTimeText(value) {
-  const raw = String(value || '').trim().replace('：', ':');
-  const match = raw.match(/^(\d{1,2}):(\d{2})$/);
-  if (!match) return '';
-  const hour = Number(match[1]);
-  const minute = Number(match[2]);
-  if (!Number.isInteger(hour) || !Number.isInteger(minute) || hour < 0 || hour > 23 || minute < 0 || minute > 59) {
-    return '';
-  }
-  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
-}
-
-function normalizePeriods(rawPeriods) {
-  if (!Array.isArray(rawPeriods)) return [];
-  const seen = new Set();
-  return rawPeriods
-    .filter(period => period && typeof period === 'object')
-    .map((period, index) => {
-      const rawIndex = Number(period.index);
-      const safeIndex = Number.isInteger(rawIndex) && rawIndex > 0 && rawIndex <= 16 ? rawIndex : index + 1;
-      const type = period.type === 'activity' ? 'activity' : 'class';
-      const label = String(period.label || '').trim() || (type === 'activity' ? '活动' : `第${safeIndex}节`);
-      return {
-        index: safeIndex,
-        startTime: normalizeTimeText(period.startTime || period.start_time),
-        endTime: normalizeTimeText(period.endTime || period.end_time),
-        label: label.slice(0, 20),
-        type,
-      };
-    })
-    .filter((period) => {
-      if (period.index < 1 || period.index > 16 || seen.has(period.index)) return false;
-      seen.add(period.index);
-      return true;
-    })
-    .sort((a, b) => a.index - b.index);
 }
 
 function normalizeCourses(payloadCourses, totalWeeks, periodCount) {
@@ -665,6 +634,7 @@ async function recognizeScheduleImage(userId, payload) {
   logger.info(FN, 'recognizeScheduleImage:vision:done', {
     provider: profile.provider,
     courses: finalized.courses.length,
+    periods: finalized.periods.length,
     confidence: finalized.confidence,
   });
   return buildSuccessFromFinalized(finalized, {

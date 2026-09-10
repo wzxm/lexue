@@ -15,7 +15,7 @@
     "deploy:share": "node scripts/deploy-cloud-functions.js share",
     "deploy:ai": "node scripts/deploy-cloud-functions.js ai",
     "create-indexes": "node scripts/create-indexes.js",
-    "test": "node --test shared/*.test.js"
+    "test": "node --test shared/*.test.js cloudfunctions/ai/*.test.js"
   },
   "keywords": [],
   "author": "",

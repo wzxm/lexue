@@ -303,7 +303,7 @@ export default function ScheduleAiPage() {
         try {
           await updateSchedule(scheduleId, {
             periods: recognizedPeriods,
-            period_config: recognitionPeriodConfig(recognizedPeriods.length, schedule),
+            period_config: recognitionPeriodConfig(recognizedPeriods.length, schedule, recognizedPeriods),
           })
         } catch {
           timeUpdateFailed = true
