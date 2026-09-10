@@ -1,0 +1,55 @@
+taro-app/src/pages/schedule/components/EmptyState.tsx
+  s_07fa14f38908e2::t_db2cd8f51babbf 1,6,9,14
+taro-app/src/utils/tabState.ts
+  s_07fa14f38908e2::t_8e3ce5ba70dd0b 4,10-11,20-22,32-36,49-52,54
+  s_07fa14f38908e2::t_2c649d077abf96 53
+taro-app/src/pages/family-manage/index.scss
+  s_07fa14f38908e2::t_c48371ba78a022 173-187
+taro-app/src/pages/schedule/index.tsx
+  s_07fa14f38908e2::t_b1473bc854b502 546
+  s_07fa14f38908e2::t_9eff6aec47bdc1 485-493
+taro-app/src/pages/schedule/index.scss
+  s_07fa14f38908e2::t_7c6492b33fc5b2 160-166
+taro-app/src/pages/copy-schedule/index.tsx
+  s_07fa14f38908e2::t_9bde008d8125b4 103,105
+  s_07fa14f38908e2::t_1c4f9208f13fbf 7
+  s_07fa14f38908e2::t_fbb1eac2d57916 34
+  s_07fa14f38908e2::t_ae1c725e5cf8a2 83-87
+taro-app/src/custom-tab-bar/index.tsx
+  s_07fa14f38908e2::t_579e5d59d2f4b0 114-125
+  s_07fa14f38908e2::t_24431e6f51392a 5
+  s_07fa14f38908e2::t_a91e4a5074530d 17,22
+  s_07fa14f38908e2::t_94b9f110f7eb67 78,86-94,96,101-111,113
+  s_07fa14f38908e2::t_96db95431e1b75 63-68
+taro-app/src/custom-tab-bar/index.scss
+  s_07fa14f38908e2::t_2da001ab11414c 10,17-69,73
+  s_07fa14f38908e2::t_ddc6302af88990 70-72
+  s_07fa14f38908e2::t_ad2b5f2b5cc5a7 74
+taro-app/src/pages/family-manage/index.tsx
+  s_07fa14f38908e2::t_e551b0e8896c92 20-23,31
+  s_07fa14f38908e2::t_7c1bdf3d38ecd6 2-3
+  s_07fa14f38908e2::t_57d2bcdb9c8730 44-48
+  s_07fa14f38908e2::t_d6bb6d46c82aae 64
+  s_07fa14f38908e2::t_c495f976a914fb 165-169
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "44ad82cd2863d1c6ac6105e2c2cbd224e6f009c8",
+  "prompts": {},
+  "humans": {
+    "h_1811824342b47a": {
+      "author": "王哲 <wangzhe@mogulinker.com>"
+    }
+  },
+  "sessions": {
+    "s_07fa14f38908e2": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "c6880947-faaf-4fea-90f7-638cc902a01c",
+        "model": "composer-2.5"
+      },
+      "human_author": "王哲 <wangzhe@mogulinker.com>"
+    }
+  }
+}
