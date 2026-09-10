@@ -414,17 +414,32 @@
   font-weight: 600;
 }
 
-.modal-course-card__meta,
-.modal-course-card__remark {
-  display: block;
-  margin-top: 10px;
-  font-size: 24px;
-  color: var(--color-text-gray);
-  line-height: 1.4;
+.modal-course-fields {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.modal-course-card__remark {
+.modal-course-field {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.modal-course-field__label {
+  flex-shrink: 0;
+  font-size: 24px;
+  color: var(--color-text-gray);
+}
+
+.modal-course-field__value {
+  flex: 1;
+  min-width: 0;
+  font-size: 24px;
   color: var(--color-text-sub);
+  line-height: 1.4;
+  word-break: break-all;
 }
 
 .modal-footer {

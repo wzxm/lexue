@@ -21,10 +21,6 @@ function formatSlotTitle(courses: Course[]): string {
   return `周${dayLabel} 第${first.slot}节`
 }
 
-function formatMeta(course: Course): string {
-  return [course.teacher, course.room].filter(Boolean).join(' · ')
-}
-
 export default function CourseModal({
   courses,
   showCourseModal,
@@ -56,12 +52,32 @@ export default function CourseModal({
                   <Text className='modal-course-card__name'>{course.name}</Text>
                   <Text className='modal-course-card__week'>{weeksLabel}</Text>
                 </View>
-                {meta ? (
-                  <Text className='modal-course-card__meta'>{meta}</Text>
-                ) : null}
-                {course.remark ? (
-                  <Text className='modal-course-card__remark'>{course.remark}</Text>
-                ) : null}
+                <View className='modal-course-fields'>
+                  {course.teacher ? (
+                    <View className='modal-course-field'>
+                      <Text className='modal-course-field__label'>老师</Text>
+                      <Text className='modal-course-field__value'>{course.teacher}</Text>
+                    </View>
+                  ) : null}
+                  {course.room ? (
+                    <View className='modal-course-field'>
+                      <Text className='modal-course-field__label'>教室</Text>
+                      <Text className='modal-course-field__value'>{course.room}</Text>
+                    </View>
+                  ) : null}
+                  {course.contact ? (
+                    <View className='modal-course-field'>
+                      <Text className='modal-course-field__label'>联系方式</Text>
+                      <Text className='modal-course-field__value'>{course.contact}</Text>
+                    </View>
+                  ) : null}
+                  {course.remark ? (
+                    <View className='modal-course-field'>
+                      <Text className='modal-course-field__label'>备注</Text>
+                      <Text className='modal-course-field__value'>{course.remark}</Text>
+                    </View>
+                  ) : null}
+                </View>
               </View>
             )
           })}
