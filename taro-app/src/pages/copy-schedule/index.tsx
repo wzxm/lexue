@@ -17,6 +17,7 @@ export default function CopySchedulePage() {
   const [isFocused, setIsFocused] = useState(false);
   const [pendingStudents, setPendingStudents] = useState<Student[] | null>(null);
   const [studentPickerIndex, setStudentPickerIndex] = useState(0);
+  const [confirmModalVisible, setConfirmModalVisible] = useState(false);
   const addSchedule = useScheduleStore(s => s.addSchedule);
   const setCurrentSchedule = useScheduleStore(s => s.setCurrentSchedule);
 
@@ -82,6 +83,16 @@ export default function CopySchedulePage() {
     setLoading(false);
   };
 
+  const handleModalClose = () => {
+    setConfirmModalVisible(false);
+    setLoading(false);
+  };
+
+  const handleModalCopy = () => {
+    setConfirmModalVisible(false);
+    void handleConfirmCopy();
+  };
+
   // 确认复制：单学生直接归属；多学生弹滑动选择器；无学生交给云函数提示
   const handleConfirmCopy = async () => {
     try {
@@ -111,6 +122,19 @@ export default function CopySchedulePage() {
       // 拉取含课程列表的完整课表，确保回到课表页能直接看到复制的课程
       const full = await getSchedule(newSchedule.id);
       setCurrentSchedule(full);
+
+      // 防御：线上 share 云函数若为旧版本，会忽略所选学生、落到默认学生
+      if (studentId && full.student_id && full.student_id !== studentId) {
+        Taro.showModal({
+          title: '学生归属可能不正确',
+          content: '当前线上 share 云函数是旧版本，未按所选学生归属。请重新部署 share 云函数（npm run deploy:share）后，删除本课表并重新复制。',
+          showCancel: false,
+          confirmText: '知道了',
+          confirmColor: '#3b82f6',
+        });
+        setLoading(false);
+        return;
+      }
 
       Taro.showToast({ title: '复制成功', icon: 'success', duration: 1500 });
       setTimeout(() => {
@@ -167,6 +191,22 @@ export default function CopySchedulePage() {
           </Text>
         </View>
       </View>
+
+      {confirmModalVisible && (
+        <View className='confirm-modal-mask' onClick={handleModalClose}>
+          <View className='confirm-modal-card' onClick={(e) => e.stopPropagation()}>
+            <Text className='confirm-modal-title'>口令匹配成功</Text>
+            <View className='confirm-modal-body'>
+              <Text className='confirm-modal-line'>复制后可按需修改课表信息和课程内容。</Text>
+              <Text className='confirm-modal-line'>（⚠️注意：出于隐私保护，老师的信息不会被复制，如有需要可自行添加）</Text>
+            </View>
+            <View className='confirm-modal-actions'>
+              <View className='confirm-modal-btn confirm-modal-btn--cancel' onClick={handleModalClose}>关闭</View>
+              <View className='confirm-modal-btn confirm-modal-btn--confirm' onClick={handleModalCopy}>立即复制</View>
+            </View>
+          </View>
+        </View>
+      )}
 
       {pendingStudents && (
         <View className='student-picker-mask' onClick={() => dismissStudentPicker()}>
