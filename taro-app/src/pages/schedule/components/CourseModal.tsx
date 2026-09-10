@@ -42,7 +42,6 @@ export default function CourseModal({
         <View className={`modal-body${courses.length > 1 ? ' modal-body--pair' : ''}`}>
           {courses.map((course, index) => {
             const weeksLabel = formatWeeksSummary(course.weeks || [], totalWeeks)
-            const meta = formatMeta(course)
             return (
               <View
                 key={resolveCourseKey(course, index)}
