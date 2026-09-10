@@ -2,6 +2,7 @@ import { Component } from 'react'
 import Taro from '@tarojs/taro'
 import { View, Text } from '@tarojs/components'
 import { tabState } from '../utils/tabState'
+import { ROUTES } from '../constants/routes'
 import './index.scss'
 
 const LIST = [
@@ -13,10 +14,12 @@ const LIST = [
 export default class CustomTabBar extends Component {
   private unsubscribe: (() => void) | null = null
   private unsubscribeVisible: (() => void) | null = null
+  private unsubscribeBanner: (() => void) | null = null
 
   state = {
     selected: tabState.current,
     visible: tabState.visible,
+    familyShareBanner: tabState.familyShareBanner,
   }
 
   private normalizeRoute(route?: string) {
@@ -57,6 +60,12 @@ export default class CustomTabBar extends Component {
         this.setState({ visible })
       }
     })
+
+    this.unsubscribeBanner = tabState.subscribeFamilyShareBanner((familyShareBanner) => {
+      if (familyShareBanner !== this.state.familyShareBanner) {
+        this.setState({ familyShareBanner })
+      }
+    })
   }
 
   componentDidShow() {
@@ -66,6 +75,7 @@ export default class CustomTabBar extends Component {
   componentWillUnmount() {
     this.unsubscribe?.()
     this.unsubscribeVisible?.()
+    this.unsubscribeBanner?.()
   }
 
   switchTab = (idx: number, url: string) => {
@@ -73,22 +83,46 @@ export default class CustomTabBar extends Component {
     Taro.switchTab({ url })
   }
 
+  closeFamilyShareBanner = () => {
+    tabState.setFamilyShareBanner(false)
+  }
+
+  handleInviteFamily = () => {
+    tabState.setFamilyShareBanner(false)
+    Taro.navigateTo({ url: `${ROUTES.FAMILY_MANAGE}?autoInvite=1` })
+  }
+
   render() {
-    const { selected, visible } = this.state
+    const { selected, visible, familyShareBanner } = this.state
     if (!visible) return null
 
     return (
       <View className='custom-tab-bar'>
-        {LIST.map((item, idx) => (
-          <View
-            key={item.pagePath}
-            className={`tab-item ${selected === idx ? 'tab-item--active' : ''}`}
-            onClick={() => this.switchTab(idx, item.pagePath)}
-          >
-            <Text className='iconfont tab-icon'>{item.icon}</Text>
-            <Text className='tab-text'>{item.text}</Text>
+        {familyShareBanner && (
+          <View className='tab-family-banner'>
+            <Text className='tab-family-banner-text'>可以共享课表给家人哦~</Text>
+            <View className='tab-family-banner-actions'>
+              <View className='tab-family-banner-btn tab-family-banner-btn--ghost' onClick={this.closeFamilyShareBanner}>
+                <Text className='tab-family-banner-btn-text'>关闭</Text>
+              </View>
+              <View className='tab-family-banner-btn tab-family-banner-btn--primary' onClick={this.handleInviteFamily}>
+                <Text className='tab-family-banner-btn-text tab-family-banner-btn-text--primary'>邀请</Text>
+              </View>
+            </View>
           </View>
-        ))}
+        )}
+        <View className='tab-items-row'>
+          {LIST.map((item, idx) => (
+            <View
+              key={item.pagePath}
+              className={`tab-item ${selected === idx ? 'tab-item--active' : ''}`}
+              onClick={() => this.switchTab(idx, item.pagePath)}
+            >
+              <Text className='iconfont tab-icon'>{item.icon}</Text>
+              <Text className='tab-text'>{item.text}</Text>
+            </View>
+          ))}
+        </View>
       </View>
     )
   }

@@ -157,6 +157,13 @@
   border: none;
 }
 
+.copy-schedule-link {
+  margin-top: 32px;
+  font-size: 28px;
+  color: var(--color-primary, #3b82f6);
+  font-weight: 500;
+}
+
 /* 有数据：课表视图 */
 .schedule-page {
   position: relative;

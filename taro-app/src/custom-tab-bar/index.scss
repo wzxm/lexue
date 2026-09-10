@@ -7,11 +7,69 @@
   bottom: 0;
   z-index: 500;
   display: flex;
-  align-items: stretch;
+  flex-direction: column;
   background: #fff;
   border-top: 1px solid #eee;
   padding-bottom: env(safe-area-inset-bottom);
   box-sizing: content-box;
+}
+
+.tab-family-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 24px;
+  background: #eff6ff;
+  border-bottom: 1px solid #dbeafe;
+}
+
+.tab-family-banner-text {
+  flex: 1;
+  font-size: 24px;
+  color: #1e40af;
+  line-height: 1.4;
+}
+
+.tab-family-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.tab-family-banner-btn {
+  min-width: 72px;
+  height: 52px;
+  padding: 0 16px;
+  border-radius: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tab-family-banner-btn--ghost {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #bfdbfe;
+}
+
+.tab-family-banner-btn--primary {
+  background: var(--color-primary, #3b82f6);
+}
+
+.tab-family-banner-btn-text {
+  font-size: 22px;
+  color: #1e40af;
+  font-weight: 500;
+}
+
+.tab-family-banner-btn-text--primary {
+  color: #fff;
+}
+
+.tab-items-row {
+  display: flex;
+  align-items: stretch;
 }
 
 .tab-item {

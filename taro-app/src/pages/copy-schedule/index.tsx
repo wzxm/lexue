@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { verifyInviteCode, copyByInviteCode } from '../../api/share.api';
 import { ROUTES } from '../../constants/routes';
 import { useScheduleStore } from '../../store/schedule.store';
+import { tabState } from '../../utils/tabState';
 
 import './index.scss';
 
@@ -30,7 +31,7 @@ export default function CopySchedulePage() {
       await verifyInviteCode(code.trim());
       Taro.hideLoading();
 
-      const confirmContent = '口令校验通过，确认复制课表？\n\n复制课表以下内容：\n- 所在学期所有课程信息\n- 课程名称、时间、周次安排\n（老师姓名和联系方式不会被复制）';
+      const confirmContent = '确认复制后可按自身需求调整课表：\n- 修改或添加课程\n- 课表所属学生纠正\n- 调整课节和开启通知';
 
       Taro.showModal({
         title: '口令匹配成功',
@@ -79,18 +80,11 @@ export default function CopySchedulePage() {
 
       Taro.hideLoading();
 
-      Taro.showModal({
-        title: '复制成功',
-        content: '复制成功，您可按自身需求调整课表：\n- 修改或添加课程\n- 课表所属学生纠正\n- 调整课节和开启通知',
-        confirmColor: '#3b82f6',
-        confirmText: '返回课表页',
-        showCancel: false,
-        success: (res) => {
-          if (res.confirm) {
-            Taro.switchTab({ url: ROUTES.SCHEDULE });
-          }
-        },
-      });
+      Taro.showToast({ title: '复制成功', icon: 'success', duration: 1500 });
+      setTimeout(() => {
+        tabState.setFamilyShareBanner(true);
+        Taro.switchTab({ url: ROUTES.SCHEDULE });
+      }, 1500);
     } catch (err: any) {
       Taro.hideLoading();
       Taro.showToast({ title: err.message || '复制失败', icon: 'none' });
@@ -106,9 +100,9 @@ export default function CopySchedulePage() {
           <View className="hero-icon">
             <View className="hero-icon-inner" />
           </View>
-          <Text className="hero-title">复制好友课表</Text>
+          <Text className="hero-title">复制同学课表</Text>
           <Text className="hero-desc">
-            输入好友分享的口令，即可一键复制课表内容
+            输入同学分享的口令，即可一键复制课表内容
           </Text>
         </View>
 

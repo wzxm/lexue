@@ -170,6 +170,21 @@
   }
 }
 
+.family-invite-btn--highlight {
+  box-shadow: 0 0 0 6px rgba(59, 130, 246, 0.35), var(--shadow-elevated);
+  animation: family-invite-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes family-invite-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.25), var(--shadow-elevated);
+  }
+
+  50% {
+    box-shadow: 0 0 0 10px rgba(59, 130, 246, 0.15), var(--shadow-elevated);
+  }
+}
+
 .family-invite-text {
   font-size: 32px;
   font-weight: 600;

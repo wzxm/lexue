@@ -482,6 +482,15 @@ export default function SchedulePage () {
     setShowAddCourseSheet(true)
   }
 
+  /** 复制同学课表 */
+  const onCopySchedule = () => {
+    if (!isLoggedIn) {
+      Taro.navigateTo({ url: ROUTES.LOGIN })
+      return
+    }
+    Taro.navigateTo({ url: ROUTES.COPY_SCHEDULE })
+  }
+
   const onAiRecognize = async () => {
     if (!isLoggedIn) {
       Taro.navigateTo({ url: ROUTES.LOGIN })
@@ -534,7 +543,7 @@ export default function SchedulePage () {
             height: `${headerPaddingTop + menuButtonInfo.height}px`
           }}
         />
-        <EmptyState onAddCourse={onAddCourse} />
+        <EmptyState onAddCourse={onAddCourse} onCopySchedule={onCopySchedule} />
       </View>
     )
   }

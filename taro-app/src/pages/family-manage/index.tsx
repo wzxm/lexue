@@ -1,6 +1,6 @@
 import { View, Text, Image, PageContainer, Button } from '@tarojs/components'
-import { useEffect, useState } from 'react'
-import Taro, { useDidShow, useShareAppMessage } from '@tarojs/taro'
+import { useEffect, useRef, useState } from 'react'
+import Taro, { useDidShow, useRouter, useShareAppMessage } from '@tarojs/taro'
 import * as familyApi from '../../api/family.api'
 import type { MemberInfo } from '../../api/family.api'
 import { useAuthStore } from '../../store/auth.store'
@@ -17,6 +17,10 @@ function getAvatarText(name?: string) {
 }
 
 export default function FamilyManagePage() {
+  const router = useRouter()
+  const autoInvite = router.params.autoInvite === '1'
+  const autoInvitePromptedRef = useRef(false)
+
   const userInfo = useAuthStore((state) => state.userInfo)
   const currentUserId = userInfo?.userId || ''
 
@@ -24,6 +28,7 @@ export default function FamilyManagePage() {
   const [loading, setLoading] = useState(true)
   const [showManageSheet, setShowManageSheet] = useState(false)
   const [selectedMember, setSelectedMember] = useState<MemberInfo | null>(null)
+  const [highlightInvite, setHighlightInvite] = useState(false)
 
   useShareAppMessage(() => ({
     title: `${userInfo?.nickname || '家人'}邀请你加入课表管家家庭共享`,
@@ -36,6 +41,11 @@ export default function FamilyManagePage() {
 
   useDidShow(() => {
     loadFamilyData()
+    if (autoInvite && !autoInvitePromptedRef.current) {
+      autoInvitePromptedRef.current = true
+      setHighlightInvite(true)
+      Taro.showToast({ title: '点击发起邀请发给家人', icon: 'none' })
+    }
   })
 
   const loadFamilyData = async () => {
@@ -51,6 +61,7 @@ export default function FamilyManagePage() {
   }
 
   const handleInvite = () => {
+    setHighlightInvite(false)
     if (!currentUserId) {
       Taro.showToast({ title: '请先登录后再邀请', icon: 'none' })
       return
@@ -151,7 +162,11 @@ export default function FamilyManagePage() {
       )}
 
       <View className='family-bottom'>
-        <Button className='family-invite-btn' openType='share' onClick={handleInvite}>
+        <Button
+          className={`family-invite-btn ${highlightInvite ? 'family-invite-btn--highlight' : ''}`}
+          openType='share'
+          onClick={handleInvite}
+        >
           <Text className='family-invite-text'>发起邀请</Text>
         </Button>
       </View>
