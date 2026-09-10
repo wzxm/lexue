@@ -104,6 +104,6 @@ export async function verifyInviteCode(code: string): Promise<InviteCodePreview>
   };
 }
 
-export async function copyByInviteCode(code: string): Promise<any> {
-  return cloud.call<any>('share', { action: 'copyByInviteCode', payload: { code } });
+export async function copyByInviteCode(code: string, studentId?: string): Promise<any> {
+  return cloud.call<any>('share', { action: 'copyByInviteCode', payload: { code, studentId: studentId || '' } });
 }

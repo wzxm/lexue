@@ -1,10 +1,13 @@
-import { View, Text, Input, Button } from '@tarojs/components';
+import { View, Text, Input, Button, Picker } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import { useState, useEffect } from 'react';
 import { verifyInviteCode, copyByInviteCode } from '../../api/share.api';
+import { getSchedule } from '../../api/schedule.api';
+import { listStudents } from '../../api/student.api';
 import { ROUTES } from '../../constants/routes';
 import { useScheduleStore } from '../../store/schedule.store';
 import { tabState } from '../../utils/tabState';
+import type { Student } from '../../types/index';
 
 import './index.scss';
 
@@ -12,6 +15,8 @@ export default function CopySchedulePage() {
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
+  const [pendingStudents, setPendingStudents] = useState<Student[] | null>(null);
+  const [studentPickerIndex, setStudentPickerIndex] = useState(0);
   const addSchedule = useScheduleStore(s => s.addSchedule);
   const setCurrentSchedule = useScheduleStore(s => s.setCurrentSchedule);
 
@@ -32,7 +37,7 @@ export default function CopySchedulePage() {
       await verifyInviteCode(code.trim());
       Taro.hideLoading();
 
-      const confirmContent = '即将复制课表的内容，复制后你可按需修改课表信息和课程内容。\n（⚠️注意：出于隐私保护，老师的信息不会被复制，如有需要可自行添加）';
+      const confirmContent = '复制后可按需修改课表信息和课程内容。\n（⚠️注意：出于隐私保护，老师的信息不会被复制，如有需要可自行添加）';
 
       Taro.showModal({
         title: '口令匹配成功',
@@ -42,7 +47,7 @@ export default function CopySchedulePage() {
         cancelText: '关闭',
         success: async (res) => {
           if (res.confirm) {
-            await doCopyCode();
+            await handleConfirmCopy();
           } else {
             setLoading(false);
           }
@@ -72,15 +77,40 @@ export default function CopySchedulePage() {
     }
   };
 
-  const doCopyCode = async () => {
+  const dismissStudentPicker = () => {
+    setPendingStudents(null);
+    setLoading(false);
+  };
+
+  // 确认复制：单学生直接归属；多学生弹滑动选择器；无学生交给云函数提示
+  const handleConfirmCopy = async () => {
+    try {
+      const studentList = await listStudents();
+      if (studentList.length > 1) {
+        setPendingStudents(studentList);
+        setStudentPickerIndex(0);
+        setLoading(false);
+        return;
+      }
+      await doCopyCode(studentList[0]?.id);
+    } catch (err: any) {
+      setLoading(false);
+      Taro.showToast({ title: err?.message || '获取学生信息失败', icon: 'none' });
+    }
+  };
+
+  const doCopyCode = async (studentId?: string) => {
     Taro.showLoading({ title: '复制中', mask: true });
     try {
-      const newSchedule = await copyByInviteCode(code.trim());
+      const newSchedule = await copyByInviteCode(code.trim(), studentId);
 
       addSchedule(newSchedule);
-      setCurrentSchedule(newSchedule);
 
       Taro.hideLoading();
+
+      // 拉取含课程列表的完整课表，确保回到课表页能直接看到复制的课程
+      const full = await getSchedule(newSchedule.id);
+      setCurrentSchedule(full);
 
       Taro.showToast({ title: '复制成功', icon: 'success', duration: 1500 });
       setTimeout(() => {
@@ -137,6 +167,39 @@ export default function CopySchedulePage() {
           </Text>
         </View>
       </View>
+
+      {pendingStudents && (
+        <View className='student-picker-mask' onClick={() => dismissStudentPicker()}>
+          <View className='student-picker-card' onClick={(e) => e.stopPropagation()}>
+            <Text className='student-picker-title'>选择学生</Text>
+            <Text className='student-picker-desc'>请选择复制的课表归属到哪个学生名下</Text>
+            <Picker
+              mode='selector'
+              range={pendingStudents.map(s => s.name)}
+              value={studentPickerIndex}
+              onChange={(e) => setStudentPickerIndex(Number(e.detail.value))}
+            >
+              <View className='student-picker-value'>
+                <Text className='student-picker-value-text'>{pendingStudents[studentPickerIndex]?.name || '请选择'}</Text>
+                <Text className='student-picker-arrow'>›</Text>
+              </View>
+            </Picker>
+            <View className='student-picker-actions'>
+              <View className='student-picker-btn student-picker-btn--cancel' onClick={() => dismissStudentPicker()}>取消</View>
+              <View
+                className='student-picker-btn student-picker-btn--confirm'
+                onClick={() => {
+                  const target = pendingStudents[studentPickerIndex];
+                  setPendingStudents(null);
+                  if (target) void doCopyCode(target.id);
+                }}
+              >
+                确认复制
+              </View>
+            </View>
+          </View>
+        </View>
+      )}
     </View>
   );
 }

@@ -226,13 +226,23 @@ async function copyByInviteCode(userId, payload) {
     return fail(ERRORS.PARAM_ERROR, '这是你自己的口令，分享给好友使用吧');
   }
 
-  // 查当前用户的默认学生（source='init' 优先，否则取第一条）
-  let defaultStudent = await db.findOne('students', { owner_user_id: userId, source: 'init' });
-  if (!defaultStudent) {
-    const studentList = await db.getList('students', { owner_user_id: userId }, { limit: 1 });
-    defaultStudent = studentList[0] || null;
+  // 目标学生：优先使用前端指定的 studentId（多学生时由用户选择），否则取默认学生
+  let targetStudent = null;
+  const requestedStudentId = String(payload.studentId || '').trim();
+  if (requestedStudentId) {
+    targetStudent = await db.getOne('students', requestedStudentId);
+    if (!targetStudent || targetStudent.owner_user_id !== userId) {
+      return fail(ERRORS.PARAM_ERROR, '学生信息无效，请重新选择');
+    }
+  } else {
+    // 查当前用户的默认学生（source='init' 优先，否则取第一条）
+    targetStudent = await db.findOne('students', { owner_user_id: userId, source: 'init' });
+    if (!targetStudent) {
+      const studentList = await db.getList('students', { owner_user_id: userId }, { limit: 1 });
+      targetStudent = studentList[0] || null;
+    }
   }
-  if (!defaultStudent) {
+  if (!targetStudent) {
     return fail(ERRORS.NOT_FOUND, '请先创建学生信息');
   }
 
@@ -252,7 +262,7 @@ async function copyByInviteCode(userId, payload) {
   // 复制课表
   const { _id: newScheduleId } = await db.create('schedules', {
     owner_user_id: userId,
-    student_id: defaultStudent._id,
+    student_id: targetStudent._id,
     name: sourceSchedule.name,
     semester: sourceSchedule.semester || '',
     total_weeks: sourceSchedule.total_weeks || 20,
@@ -276,7 +286,7 @@ async function copyByInviteCode(userId, payload) {
     const slot = Number(course.slot ?? course.period);
     await db.create('courses', {
       schedule_id: newScheduleId,
-      student_id: defaultStudent._id,
+      student_id: targetStudent._id,
       owner_user_id: userId,
       name: course.name,
       day_of_week: course.day_of_week,
@@ -289,9 +299,10 @@ async function copyByInviteCode(userId, payload) {
     });
   }
 
-  // 返回新课表完整信息
+  // 返回新课表完整信息（含复制的课程，避免前端拿到空课程列表）
   const newSchedule = await db.getOne('schedules', newScheduleId);
-  return success({ ...newSchedule, id: newSchedule._id });
+  const newCourses = await db.getList('courses', { schedule_id: newScheduleId });
+  return success({ ...newSchedule, id: newSchedule._id, courses: newCourses });
 }
 
 /**
