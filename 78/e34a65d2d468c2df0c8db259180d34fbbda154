@@ -1,0 +1,32 @@
+taro-app/src/pages/schedule/components/ScheduleGrid.tsx
+  s_af14581e4a68e2::t_d0d1b982395165 215
+  s_af14581e4a68e2::t_a2c0b668eb2748 31-32
+  s_af14581e4a68e2::t_4f1b17e76dea68 2
+  s_af14581e4a68e2::t_8f13fa910ca30b 75
+taro-app/src/pages/schedule/index.tsx
+  s_af14581e4a68e2::t_09dfc3dace6c24 659-663
+  s_af14581e4a68e2::t_2599c1353c488c 183-186
+taro-app/src/pages/schedule/components/ScheduleGrid.scss
+  s_af14581e4a68e2::t_872937153ef620 9-21
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "78e34a65d2d468c2df0c8db259180d34fbbda154",
+  "prompts": {},
+  "humans": {
+    "h_1811824342b47a": {
+      "author": "王哲 <wangzhe@mogulinker.com>"
+    }
+  },
+  "sessions": {
+    "s_af14581e4a68e2": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "d747801c-0c8c-494a-8ed3-7ffcf30577c3",
+        "model": "grok-4.6"
+      },
+      "human_author": "王哲 <wangzhe@mogulinker.com>"
+    }
+  }
+}
