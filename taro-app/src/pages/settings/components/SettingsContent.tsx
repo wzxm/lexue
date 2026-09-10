@@ -36,7 +36,7 @@ function MenuItem({ row, suffix, onMenu }: MenuItemProps) {
 
   if (row.key === 'shareSchedule') {
     return (
-      <View className='menu-item-wrap'>
+      <View className='menu-item-wrap menu-item-wrap--share'>
         <Button className='menu-item menu-item--share-btn' openType='share'>
           {content}
         </Button>
