@@ -1,0 +1,52 @@
+cloudfunctions/ai/periodTimes.test.js
+  s_ceea047905810b::t_9834513f40ff1e 67-117
+  s_ceea047905810b::t_abc239510a2685 66,118-128
+  s_ceea047905810b::t_d33769009d81eb 1-31,36-65
+  s_ceea047905810b::t_4dd12585cecc81 32-35
+cloudfunctions/ai/index.js
+  s_ceea047905810b::t_b303b5df7e0be6 637
+  s_ceea047905810b::t_2340065a8d29fc 323-325
+  s_ceea047905810b::t_43ffbb859e227a 266-267
+  s_ceea047905810b::t_464541677034ea 16
+  s_ceea047905810b::t_2569dcae7ea9bd 97-98,101,106-113
+  s_ceea047905810b::t_cd17d7bcfb4995 104-105
+taro-app/src/pages/schedule-ai/index.tsx
+  s_ceea047905810b::t_f1c2c9f41024a2 306
+cloudfunctions/ai/periodTimes.js
+  s_ceea047905810b::t_78f07229e8ccb8 96-107,110,126-129
+  s_ceea047905810b::t_db01d21c18f48f 1-5,9-83,89-95,108-109,111-125,130-134,136-146
+  s_ceea047905810b::t_0262db8aab8d70 135
+  s_ceea047905810b::t_0ea5128237097f 84-88
+  s_ceea047905810b::t_ad4d6f464afa83 6-8
+package.json
+  s_ceea047905810b::t_9b9ddea56502f3 18
+taro-app/src/utils/recognitionPeriods.ts
+  s_ceea047905810b::t_a3b7fd3cfcb4be 93,109-117
+  s_ceea047905810b::t_b31cec599495af 123
+  s_ceea047905810b::t_dd56fa6258c12b 3-5
+  s_ceea047905810b::t_157854711d7c1f 133-160
+  s_ceea047905810b::t_47fbc3467e456d 78-82
+  s_ceea047905810b::t_5e663128c790c8 6-77,83-89,91-92,94-108,118-122,124-131
+  s_ceea047905810b::t_b8f646becd1083 132
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "0b493aeb4f2bfa184fce134755269d12e851be93",
+  "prompts": {},
+  "humans": {
+    "h_1811824342b47a": {
+      "author": "王哲 <wangzhe@mogulinker.com>"
+    }
+  },
+  "sessions": {
+    "s_ceea047905810b": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "532119ae-4585-4eda-9ee7-0e6a9a0cb87a",
+        "model": "grok-4.6"
+      },
+      "human_author": "王哲 <wangzhe@mogulinker.com>"
+    }
+  }
+}
