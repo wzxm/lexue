@@ -77,6 +77,7 @@ export default function InviteAcceptPage() {
   const setSchedules = useScheduleStore(s => s.setSchedules)
   const setCurrentSchedule = useScheduleStore(s => s.setCurrentSchedule)
   const setStudents = useStudentStore(s => s.setStudents)
+  const setCurrentStudent = useStudentStore(s => s.setCurrentStudent)
 
   useEffect(() => {
     Taro.setNavigationBarTitle({ title: '家人共享邀请' })
@@ -138,8 +139,15 @@ export default function InviteAcceptPage() {
 
         const joinedSchedule = schedules.find(
           s => result.scheduleIds.includes(s.id) || result.scheduleIds.includes(s._id || '')
-        )
+        ) || schedules.find(s => {
+          const student = students.find(st => st.id === s.student_id)
+          return !!student?.isShared
+        })
         if (joinedSchedule) {
+          const joinedStudent = students.find(s => s.id === joinedSchedule.student_id)
+          if (joinedStudent) {
+            setCurrentStudent(joinedStudent)
+          }
           setCurrentSchedule(joinedSchedule)
         }
       } catch {

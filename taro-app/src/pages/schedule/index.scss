@@ -139,11 +139,17 @@
   text-align: center;
 }
 
-.create-btn {
+.empty-actions {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.create-btn,
+.copy-schedule-btn {
   width: 100% !important;
   height: 96px;
-  background: var(--color-dark-btn);
-  color: #ffffff;
   border-radius: 16px;
   font-size: 32px;
   font-weight: 600;
@@ -153,15 +159,20 @@
   border: none;
   margin: 0;
 }
-.create-btn::after {
+
+.create-btn {
+  background: var(--color-dark-btn);
+  color: #ffffff;
+}
+.create-btn::after,
+.copy-schedule-btn::after {
   border: none;
 }
 
-.copy-schedule-link {
-  margin-top: 32px;
-  font-size: 28px;
-  color: var(--color-primary, #3b82f6);
-  font-weight: 500;
+.copy-schedule-btn {
+  background: #ffffff;
+  color: var(--color-dark-btn, #1a1a2e);
+  border: 2px solid var(--color-border, #e5e7eb);
 }
 
 /* 有数据：课表视图 */

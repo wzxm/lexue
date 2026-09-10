@@ -226,15 +226,20 @@ export default function SchedulePage () {
         useScheduleStore.getState()
 
       // Tab 间切换优先复用现有数据，避免每次回到课表页都串行重拉。
-      // 但如果 currentSchedule 已不在列表中（被删除），也需要重新加载。
+      // 但如果 currentSchedule 已不在列表中（被删除 / 取消共享），也需要重新加载。
       const currentStillExists = cachedCurrentSchedule
         ? cachedSchedules.some(s => s.id === cachedCurrentSchedule.id)
         : false
+      const scheduleStudentGone = !!(
+        cachedCurrentSchedule?.student_id &&
+        !cachedStudents.some(s => s.id === cachedCurrentSchedule.student_id)
+      )
       if (
         cachedStudents.length === 0 ||
         cachedSchedules.length === 0 ||
         !cachedCurrentSchedule ||
-        !currentStillExists
+        !currentStillExists ||
+        scheduleStudentGone
       ) {
         void loadData()
       }
@@ -266,9 +271,17 @@ export default function SchedulePage () {
           syncView()
           return
         }
-        const schedules = await listSchedules(activeStudent.id)
+        let schedules = await listSchedules(activeStudent.id)
+        if (schedules.length === 0) {
+          // 当前学生没有课表时，回退到可见的共享课表，避免加入家人后首页空白
+          schedules = await listSchedules()
+        }
         setSchedules(schedules)
-        const defaultSchedule = schedules.find(s => s.is_default) || schedules[0]
+        const previousId = useScheduleStore.getState().currentSchedule?.id
+        const defaultSchedule =
+          schedules.find(s => s.id === previousId) ||
+          schedules.find(s => s.is_default) ||
+          schedules[0]
         if (defaultSchedule) {
           const full = await getSchedule(defaultSchedule.id)
           const st = resolveScheduleStudent(full, studentList)

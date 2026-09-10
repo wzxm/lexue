@@ -3,7 +3,11 @@ import { useEffect, useRef, useState } from 'react'
 import Taro, { useDidShow, useRouter, useShareAppMessage } from '@tarojs/taro'
 import * as familyApi from '../../api/family.api'
 import type { MemberInfo } from '../../api/family.api'
+import { listSchedules, getSchedule } from '../../api/schedule.api'
+import { listStudents } from '../../api/student.api'
 import { useAuthStore } from '../../store/auth.store'
+import { useScheduleStore } from '../../store/schedule.store'
+import { useStudentStore } from '../../store/student.store'
 import { ROUTES } from '../../constants/routes'
 import shareCover from '../../assets/share.png'
 import './index.scss'
@@ -15,6 +19,37 @@ function getAvatarText(name?: string) {
   if (!normalized) return '微'
   // Use code-point aware split so emoji won't be cut into broken chars.
   return Array.from(normalized)[0] || '微'
+}
+
+/** 家人关系变化后，丢掉已失效的共享课表，切回当前账号仍可见的课表 */
+async function refreshAccessibleSchedules() {
+  const [schedules, students] = await Promise.all([
+    listSchedules(),
+    listStudents(),
+  ])
+  useStudentStore.getState().setStudents(students)
+  useScheduleStore.getState().setSchedules(schedules)
+
+  const current = useScheduleStore.getState().currentSchedule
+  const stillVisible = !!current && schedules.some(s => s.id === current.id)
+  if (stillVisible) return
+
+  const next = schedules.find(s => s.is_default) || schedules[0]
+  if (!next) {
+    useScheduleStore.getState().setCurrentSchedule(null)
+    return
+  }
+
+  try {
+    const full = await getSchedule(next.id)
+    useScheduleStore.getState().setCurrentSchedule(full)
+    const student = students.find(s => s.id === full.student_id)
+    if (student) {
+      useStudentStore.getState().setCurrentStudent(student)
+    }
+  } catch {
+    useScheduleStore.getState().setCurrentSchedule(null)
+  }
 }
 
 export default function FamilyManagePage() {
@@ -89,6 +124,11 @@ export default function FamilyManagePage() {
       Taro.showToast({ title: selectedMember.relation_type === 'incoming' || selectedMember.is_owner ? '已退出共享' : '已取消共享' })
       closeManageSheet()
       await loadFamilyData()
+      try {
+        await refreshAccessibleSchedules()
+      } catch {
+        useScheduleStore.getState().setCurrentSchedule(null)
+      }
     } catch (err: any) {
       Taro.hideLoading()
       Taro.showToast({ title: err?.message || '操作失败', icon: 'none' })

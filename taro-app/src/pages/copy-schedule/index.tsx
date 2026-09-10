@@ -1,4 +1,4 @@
-import { View, Text, Input, Button, Picker } from '@tarojs/components';
+import { View, Text, Input, Button } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import { useState, useEffect } from 'react';
 import { verifyInviteCode, copyByInviteCode } from '../../api/share.api';
@@ -6,20 +6,26 @@ import { getSchedule } from '../../api/schedule.api';
 import { listStudents } from '../../api/student.api';
 import { ROUTES } from '../../constants/routes';
 import { useScheduleStore } from '../../store/schedule.store';
+import { useStudentStore } from '../../store/student.store';
 import { tabState } from '../../utils/tabState';
 import type { Student } from '../../types/index';
 
 import './index.scss';
+
+function ownStudentsOf(list: Student[]) {
+  return list.filter(s => !s.isShared);
+}
 
 export default function CopySchedulePage() {
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const [pendingStudents, setPendingStudents] = useState<Student[] | null>(null);
-  const [studentPickerIndex, setStudentPickerIndex] = useState(0);
+  const [selectedStudentId, setSelectedStudentId] = useState('');
   const [confirmModalVisible, setConfirmModalVisible] = useState(false);
   const addSchedule = useScheduleStore(s => s.addSchedule);
   const setCurrentSchedule = useScheduleStore(s => s.setCurrentSchedule);
+  const setCurrentStudent = useStudentStore(s => s.setCurrentStudent);
 
   useEffect(() => {
     Taro.setNavigationBarTitle({ title: '复制课表' });
@@ -80,6 +86,7 @@ export default function CopySchedulePage() {
 
   const dismissStudentPicker = () => {
     setPendingStudents(null);
+    setSelectedStudentId('');
     setLoading(false);
   };
 
@@ -93,24 +100,25 @@ export default function CopySchedulePage() {
     void handleConfirmCopy();
   };
 
-  // 确认复制：单学生直接归属；多学生弹滑动选择器；无学生交给云函数提示
+  // 只按「我名下」的学生归属：1 个直接复制，多个必须点选后再复制
   const handleConfirmCopy = async () => {
     try {
-      const studentList = await listStudents();
-      if (studentList.length > 1) {
-        setPendingStudents(studentList);
-        setStudentPickerIndex(0);
+      const ownStudents = ownStudentsOf(await listStudents());
+      if (ownStudents.length > 1) {
+        setPendingStudents(ownStudents);
+        setSelectedStudentId('');
         setLoading(false);
         return;
       }
-      await doCopyCode(studentList[0]?.id);
+      await doCopyCode(ownStudents[0]);
     } catch (err: any) {
       setLoading(false);
       Taro.showToast({ title: err?.message || '获取学生信息失败', icon: 'none' });
     }
   };
 
-  const doCopyCode = async (studentId?: string) => {
+  const doCopyCode = async (student?: Student) => {
+    const studentId = student?.id;
     Taro.showLoading({ title: '复制中', mask: true });
     try {
       const newSchedule = await copyByInviteCode(code.trim(), studentId);
@@ -119,11 +127,17 @@ export default function CopySchedulePage() {
 
       Taro.hideLoading();
 
-      // 拉取含课程列表的完整课表，确保回到课表页能直接看到复制的课程
       const full = await getSchedule(newSchedule.id);
       setCurrentSchedule(full);
 
-      // 防御：线上 share 云函数若为旧版本，会忽略所选学生、落到默认学生
+      const ownerId = full.student_id || studentId || '';
+      if (student && ownerId === student.id) {
+        setCurrentStudent(student);
+      } else if (ownerId) {
+        const owner = (await listStudents()).find(s => s.id === ownerId);
+        if (owner) setCurrentStudent(owner);
+      }
+
       if (studentId && full.student_id && full.student_id !== studentId) {
         Taro.showModal({
           title: '学生归属可能不正确',
@@ -147,6 +161,16 @@ export default function CopySchedulePage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const confirmSelectedStudent = () => {
+    const target = pendingStudents?.find(s => s.id === selectedStudentId);
+    if (!target) {
+      Taro.showToast({ title: '请选择学生', icon: 'none' });
+      return;
+    }
+    setPendingStudents(null);
+    void doCopyCode(target);
   };
 
   return (
@@ -213,26 +237,26 @@ export default function CopySchedulePage() {
           <View className='student-picker-card' onClick={(e) => e.stopPropagation()}>
             <Text className='student-picker-title'>选择学生</Text>
             <Text className='student-picker-desc'>请选择复制的课表归属到哪个学生名下</Text>
-            <Picker
-              mode='selector'
-              range={pendingStudents.map(s => s.name)}
-              value={studentPickerIndex}
-              onChange={(e) => setStudentPickerIndex(Number(e.detail.value))}
-            >
-              <View className='student-picker-value'>
-                <Text className='student-picker-value-text'>{pendingStudents[studentPickerIndex]?.name || '请选择'}</Text>
-                <Text className='student-picker-arrow'>›</Text>
-              </View>
-            </Picker>
+            <View className='student-picker-list'>
+              {pendingStudents.map((student) => {
+                const active = student.id === selectedStudentId
+                return (
+                  <View
+                    key={student.id}
+                    className={`student-picker-item${active ? ' student-picker-item--active' : ''}`}
+                    onClick={() => setSelectedStudentId(student.id)}
+                  >
+                    <Text className='student-picker-item-name'>{student.name}</Text>
+                    {active ? <Text className='student-picker-item-check'>✓</Text> : null}
+                  </View>
+                )
+              })}
+            </View>
             <View className='student-picker-actions'>
               <View className='student-picker-btn student-picker-btn--cancel' onClick={() => dismissStudentPicker()}>取消</View>
               <View
-                className='student-picker-btn student-picker-btn--confirm'
-                onClick={() => {
-                  const target = pendingStudents[studentPickerIndex];
-                  setPendingStudents(null);
-                  if (target) void doCopyCode(target.id);
-                }}
+                className={`student-picker-btn student-picker-btn--confirm${!selectedStudentId ? ' student-picker-btn--disabled' : ''}`}
+                onClick={confirmSelectedStudent}
               >
                 确认复制
               </View>
