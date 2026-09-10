@@ -1,0 +1,42 @@
+taro-app/src/pages/copy-schedule/index.scss
+  s_dec6fe10b03105::t_0ac9dea3cc8612 194,196-203,207,210,213-218,224,226-227
+  s_dec6fe10b03105::t_1190d9c4d768ad 257-260
+taro-app/src/pages/invite-accept/index.tsx
+  s_dec6fe10b03105::t_9a3f129f132979 80
+  s_dec6fe10b03105::t_d7bf5549bfbde5 142-145,147-150
+taro-app/src/pages/schedule/components/EmptyState.tsx
+  s_dec6fe10b03105::t_8decc8e881ea25 1,13-16
+taro-app/src/pages/schedule/index.tsx
+  s_dec6fe10b03105::t_8fb64d90de7d26 274-278,280-284
+  s_dec6fe10b03105::t_944a2a7da6422e 229,233-236,241-242
+taro-app/src/pages/copy-schedule/index.tsx
+  s_dec6fe10b03105::t_f2adf83fdfa5e2 1,9,15-18,24,28,89,103,106-109,113,120-121,133-136,138-140,166-175,240-254,258-259
+  s_dec6fe10b03105::t_d56322e4c4eba8 137
+taro-app/src/pages/schedule/index.scss
+  s_dec6fe10b03105::t_ef94398c5382ed 142-150,162-168,172-175
+taro-app/src/pages/family-manage/index.tsx
+  s_dec6fe10b03105::t_95005090c33236 127-131
+  s_dec6fe10b03105::t_c5fa6ae5ad47b2 6-7,9-10
+  s_dec6fe10b03105::t_dce5bf8db664d8 24-54
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "cb01a005f189eafbea24fa448e658b5f3bc6fed3",
+  "prompts": {},
+  "humans": {
+    "h_1811824342b47a": {
+      "author": "王哲 <wangzhe@mogulinker.com>"
+    }
+  },
+  "sessions": {
+    "s_dec6fe10b03105": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "d2bf31cd-1ba3-441a-b342-8aef21fe2628",
+        "model": "grok-4.6"
+      },
+      "human_author": "王哲 <wangzhe@mogulinker.com>"
+    }
+  }
+}
