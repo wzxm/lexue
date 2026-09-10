@@ -658,6 +658,7 @@ export default function SchedulePage () {
           hideWeekend={hideWeekend}
           footer={(
             <View className='share-family-btn' onClick={goFamilyManage}>
+              <Text className='iconfont share-family-btn-icon'>{'\ue841'}</Text>
               <Text className='share-family-btn-text'>共享给家人</Text>
             </View>
           )}

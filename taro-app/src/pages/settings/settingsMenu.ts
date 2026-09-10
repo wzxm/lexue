@@ -17,7 +17,7 @@ export interface MenuRow {
 }
 
 export const menuRows: MenuRow[] = [
-  { key: 'family', label: '家人管理', icon: '\ue600' },
+  { key: 'family', label: '共享给家人', icon: '\ue600' },
   { key: 'scheduleTab', label: '课表管理', icon: '\ue696' },
   { key: 'studentManage', label: '学生管理', icon: '\ue706' },
   { key: 'shareSchedule', label: '分享小程序', icon: '\ue729' },

@@ -1,3 +1,3 @@
 export default definePageConfig({
-  navigationBarTitleText: '家人管理',
+  navigationBarTitleText: '共享给家人',
 })

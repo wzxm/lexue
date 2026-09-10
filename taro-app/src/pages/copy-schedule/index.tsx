@@ -4,10 +4,9 @@ import { useState, useEffect } from 'react';
 import { verifyInviteCode, copyByInviteCode } from '../../api/share.api';
 import { getSchedule } from '../../api/schedule.api';
 import { listStudents } from '../../api/student.api';
-import { ROUTES } from '../../constants/routes';
 import { useScheduleStore } from '../../store/schedule.store';
 import { useStudentStore } from '../../store/student.store';
-import { tabState } from '../../utils/tabState';
+import { goScheduleWithFamilyInvite } from '../../utils/goScheduleWithFamilyInvite';
 import type { Student } from '../../types/index';
 
 import './index.scss';
@@ -152,8 +151,7 @@ export default function CopySchedulePage() {
 
       Taro.showToast({ title: '复制成功', icon: 'success', duration: 1500 });
       setTimeout(() => {
-        tabState.setFamilyShareBanner(true);
-        Taro.switchTab({ url: ROUTES.SCHEDULE });
+        goScheduleWithFamilyInvite();
       }, 1500);
     } catch (err: any) {
       Taro.hideLoading();

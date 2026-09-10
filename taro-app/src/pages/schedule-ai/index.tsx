@@ -7,6 +7,7 @@ import { getSchedule, updateSchedule } from '../../api/schedule.api'
 import { useScheduleStore, buildGrid } from '../../store/schedule.store'
 import { useAuthStore } from '../../store/auth.store'
 import { ROUTES } from '../../constants/routes'
+import { goScheduleWithFamilyInvite } from '../../utils/goScheduleWithFamilyInvite'
 import { DEFAULT_PERIODS } from '../../constants/periods'
 import { DEFAULT_COURSE_COLOR, COURSE_COLORS } from '../../constants/colors'
 import { getCurrentWeekOffset, getWeekDates, formatDate } from '../../utils/date'
@@ -149,10 +150,17 @@ export default function ScheduleAiPage() {
     return () => { unmountedRef.current = true }
   }, [])
 
-  const jumpToSchedule = () => {
-    Taro.switchTab({ url: ROUTES.SCHEDULE }).catch(() => {
-      Taro.navigateBack({ delta: 1 })
+  const IMPORT_SUCCESS_TOAST_MS = 2000
+
+  const finishImportSuccess = () => {
+    Taro.showToast({
+      title: '导入成功，为你切换到该课表',
+      icon: 'none',
+      duration: IMPORT_SUCCESS_TOAST_MS,
     })
+    setTimeout(() => {
+      goScheduleWithFamilyInvite()
+    }, IMPORT_SUCCESS_TOAST_MS)
   }
 
   // 页面 mount 时一次性做权限 & 数据检查，不随响应式状态重复触发路由
@@ -294,7 +302,6 @@ export default function ScheduleAiPage() {
     }
     importingRef.current = true
     let coursesImported = false
-    let timeUpdateFailed = false
     try {
       Taro.showLoading({ title: '导入中', mask: true })
       await batchImportCoursesWithOverwrite(scheduleId, normalizedDraftCourses)
@@ -306,32 +313,21 @@ export default function ScheduleAiPage() {
             period_config: recognitionPeriodConfig(recognizedPeriods.length, schedule, recognizedPeriods),
           })
         } catch {
-          timeUpdateFailed = true
+          // 课节时间更新失败不影响导入成功流程
         }
       }
-      const full = await getSchedule(scheduleId)
-      setCurrentSchedule(full)
+      try {
+        const full = await getSchedule(scheduleId)
+        setCurrentSchedule(full)
+      } catch {
+        // 课程已写入，刷新失败仍视为导入成功，避免重复导入
+      }
       Taro.hideLoading()
-      Taro.showModal({
-        title: timeUpdateFailed ? '课程已导入' : '导入成功',
-        content: timeUpdateFailed
-          ? '课程已导入，但课节时间更新失败，请在课表设置中核对并修改时间。'
-          : recognizedPeriods.length ? '课程与课节时间已同步，请核对识别结果。' : '课程导入成功，未识别到完整课节时间，已保留原配置。',
-        showCancel: false,
-        confirmText: '知道了',
-        success: () => {
-          jumpToSchedule()
-        },
-      })
+      finishImportSuccess()
     } catch (err: any) {
       Taro.hideLoading()
       if (coursesImported) {
-        await Taro.showModal({
-          title: '课程已导入',
-          content: timeUpdateFailed ? '课节时间更新失败，且课表刷新失败，请返回课表重新加载并核对时间。' : '课表刷新失败，请返回课表重新加载，勿重复导入。',
-          showCancel: false,
-        })
-        jumpToSchedule()
+        finishImportSuccess()
       } else {
         Taro.showToast({ title: err?.message || '导入失败', icon: 'none' })
       }

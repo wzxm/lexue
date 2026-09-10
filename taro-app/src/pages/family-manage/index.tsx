@@ -73,7 +73,7 @@ export default function FamilyManagePage() {
   }))
 
   useEffect(() => {
-    Taro.setNavigationBarTitle({ title: '家人管理' })
+    Taro.setNavigationBarTitle({ title: '共享给家人' })
   }, [])
 
   useDidShow(() => {
