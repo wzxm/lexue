@@ -66,7 +66,7 @@ function SettingsContent({ settingsSummary, onMenu, onGuestBannerClick, onAiKidP
 
       <View className='menu-list'>
         <View className='menu-list-group'>
-          {menuRows.slice(0, 4).map((row) => (
+          {menuRows.slice(0, 3).map((row) => (
             <MenuItem
               key={row.key}
               row={row}
@@ -77,7 +77,7 @@ function SettingsContent({ settingsSummary, onMenu, onGuestBannerClick, onAiKidP
         </View>
 
         <View className='menu-list-group'>
-          {menuRows.slice(4).map((row) => (
+          {menuRows.slice(3).map((row) => (
             <MenuItem
               key={row.key}
               row={row}
