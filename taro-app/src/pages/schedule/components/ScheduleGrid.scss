@@ -6,6 +6,19 @@
   box-sizing: border-box;
 }
 
+.share-family-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px 24px 8px;
+}
+
+.share-family-btn-text {
+  font-size: 26px;
+  color: var(--color-text-gray);
+  line-height: 1.4;
+}
+
 .schedule-card {
   background: #ffffff;
   border-radius: 40px;

@@ -180,6 +180,10 @@ export default function SchedulePage () {
     Taro.navigateTo({ url: ROUTES.STUDENT_MANAGE })
   }
 
+  const goFamilyManage = () => {
+    Taro.navigateTo({ url: ROUTES.FAMILY_MANAGE })
+  }
+
   const windowInfo = Taro.getWindowInfo()
   const menuButtonInfo = Taro.getMenuButtonBoundingClientRect()
 
@@ -652,6 +656,11 @@ export default function SchedulePage () {
           onTapEmpty={onTapEmpty}
           offWeekSlotKeys={offWeekSlotKeys}
           hideWeekend={hideWeekend}
+          footer={(
+            <View className='share-family-btn' onClick={goFamilyManage}>
+              <Text className='share-family-btn-text'>共享给家人</Text>
+            </View>
+          )}
         />
       )}
 

@@ -1,5 +1,5 @@
 import { View, Text } from '@tarojs/components'
-import { useState, useMemo, useEffect, Fragment, type CSSProperties } from 'react'
+import { useState, useMemo, useEffect, Fragment, type CSSProperties, type ReactNode } from 'react'
 import type { Course, ScheduleGrid as ScheduleGridType, Period } from '../../../types/index'
 import { tabState } from '../../../utils/tabState'
 import './ScheduleGrid.scss'
@@ -28,6 +28,8 @@ interface Props {
   onCourseClick?: (course: Course, index: number) => void;
   /** 是否为 remark 含 [待确认] 的课程添加特殊样式 */
   highlightUncertain?: boolean;
+  /** 课表卡片下方附加内容（如「共享给家人」） */
+  footer?: ReactNode;
 }
 
 const WEEKDAY_LABELS = ['一', '二', '三', '四', '五', '六', '日']
@@ -70,6 +72,7 @@ export default function ScheduleGrid({
   highlightToday = true,
   onCourseClick,
   highlightUncertain = false,
+  footer,
 }: Props) {
   const visibleDayIndices = hideWeekend ? [0, 1, 2, 3, 4] : [0, 1, 2, 3, 4, 5, 6]
   const [showWeekPicker, setShowWeekPicker] = useState(false)
@@ -209,6 +212,7 @@ export default function ScheduleGrid({
               ))}
             </View>
           </View>
+          {footer}
         </View>
       </View>
 
