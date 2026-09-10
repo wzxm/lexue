@@ -13,6 +13,7 @@ export default function CopySchedulePage() {
   const [loading, setLoading] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const addSchedule = useScheduleStore(s => s.addSchedule);
+  const setCurrentSchedule = useScheduleStore(s => s.setCurrentSchedule);
 
   useEffect(() => {
     Taro.setNavigationBarTitle({ title: '复制课表' });
@@ -77,6 +78,7 @@ export default function CopySchedulePage() {
       const newSchedule = await copyByInviteCode(code.trim());
 
       addSchedule(newSchedule);
+      setCurrentSchedule(newSchedule);
 
       Taro.hideLoading();
 

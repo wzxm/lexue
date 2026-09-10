@@ -100,7 +100,7 @@ export default class CustomTabBar extends Component {
       <View className='custom-tab-bar'>
         {familyShareBanner && (
           <View className='tab-family-banner'>
-            <Text className='tab-family-banner-text'>可以共享课表给家人哦~</Text>
+            <Text className='tab-family-banner-text'>可以共享课表给家人查看哦～😊</Text>
             <View className='tab-family-banner-actions'>
               <View className='tab-family-banner-btn tab-family-banner-btn--ghost' onClick={this.closeFamilyShareBanner}>
                 <Text className='tab-family-banner-btn-text'>关闭</Text>
