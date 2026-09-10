@@ -31,7 +31,7 @@ export default function CopySchedulePage() {
       await verifyInviteCode(code.trim());
       Taro.hideLoading();
 
-      const confirmContent = '确认复制后可按自身需求调整课表：\n- 修改或添加课程\n- 课表所属学生纠正\n- 调整课节和开启通知';
+      const confirmContent = '即将复制课表的内容，复制后你可按需修改课表信息和课程内容。\n（⚠️注意：出于隐私保护，老师的信息不会被复制，如有需要可自行添加）';
 
       Taro.showModal({
         title: '口令匹配成功',
