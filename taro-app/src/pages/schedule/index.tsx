@@ -5,9 +5,9 @@ import { tabState } from '../../utils/tabState'
 import { useScheduleStore, buildGrid } from '../../store/schedule.store'
 import { useStudentStore } from '../../store/student.store'
 import { useAuthStore } from '../../store/auth.store'
-import { listStudents } from '../../api/student.api'
 import {
   listSchedules,
+  bootstrapSchedule,
   getSchedule,
   setDefaultSchedule,
   updateSchedule
@@ -47,6 +47,7 @@ export default function SchedulePage () {
     currentSchedule,
     setSchedules,
     setCurrentSchedule,
+    applyBootstrap,
     setWeekOffset,
     removeCourse: removeCourseFromStore
   } = useScheduleStore()
@@ -184,8 +185,8 @@ export default function SchedulePage () {
     Taro.navigateTo({ url: ROUTES.FAMILY_MANAGE })
   }
 
-  const windowInfo = Taro.getWindowInfo()
-  const menuButtonInfo = Taro.getMenuButtonBoundingClientRect()
+  const windowInfo = useMemo(() => Taro.getWindowInfo(), [])
+  const menuButtonInfo = useMemo(() => Taro.getMenuButtonBoundingClientRect(), [])
 
   /** 内容要向下偏移，不要压在导航栏上 */
   const headerPaddingTop = menuButtonInfo.top
@@ -224,30 +225,9 @@ export default function SchedulePage () {
   Taro.useDidShow(() => {
     syncView()
     tabState.setSelected(0)
-    if (useAuthStore.getState().isLoggedIn) {
-      const { students: cachedStudents } = useStudentStore.getState()
-      const { schedules: cachedSchedules, currentSchedule: cachedCurrentSchedule } =
-        useScheduleStore.getState()
-
-      // Tab 间切换优先复用现有数据，避免每次回到课表页都串行重拉。
-      // 但如果 currentSchedule 已不在列表中（被删除 / 取消共享），也需要重新加载。
-      const currentStillExists = cachedCurrentSchedule
-        ? cachedSchedules.some(s => s.id === cachedCurrentSchedule.id)
-        : false
-      const scheduleStudentGone = !!(
-        cachedCurrentSchedule?.student_id &&
-        !cachedStudents.some(s => s.id === cachedCurrentSchedule.student_id)
-      )
-      if (
-        cachedStudents.length === 0 ||
-        cachedSchedules.length === 0 ||
-        !cachedCurrentSchedule ||
-        !currentStillExists ||
-        scheduleStudentGone
-      ) {
-        void loadData()
-      }
-    }
+    if (!useAuthStore.getState().isLoggedIn) return
+    const hasContent = !!useScheduleStore.getState().currentSchedule
+    void loadData({ silent: hasContent })
   })
 
   /** 加载数据 */
@@ -259,44 +239,34 @@ export default function SchedulePage () {
         Taro.showLoading({ title: '加载中', mask: true })
       }
       try {
-        const studentList = await listStudents()
-        setStudents(studentList)
-        const cur = useStudentStore.getState().currentStudent
-        const activeStudent =
-          cur && studentList.some(s => s.id === cur.id)
-            ? cur
-            : pickFallbackStudent(studentList)
-        if (activeStudent && (!cur || cur.id !== activeStudent.id)) {
-          setCurrentStudent(activeStudent)
+        const { currentStudent: curStudent, currentSchedule: curSchedule } = {
+          currentStudent: useStudentStore.getState().currentStudent,
+          currentSchedule: useScheduleStore.getState().currentSchedule,
         }
-        if (!activeStudent) {
+        const data = await bootstrapSchedule({
+          studentId: curStudent?.id,
+          scheduleId: curSchedule?.id,
+        })
+        setStudents(data.students)
+        if (data.activeStudentId) {
+          const activeStudent = data.students.find(s => s.id === data.activeStudentId)
+          if (activeStudent) {
+            setCurrentStudent(activeStudent)
+          }
+        } else {
           setSchedules([])
           setCurrentSchedule(null)
           syncView()
           return
         }
-        let schedules = await listSchedules(activeStudent.id)
-        if (schedules.length === 0) {
-          // 当前学生没有课表时，回退到可见的共享课表，避免加入家人后首页空白
-          schedules = await listSchedules()
-        }
-        setSchedules(schedules)
-        const previousId = useScheduleStore.getState().currentSchedule?.id
-        const defaultSchedule =
-          schedules.find(s => s.id === previousId) ||
-          schedules.find(s => s.is_default) ||
-          schedules[0]
-        if (defaultSchedule) {
-          const full = await getSchedule(defaultSchedule.id)
-          const st = resolveScheduleStudent(full, studentList)
-          if (st) {
-            setCurrentStudent(st)
-          }
-          setCurrentSchedule(full)
-          setWeekOffset(calcInitialOffset(full))
-        } else {
-          setCurrentSchedule(null)
-        }
+        const weekOffset = data.currentSchedule
+          ? calcInitialOffset(data.currentSchedule)
+          : 0
+        applyBootstrap({
+          schedules: data.schedules,
+          currentSchedule: data.currentSchedule,
+          weekOffset,
+        })
         syncView()
       } catch (err: any) {
         Taro.showToast({

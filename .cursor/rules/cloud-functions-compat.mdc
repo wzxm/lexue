@@ -1,0 +1,38 @@
+---
+description: 云函数与 shared 改动必须向后兼容（同一云环境可被多版小程序共用）
+globs: cloudfunctions/**/*,shared/**/*
+alwaysApply: false
+---
+
+# 云函数向后兼容
+
+云函数部署后**立即作用于整个云环境** `cloud1-d5gbyvu3l05e11828`，不随小程序发版。旧版客户端、预览包、体验版仍可能调用已有 `action`。因此**每次**改动 `cloudfunctions/` 或 `shared/` 都必须向后兼容。
+
+## 必须遵守
+
+1. **禁止破坏已有 action 的契约**：不得删除或重命名已在使用的 `action`；不得改 `payload` 必填项、成功/失败时的 `data` 形状、字段语义或错误码含义，除非同期已发布适配的新前端且确认无旧包在用。
+2. **新能力用 additive 方式**：优先新增 `action`（如 `schedule.bootstrap`），保留 `list` / `get` 等旧入口；内部重构（如 `student.list` 走 `shared/students.js`）须保证对外输入输出与旧行为一致。
+3. **`shared/` 视为公共 API**：被多个云函数 require；改函数签名、返回值或错误行为时，逐一确认所有调用方及仍在线的旧前端路径。
+4. **数据库/字段变更**：新增字段可以；删字段、改类型、改必填须兼容旧数据与旧客户端（默认值、读时归一化），不要假设一次部署前后端同时上线。
+5. **部署前自检**：列出本次影响的 `funcName` + `action`；若仅新前端用新 action，在 PR/说明里写清「旧包仍走哪些 action」。
+
+## 示例
+
+```js
+// ✅ 新增 bootstrap，保留 list / get
+case 'bootstrap': return await bootstrap(userId, payload);
+case 'list':      return await list(userId, payload);
+
+// ❌ 删除 list 或把 list 的 data 从 { own, shared } 改成纯数组
+```
+
+```js
+// ✅ 内部优化，响应结构不变
+async function list(userId) {
+  return success(await listVisibleStudents(userId));
+}
+
+// ❌ 把 is_shared 改成 shared 且不提供旧字段别名
+```
+
+详细说明见 `rules/cloud-functions/rule.md` 的「向后兼容」一节。

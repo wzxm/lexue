@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import type { Schedule, Course, ScheduleGrid } from '../types/index'
 import { PERIOD_COUNT, WEEKDAY_COUNT } from '../constants/periods'
-import { saveSchedule, loadSchedule } from '../utils/storage'
+import { saveSchedule } from '../utils/storage'
 import { resolveCourseId } from '../utils/courseId'
 
 interface ScheduleState {
@@ -12,7 +12,11 @@ interface ScheduleState {
   setSchedules: (schedules: Schedule[]) => void
   addSchedule: (schedule: Schedule) => void
   setCurrentSchedule: (schedule: Schedule | null) => void
-  tryLoadFromCache: (id: string) => boolean
+  applyBootstrap: (payload: {
+    schedules: Schedule[]
+    currentSchedule: Schedule | null
+    weekOffset: number
+  }) => void
   setWeekOffset: (offset: number) => void
   addCourse: (course: Course) => void
   updateCourse: (updated: Course) => void
@@ -59,13 +63,11 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
     set({ currentSchedule: schedule })
   },
 
-  tryLoadFromCache: (id) => {
-    const cached = loadSchedule(id)
-    if (cached) {
-      set({ currentSchedule: cached })
-      return true
+  applyBootstrap: ({ schedules, currentSchedule, weekOffset }) => {
+    if (currentSchedule) {
+      saveSchedule(currentSchedule.id, currentSchedule)
     }
-    return false
+    set({ schedules, currentSchedule, weekOffset })
   },
 
   setWeekOffset: (offset) => set({ weekOffset: offset }),

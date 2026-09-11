@@ -31,6 +31,7 @@ npm run deploy:auth     # 部署单个
 
 - **数据流**：云函数 → `api/cloud.ts`（`cloud.call<T>(funcName, {action, payload})`）→ `*.api.ts` → zustand store → pages
 - **云函数入口**：`exports.main` 接收 `{action, payload}` 路由；OPENID 必须从 `cloud.getWXContext()` 获取
+- **云函数向后兼容**：每次改 `cloudfunctions/` 或 `shared/` 须兼容已有 action 与响应契约；新能力加 action，不删旧入口（同一云环境可被多版小程序共用）
 - **响应格式**：`{code: 0, message, data}` 成功 / `{code: 4xxxx|50000, message, data: null}` 失败
 - **命名**：DB 字段 snake_case，前端类型 camelCase
 - **WeekDay**：1=周一 … 7=周日

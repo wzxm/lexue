@@ -12,6 +12,7 @@ const { resolveCurrentUser, requireOwner, requireMember, requireEdit } = require
 const { isFamilyMember, listFamilyRelations } = require('../../shared/family');
 const validator = require('../../shared/validator');
 const logger = require('../../shared/logger');
+const { listVisibleStudents } = require('../../shared/students');
 
 const FN = 'schedule';
 const INVITE_CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -134,6 +135,117 @@ async function list(userId, payload = {}) {
   return success({
     own: ownSchedules.map(mapId),
     shared: sharedSchedules.map(mapId),
+  });
+}
+
+const mapScheduleId = (schedule) => (schedule ? { ...schedule, id: schedule._id } : schedule);
+
+function pickFallbackStudent(students) {
+  if (!students || students.length === 0) return null;
+  return (
+    students.find((s) => s.source === 'init' && !s.is_shared)
+    || students.find((s) => s.name === '默认学生' && !s.is_shared)
+    || students.find((s) => !s.is_shared)
+    || students[0]
+  );
+}
+
+function pickActiveStudent(students, preferredStudentId) {
+  if (!students || students.length === 0) return null;
+  if (preferredStudentId) {
+    const matched = students.find((s) => s.id === preferredStudentId || s._id === preferredStudentId);
+    if (matched) return matched;
+  }
+  return pickFallbackStudent(students);
+}
+
+function pickDefaultSchedule(schedules, preferredScheduleId) {
+  if (!schedules || schedules.length === 0) return null;
+  if (preferredScheduleId) {
+    const prev = schedules.find((s) => s.id === preferredScheduleId || s._id === preferredScheduleId);
+    if (prev) return prev;
+  }
+  return schedules.find((s) => s.is_default) || schedules[0];
+}
+
+async function loadScheduleWithCourses(userId, scheduleId) {
+  const schedule = await requireMember(userId, scheduleId);
+  const courses = await db.getList('courses', { schedule_id: scheduleId }, {
+    orderBy: { field: 'day_of_week', direction: 'asc' },
+  });
+  const coursesNormalized = courses.map((c) => ({ ...c, id: c._id }));
+  return { ...schedule, id: schedule._id, courses: coursesNormalized };
+}
+
+/**
+ * 课表页首屏聚合：学生列表 + 全量课表 + 当前课表详情（含课程）
+ */
+async function bootstrap(userId, payload = {}) {
+  const preferredStudentId = payload.studentId || payload.student_id || '';
+  const preferredScheduleId = payload.scheduleId || payload.schedule_id || '';
+  logger.info(FN, 'bootstrap', { user_id: userId, preferredStudentId, preferredScheduleId });
+
+  const _ = db.getCommand();
+  const [students, ownSchedules, sharedSchedules] = await Promise.all([
+    listVisibleStudents(userId),
+    db.getList('schedules', { owner_user_id: userId }, {
+      orderBy: { field: 'createTime', direction: 'desc' },
+    }),
+    db.getList('schedules', {
+      shared_with: _.elemMatch({ user_id: userId }),
+      owner_user_id: _.neq(userId),
+    }),
+  ]);
+
+  const allSchedules = [
+    ...ownSchedules.map(mapScheduleId),
+    ...sharedSchedules.map(mapScheduleId),
+  ];
+
+  const activeStudent = pickActiveStudent(students, preferredStudentId);
+  if (!activeStudent) {
+    return success({
+      students,
+      schedules: allSchedules,
+      currentSchedule: null,
+      activeStudentId: '',
+    });
+  }
+
+  const activeStudentId = activeStudent.id || activeStudent._id;
+  let schedulesForPick = allSchedules.filter((s) => s.student_id === activeStudentId);
+  if (schedulesForPick.length === 0) {
+    schedulesForPick = allSchedules;
+  }
+
+  const target = pickDefaultSchedule(schedulesForPick, preferredScheduleId);
+  if (!target) {
+    return success({
+      students,
+      schedules: allSchedules,
+      currentSchedule: null,
+      activeStudentId,
+    });
+  }
+
+  const scheduleId = target.id || target._id;
+  const currentSchedule = await loadScheduleWithCourses(userId, scheduleId);
+
+  let activeStudentIdOut = activeStudentId;
+  if (currentSchedule.student_id) {
+    const fromSchedule = students.find(
+      (s) => s.id === currentSchedule.student_id || s._id === currentSchedule.student_id,
+    );
+    if (fromSchedule) {
+      activeStudentIdOut = fromSchedule.id || fromSchedule._id;
+    }
+  }
+
+  return success({
+    students,
+    schedules: allSchedules,
+    currentSchedule,
+    activeStudentId: activeStudentIdOut,
   });
 }
 
@@ -347,6 +459,7 @@ exports.main = async (event, context) => {
 
     switch (action) {
       case 'list':       return await list(userId, payload);
+      case 'bootstrap':  return await bootstrap(userId, payload);
       case 'create':     return await create(userId, payload);
       case 'get':        return await get(userId, payload);
       case 'update':     return await update(userId, payload);

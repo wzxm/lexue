@@ -18,7 +18,7 @@ type BackendStudent = {
   source?: 'init' | 'user';
 };
 
-function toFrontendStudent(data: BackendStudent): Student {
+export function toFrontendStudent(data: BackendStudent): Student {
   return {
     id: data._id || '',
     name: data.name || '',

@@ -8,3 +8,4 @@ Use before creating or updating a CloudBase Event Function in this project.
 4. Use the existing shared modules for auth, validation, errors, logging, and database access.
 5. Deploy from the repository root with `npm run deploy` or `npm run deploy:<name>`.
 6. Run a narrow syntax or test check before deployment.
+7. **Backward compatibility**: do not break existing `action` contracts; add new actions for new behavior; keep response shapes stable for old miniprogram builds on the same env.

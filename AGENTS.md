@@ -116,6 +116,8 @@ TabBar 三个 tab：课表（schedule）/ 工具（tools）/ 设置（settings�
 
 每个云函数 `exports.main` 接收 `{ action, payload }` 路由到内部函数。身份认证**必须**从 `cloud.getWXContext().OPENID` 获取，严禁从 payload 里取 openid。
 
+**向后兼容（强制）**：云函数部署后立即作用于整个云环境，旧版/预览/体验版小程序仍可能调用已有 action。不得删除或破坏已有 action 的入参与响应；新能力优先新增 action；改 `shared/` 须确认所有云函数与旧客户端路径仍可用。细则见 `rules/cloud-functions/rule.md`。
+
 ### 统一响应格式
 
 ```js

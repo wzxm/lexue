@@ -12,6 +12,7 @@ const { resolveCurrentUser } = require('../../shared/auth');
 const { isFamilyMember } = require('../../shared/family');
 const validator = require('../../shared/validator');
 const logger = require('../../shared/logger');
+const { listVisibleStudents } = require('../../shared/students');
 
 const FN = 'student';
 
@@ -25,83 +26,13 @@ async function cleanupAvatarFile(fileId) {
   }
 }
 
-function attachSharedOwnerInfo(student, ownerUserMap) {
-  const ownerUserId = student.owner_user_id || '';
-  const owner = ownerUserMap[ownerUserId] || {};
-  return {
-    ...student,
-    is_shared: true,
-    shared_from_user_id: ownerUserId,
-    shared_from_nickname: owner.nickname || '',
-    shared_from_avatar_url: owner.avatar_url || '',
-  };
-}
-
 /**
  * 获取当前用户可见的学生列表
  * 返回：自己创建的学生 + 通过共享课表可见的他人学生（标记 is_shared）
  */
 async function list(userId) {
   logger.info(FN, 'list', { userId });
-
-  // 1. 自己创建的学生
-  const ownStudents = await db.getList('students', { owner_user_id: userId }, {
-    orderBy: { field: 'createTime', direction: 'desc' },
-  });
-
-  // 2. 共享课表里涉及到的他人学生（去重）
-  const _ = db.getCommand();
-  const familyRelations = await db.getList('families', { member_user_id: userId });
-  const familyOwnerUserIds = Array.from(new Set(familyRelations.map((item) => item.owner_user_id).filter(Boolean)));
-  const sharedSchedules = await db.getList('schedules', {
-    shared_with: _.elemMatch({ user_id: userId }),
-    owner_user_id: _.neq(userId),
-  });
-
-  const sharedStudentIdSet = new Set();
-  const sharedStudentOwnerMap = new Map();
-  if (familyOwnerUserIds.length > 0) {
-    const familyStudents = await db.getList('students', { owner_user_id: _.in(familyOwnerUserIds) });
-    for (const student of familyStudents) {
-      sharedStudentIdSet.add(student._id);
-      if (student._id && student.owner_user_id) {
-        sharedStudentOwnerMap.set(student._id, student.owner_user_id);
-      }
-    }
-  }
-  for (const sch of sharedSchedules) {
-    if (sch.student_id) {
-      sharedStudentIdSet.add(sch.student_id);
-      if (sch.owner_user_id && !sharedStudentOwnerMap.has(sch.student_id)) {
-        sharedStudentOwnerMap.set(sch.student_id, sch.owner_user_id);
-      }
-    }
-  }
-
-  const sharedStudents = [];
-  for (const sid of sharedStudentIdSet) {
-    const st = await db.getOne('students', sid);
-    if (st) {
-      const fallbackOwnerOpenid = sharedStudentOwnerMap.get(sid) || '';
-      sharedStudents.push({
-        ...st,
-        owner_user_id: st.owner_user_id || fallbackOwnerOpenid,
-        is_shared: true,
-      });
-    }
-  }
-  const sharedOwnerUserIds = Array.from(new Set(sharedStudents.map((s) => s.owner_user_id).filter(Boolean)));
-  const ownerUsers = sharedOwnerUserIds.length > 0
-    ? await db.getList('users', { _id: _.in(sharedOwnerUserIds) })
-    : [];
-  const ownerUserMap = {};
-  ownerUsers.forEach((user) => { ownerUserMap[user._id] = user; });
-
-  const result = [
-    ...ownStudents.map(s => ({ ...s, id: s._id, is_shared: false })),
-    ...sharedStudents.map(s => attachSharedOwnerInfo({ ...s, id: s._id }, ownerUserMap)),
-  ];
-
+  const result = await listVisibleStudents(userId);
   return success(result);
 }
 

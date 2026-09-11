@@ -1,5 +1,6 @@
 import { cloud } from './cloud';
-import type { Schedule, Period, PeriodConfig } from '../types/index';
+import { toFrontendStudent } from './student.api';
+import type { Schedule, Period, PeriodConfig, Student } from '../types/index';
 
 type BackendSchedule = Schedule & {
   createTime?: string | number | Date;
@@ -32,6 +33,34 @@ export async function listSchedules(student_id?: string): Promise<Schedule[]> {
   const result = await cloud.call<{ own: BackendSchedule[]; shared: BackendSchedule[] }>('schedule', { action: 'list', payload });
   // 云函数返回 { own, shared }，拍平成数组供前端使用
   return [...(result.own || []), ...(result.shared || [])].map(toFrontendSchedule);
+}
+
+type BootstrapBackendStudent = Parameters<typeof toFrontendStudent>[0];
+
+export async function bootstrapSchedule(params: {
+  studentId?: string;
+  scheduleId?: string;
+}): Promise<{
+  students: Student[];
+  schedules: Schedule[];
+  currentSchedule: Schedule | null;
+  activeStudentId: string;
+}> {
+  const payload: Record<string, unknown> = {};
+  if (params.studentId) payload.studentId = params.studentId;
+  if (params.scheduleId) payload.scheduleId = params.scheduleId;
+  const result = await cloud.call<{
+    students: BootstrapBackendStudent[];
+    schedules: BackendSchedule[];
+    currentSchedule: BackendSchedule | null;
+    activeStudentId: string;
+  }>('schedule', { action: 'bootstrap', payload });
+  return {
+    students: (result.students || []).map(toFrontendStudent),
+    schedules: (result.schedules || []).map(toFrontendSchedule),
+    currentSchedule: result.currentSchedule ? toFrontendSchedule(result.currentSchedule) : null,
+    activeStudentId: result.activeStudentId || '',
+  };
 }
 
 export async function createSchedule(data: {
