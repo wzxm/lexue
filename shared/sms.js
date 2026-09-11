@@ -1,17 +1,16 @@
 /**
- * 腾讯云短信验证码工具
- * 环境变量：TENCENTCLOUD_SECRET_ID、TENCENTCLOUD_SECRET_KEY、
- * TENCENT_SMS_SDK_APP_ID、TENCENT_SMS_SIGN_NAME、TENCENT_SMS_TEMPLATE_ID、SMS_CODE_PEPPER
+ * CloudBase 身份认证 HTTP 短信验证码（发码/验码由 CloudBase 托管）
+ * 环境变量：CLOUDBASE_PUBLISHABLE_KEY（云函数环境，禁止下发到小程序）
+ * 可选：CLOUDBASE_ENV_ID / TCB_ENV（默认 cloud1-d5gbyvu3l05e11828）
  */
 
-const crypto = require('crypto');
-const tencentcloud = require('tencentcloud-sdk-nodejs-sms');
+const https = require('https');
 const db = require('./db');
 const { ERRORS, fail } = require('./errors');
 const validator = require('./validator');
+const { loadLocalEnvFile } = require('./env');
 
-const CODE_LENGTH = 6;
-const CODE_TTL_MS = Number(process.env.SMS_CODE_TTL_MS) || 5 * 60 * 1000;
+const DEFAULT_CLOUD_ENV = 'cloud1-d5gbyvu3l05e11828';
 const SEND_COOLDOWN_MS = Number(process.env.SMS_SEND_COOLDOWN_MS) || 60 * 1000;
 const MAX_SEND_PER_PHONE_DAY = Number(process.env.SMS_MAX_SEND_PER_PHONE_DAY) || 10;
 const MAX_SEND_PER_OPENID_HOUR = Number(process.env.SMS_MAX_SEND_PER_OPENID_HOUR) || 20;
@@ -21,52 +20,112 @@ const PURGE_BATCH_SIZE = Number(process.env.SMS_PURGE_BATCH_SIZE) || 50;
 const TERMINAL_STATUSES = ['used', 'superseded', 'locked', 'failed'];
 const COOLDOWN_SEC = Math.ceil(SEND_COOLDOWN_MS / 1000);
 
-function getPepper() {
-  const pepper = (process.env.SMS_CODE_PEPPER || '').trim();
-  if (!pepper) {
-    throw fail(ERRORS.INTERNAL_ERROR, '未配置 SMS_CODE_PEPPER');
+function getPublishableKey() {
+  loadLocalEnvFile();
+  const key = (process.env.CLOUDBASE_PUBLISHABLE_KEY || '').trim();
+  if (!key) {
+    throw fail(ERRORS.INTERNAL_ERROR, '未配置 CLOUDBASE_PUBLISHABLE_KEY');
   }
-  return pepper;
+  return key;
 }
 
-let smsClient;
-function getTencentSmsClient() {
-  if (smsClient) return smsClient;
-  const secretId = (process.env.TENCENTCLOUD_SECRET_ID || '').trim();
-  const secretKey = (process.env.TENCENTCLOUD_SECRET_KEY || '').trim();
-  if (!secretId || !secretKey) throw fail(ERRORS.INTERNAL_ERROR, '未配置腾讯云短信凭证');
-  const Client = tencentcloud.sms.v20210111.Client;
-  smsClient = new Client({
-    credential: { secretId, secretKey, token: process.env.TENCENTCLOUD_SESSION_TOKEN || undefined },
-    region: process.env.TENCENT_SMS_REGION || 'ap-guangzhou',
-    profile: { httpProfile: { endpoint: 'sms.tencentcloudapi.com', reqTimeout: REQUEST_TIMEOUT_MS / 1000 } },
+function getGatewayHost() {
+  const envId = (process.env.CLOUDBASE_ENV_ID || process.env.TCB_ENV || DEFAULT_CLOUD_ENV).trim();
+  return `${envId}.api.tcloudbasegateway.com`;
+}
+
+function requestAuthJson(path, body) {
+  return new Promise((resolve, reject) => {
+    const payload = JSON.stringify(body);
+    const req = https.request({
+      hostname: getGatewayHost(),
+      path,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(payload),
+        Authorization: `Bearer ${getPublishableKey()}`,
+      },
+      timeout: REQUEST_TIMEOUT_MS,
+    }, (res) => {
+      let raw = '';
+      res.on('data', (chunk) => { raw += chunk; });
+      res.on('end', () => {
+        let parsed = {};
+        if (raw) {
+          try {
+            parsed = JSON.parse(raw);
+          } catch {
+            parsed = { error: 'invalid_response', error_description: raw.slice(0, 200) };
+          }
+        }
+        resolve({ status: res.statusCode || 0, body: parsed });
+      });
+    });
+    req.on('error', reject);
+    req.on('timeout', () => {
+      req.destroy();
+      reject(new Error('CloudBaseAuthTimeout'));
+    });
+    req.write(payload);
+    req.end();
   });
-  return smsClient;
 }
 
-async function sendWithTencent(phone, code) {
-  const SmsSdkAppId = (process.env.TENCENT_SMS_SDK_APP_ID || '').trim();
-  const SignName = (process.env.TENCENT_SMS_SIGN_NAME || '').trim();
-  const TemplateId = (process.env.TENCENT_SMS_TEMPLATE_ID || '').trim();
-  if (!SmsSdkAppId || !SignName || !TemplateId) throw fail(ERRORS.INTERNAL_ERROR, '未配置腾讯云短信应用、签名或模板');
-  const result = await getTencentSmsClient().SendSms({
-    SmsSdkAppId, SignName, TemplateId,
-    PhoneNumberSet: [`+86${phone}`],
-    TemplateParamSet: process.env.TENCENT_SMS_TEMPLATE_WITH_TTL === 'true'
-      ? [code, String(Math.ceil(CODE_TTL_MS / 60000))]
-      : [code],
+function throwCloudBaseAuthError(body) {
+  const error = body && body.error ? String(body.error) : '';
+  const desc = body && body.error_description ? String(body.error_description) : '';
+
+  if (error === 'rate_limit_exceeded') {
+    throw fail(ERRORS.LIMIT_EXCEEDED, desc || '发送验证码频率过高，请稍后重试');
+  }
+  if (error === 'captcha_required') {
+    throw fail(ERRORS.LIMIT_EXCEEDED, '发送过于频繁，请稍后重试');
+  }
+  if (error === 'invalid_phone_number') {
+    throw fail(ERRORS.PARAM_ERROR, desc || '手机号格式错误');
+  }
+  if (error === 'invalid_verification_code') {
+    throw fail(ERRORS.PARAM_ERROR, '验证码错误或已过期');
+  }
+  if (error) {
+    throw fail(ERRORS.INTERNAL_ERROR, '验证码服务暂时不可用，请稍后重试');
+  }
+  throw fail(ERRORS.INTERNAL_ERROR, '验证码服务暂时不可用，请稍后重试');
+}
+
+async function cloudbaseSendVerification(phone) {
+  const { status, body } = await requestAuthJson('/auth/v1/verification', {
+    phone_number: `+86 ${phone}`,
+    target: 'ANY',
   });
-  const status = result.SendStatusSet && result.SendStatusSet[0];
-  // 只保留错误码，避免供应商错误信息包含手机号或模板参数。
-  if (!status || status.Code !== 'Ok') throw new Error(status && status.Code ? status.Code : 'MissingSendStatus');
+
+  if (body && body.error) {
+    throwCloudBaseAuthError(body);
+  }
+  if (status < 200 || status >= 300 || !body.verification_id) {
+    throw fail(ERRORS.INTERNAL_ERROR, '验证码发送失败，请稍后重试');
+  }
+
+  return {
+    verificationId: String(body.verification_id),
+    expiresIn: Number(body.expires_in) > 0 ? Number(body.expires_in) : 600,
+  };
 }
 
-function generateCode() {
-  return String(crypto.randomInt(0, 10 ** CODE_LENGTH)).padStart(CODE_LENGTH, '0');
-}
+async function cloudbaseVerifyVerification(verificationId, smsCode) {
+  const { status, body } = await requestAuthJson('/auth/v1/verification/verify', {
+    verification_id: verificationId,
+    verification_code: smsCode,
+  });
 
-function hashCode(phone, code) {
-  return crypto.createHmac('sha256', getPepper()).update(`${phone}:${code}`).digest('hex');
+  if (body && body.error) {
+    throwCloudBaseAuthError(body);
+  }
+  if (status < 200 || status >= 300 || !body.verification_token) {
+    throw fail(ERRORS.PARAM_ERROR, '验证码错误或已过期');
+  }
+  return true;
 }
 
 function maskPhone(phone) {
@@ -180,40 +239,42 @@ async function sendSmsCode(phone, requestOpenid = '') {
   await purgeSmsCodesForPhone(phone);
   purgeStaleSmsCodesBatch().catch(() => {});
 
-  const code = generateCode();
-  const codeHash = hashCode(phone, code);
-  const expiresAt = new Date(Date.now() + CODE_TTL_MS);
-  let tencentMessage = '';
+  let sendResult;
+  let providerMessage = '';
   try {
-    await sendWithTencent(phone, code);
+    sendResult = await cloudbaseSendVerification(phone);
   } catch (e) {
-    tencentMessage = e.code || (e.message && /^[A-Za-z.]+$/.test(e.message) ? e.message : 'SmsSendFailed');
+    if (e && typeof e.code === 'number') {
+      throw e;
+    }
+    providerMessage = e instanceof Error ? e.message : 'SendFailed';
   }
 
-  if (tencentMessage) {
+  if (providerMessage || !sendResult) {
     await db.create('sms_codes', {
       phone,
-      code_hash: codeHash,
-      expires_at: expiresAt,
+      verification_id: '',
+      expires_at: new Date(Date.now() + 60 * 1000),
       status: 'failed',
       attempt_count: 0,
       request_openid: requestOpenid || '',
-      provider_message: String(tencentMessage).slice(0, 200),
+      provider_message: String(providerMessage).slice(0, 200),
     });
     throw fail(ERRORS.INTERNAL_ERROR, '验证码发送失败，请稍后重试');
   }
 
+  const expiresAt = new Date(Date.now() + sendResult.expiresIn * 1000);
   await deleteActiveCodes(phone);
   await db.create('sms_codes', {
     phone,
-    code_hash: codeHash,
+    verification_id: sendResult.verificationId,
     expires_at: expiresAt,
     status: 'active',
     attempt_count: 0,
     request_openid: requestOpenid || '',
   });
 
-  return { phone: maskPhone(phone), expiresIn: Math.floor(CODE_TTL_MS / 1000) };
+  return { phone: maskPhone(phone), expiresIn: sendResult.expiresIn };
 }
 
 async function verifySmsCode(phone, smsCode) {
@@ -235,24 +296,26 @@ async function verifySmsCode(phone, smsCode) {
   });
 
   const record = records[0];
-  if (!record) {
+  if (!record || !record.verification_id) {
     await purgeSmsCodesForPhone(phone);
     throw fail(ERRORS.PARAM_ERROR, '验证码错误或已过期');
   }
 
-  const expectedHash = hashCode(phone, code);
-  if (record.code_hash !== expectedHash) {
-    const nextAttempts = (record.attempt_count || 0) + 1;
-    if (nextAttempts >= MAX_VERIFY_ATTEMPTS) {
-      await db.remove('sms_codes', record._id);
-    } else {
-      await db.update('sms_codes', record._id, { attempt_count: nextAttempts });
+  try {
+    await cloudbaseVerifyVerification(record.verification_id, code);
+  } catch (e) {
+    if (e && e.code === ERRORS.PARAM_ERROR.code) {
+      const nextAttempts = (record.attempt_count || 0) + 1;
+      if (nextAttempts >= MAX_VERIFY_ATTEMPTS) {
+        await db.remove('sms_codes', record._id);
+      } else {
+        await db.update('sms_codes', record._id, { attempt_count: nextAttempts });
+      }
     }
-    throw fail(ERRORS.PARAM_ERROR, '验证码错误或已过期');
+    throw e;
   }
 
   await db.remove('sms_codes', record._id);
-
   return true;
 }
 
@@ -261,7 +324,5 @@ module.exports = {
   verifySmsCode,
   purgeSmsCodesForPhone,
   purgeStaleSmsCodesBatch,
-  hashCode,
   maskPhone,
-  CODE_TTL_MS,
 };

@@ -3,14 +3,16 @@
  * 手机号 + 短信验证码登录；身份解析从 WXContext OPENID 绑定到 users._id
  */
 
+const { resolveCloudEnv } = require('../../shared/env');
 const cloud = require('wx-server-sdk');
-cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
+cloud.init({ env: resolveCloudEnv(cloud.DYNAMIC_CURRENT_ENV) });
 
 const db = require('../../shared/db');
 const { ERRORS, success, fail } = require('../../shared/errors');
 const { getOpenId, resolveCurrentUser } = require('../../shared/auth');
 const validator = require('../../shared/validator');
 const logger = require('../../shared/logger');
+const sms = require('../../shared/sms');
 
 const FN = 'auth';
 const USER_STATUS = {
@@ -170,7 +172,8 @@ async function handleSendSmsCode(wxContext, payload = {}) {
   validator.requireFields(payload, ['phone']);
   const phone = String(payload.phone).trim();
   const requestOpenid = wxContext.OPENID || '';
-  return success({ phone: phone.slice(0, 3) + '****' + phone.slice(-4), expiresIn: 300 });
+  const data = await sms.sendSmsCode(phone, requestOpenid);
+  return success(data);
 }
 
 async function loginByPhone(openid, unionid, payload = {}) {
@@ -178,6 +181,7 @@ async function loginByPhone(openid, unionid, payload = {}) {
   const phone = String(payload.phone).trim();
   const smsCode = String(payload.sms_code).trim();
 
+  await sms.verifySmsCode(phone, smsCode);
   const user = await resolvePhoneAccount(openid, unionid, phone, payload);
   return finishLogin(user);
 }

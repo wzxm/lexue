@@ -4,7 +4,35 @@
  * 别在业务代码里直接写一堆 db.collection().doc()，恶心死了
  */
 
-const cloud = require('wx-server-sdk');
+function loadWxServerSdk() {
+  const cached = Object.keys(require.cache).find((id) =>
+    id.replace(/\\/g, '/').endsWith('/wx-server-sdk/index.js'),
+  );
+  if (cached) return require(cached);
+
+  try {
+    return require(require.resolve('wx-server-sdk', { paths: [process.cwd()] }));
+  } catch {
+    return require('wx-server-sdk');
+  }
+}
+
+const { resolveCloudEnv } = require('./env');
+
+const cloud = loadWxServerSdk();
+
+function ensureCloudInit() {
+  try {
+    cloud.database();
+  } catch (e) {
+    const msg = String((e && e.message) || e);
+    if (msg.includes('init') || msg.includes("Cloud API isn't enabled")) {
+      cloud.init({ env: resolveCloudEnv(cloud.DYNAMIC_CURRENT_ENV) });
+      return;
+    }
+    throw e;
+  }
+}
 
 /**
  * 获取数据库实例（懒加载）
@@ -12,6 +40,7 @@ const cloud = require('wx-server-sdk');
 let _db = null;
 function getDB() {
   if (!_db) {
+    ensureCloudInit();
     _db = cloud.database();
   }
   return _db;

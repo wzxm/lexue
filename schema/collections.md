@@ -31,8 +31,9 @@
 |--------|------|------|------|
 | _id | string | 是 | 文档 ID |
 | phone | string | 是 | 目标手机号 |
-| code_hash | string | 是 | HMAC-SHA256 哈希，禁止存明文 |
-| expires_at | date | 是 | 过期时间（默认 5 分钟） |
+| verification_id | string | 否 | CloudBase 发码返回的 id（非验证码明文）；失败记录可为空 |
+| code_hash | string | 否 | **已废弃**（原腾讯云自管短信哈希）；CloudBase HTTP 发码方案不使用 |
+| expires_at | date | 是 | 过期时间（与 CloudBase `expires_in` 对齐，默认约 10 分钟） |
 | used_at | date | 否 | 核销时间 |
 | attempt_count | number | 是 | 错误尝试次数，默认 0 |
 | status | string | 是 | `active` / `used` / `locked` / `superseded` / `failed` |
