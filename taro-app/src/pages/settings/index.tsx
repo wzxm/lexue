@@ -188,10 +188,6 @@ export default function SettingsPage() {
     Taro.navigateToMiniProgram({ appId, path, fail: () => {} })
   }, [])
 
-  const handleAiKidPlanClick = useCallback(() => {
-    Taro.navigateTo({ url: ROUTES.AI_KID_PLAN })
-  }, [])
-
   return (
     <View className={`settings-page ${!isLoggedIn ? 'settings-page--guest' : ''}`}>
       <SettingsHeader
@@ -209,7 +205,6 @@ export default function SettingsPage() {
         settingsSummary={settingsSummary}
         onMenu={onMenu}
         onGuestBannerClick={handleGuestBannerClick}
-        onAiKidPlanClick={handleAiKidPlanClick}
       />
 
       <AccountMenuSheet
