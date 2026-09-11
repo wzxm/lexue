@@ -1,0 +1,55 @@
+shared/env.js
+  s_040ffa0bab5b4c::t_9ae03552499005 1-30
+schema/collections.md
+  s_74787eaa4b3964::t_5269b6a554b7e4 34-36
+shared/db.js
+  s_040ffa0bab5b4c::t_7cfe3e6f73d55c 20-21,30
+  s_040ffa0bab5b4c::t_1b9be2aec7d653 7-19,22-29,31-35,43
+shared/sms.js
+  s_74787eaa4b3964::t_05b2c6a5c3c973 2-4,7,13,23,25-27,29,32-34,37-71,75-94,97-128,242-243,245,247-250,253,256-257,261,266,270,277,299,304-313,315
+  s_040ffa0bab5b4c::t_dc466a9e944861 11
+  s_040ffa0bab5b4c::t_885a7290f90e83 24
+cloudfunctions/auth/index.js
+  s_74787eaa4b3964::t_da7903b752afdd 15
+  s_040ffa0bab5b4c::t_1a2578cac5e825 6,8
+  s_74787eaa4b3964::t_1876e6508dbb19 175-176,184
+shared/sms.test.js
+  s_74787eaa4b3964::t_a30df66eebe63c 2
+docs/cloudbase-sms-auth.md
+  s_74787eaa4b3964::t_31cde3a01bd9d7 3,9,11-20,24-26
+package.json
+  s_040ffa0bab5b4c::t_b0f65357ab45ec 23-25
+taro-app/src/api/auth.api.ts
+  s_74787eaa4b3964::t_372b618cdc125d 17-20,24
+package-lock.json
+  s_040ffa0bab5b4c::t_808c1d7d68b0b2 1-1832
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "d935ffa48cbc56d4b60d95dfaaf712446b5eae8e",
+  "prompts": {},
+  "humans": {
+    "h_1811824342b47a": {
+      "author": "王哲 <wangzhe@mogulinker.com>"
+    }
+  },
+  "sessions": {
+    "s_040ffa0bab5b4c": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "166924a5-3e0e-4acd-bb58-e801488eec1c",
+        "model": "grok-4.6"
+      },
+      "human_author": "王哲 <wangzhe@mogulinker.com>"
+    },
+    "s_74787eaa4b3964": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "2269cf81-0187-4fa2-99e3-35473a59471f",
+        "model": "composer-2.5"
+      },
+      "human_author": "王哲 <wangzhe@mogulinker.com>"
+    }
+  }
+}
