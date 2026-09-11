@@ -1,0 +1,53 @@
+cloudfunctions/schedule/index.js
+  s_7d22ef0983c1f2::t_adbe2c3703a135 234-243,248
+  s_7d22ef0983c1f2::t_75c737031e4c84 15
+  s_7d22ef0983c1f2::t_583af2ce5cb7be 462
+  s_7d22ef0983c1f2::t_448b17ca868c06 141-233,244-247,249-251
+shared/students.js
+  s_7d22ef0983c1f2::t_fc2b0c1e3813d8 1-106
+taro-app/src/pages/schedule/index.tsx
+  s_7d22ef0983c1f2::t_76a343f5bfc886 228-230,242-244,246-256,262-269
+  s_7d22ef0983c1f2::t_89bec1e6de3d83 50
+  s_7d22ef0983c1f2::t_346a5713088d87 188-189
+  s_7d22ef0983c1f2::t_ee57d052f64401 10
+rules/cloud-functions/rule.md
+  s_7d22ef0983c1f2::t_c0ad23b77edddc 56
+  s_7d22ef0983c1f2::t_e6d0610236c83a 13
+  s_7d22ef0983c1f2::t_d32e4f64e2db52 34-48
+rules/cloud-functions/checklist.md
+  s_7d22ef0983c1f2::t_2dd0829aaaaae7 11
+taro-app/src/store/schedule.store.ts
+  s_7d22ef0983c1f2::t_4b41bc26835369 15-19
+  s_7d22ef0983c1f2::t_3fb42c77fb4d6c 4
+  s_7d22ef0983c1f2::t_99645337e47389 66-68,70
+CLAUDE.md
+  s_7d22ef0983c1f2::t_611f4ec46e0cd9 34
+taro-app/src/api/student.api.ts
+  s_7d22ef0983c1f2::t_fc7beef8f4886e 21
+.cursor/rules/cloud-functions-compat.mdc
+  s_7d22ef0983c1f2::t_749d8f845ecd3a 1-38
+taro-app/src/api/schedule.api.ts
+  s_7d22ef0983c1f2::t_a0a93bc33259e3 2-3
+  s_7d22ef0983c1f2::t_0a9e9f3f60d84b 38-65
+cloudfunctions/student/index.js
+  s_7d22ef0983c1f2::t_0e00b481517f45 15
+  s_7d22ef0983c1f2::t_ff460e9c9e2b06 35
+AGENTS.md
+  s_7d22ef0983c1f2::t_519093b9b4f397 119-120
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "637cb3e9c329a36b3db622e9a40d3b6020402870",
+  "prompts": {},
+  "sessions": {
+    "s_7d22ef0983c1f2": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "f6efeb92-50a3-47f3-814a-9c7b4a27b0cf",
+        "model": "composer-2.5"
+      },
+      "human_author": "王哲 <wangzhe@mogulinker.com>"
+    }
+  }
+}
