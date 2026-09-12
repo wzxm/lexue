@@ -15,6 +15,7 @@ import {
 import { deleteCourse } from '../../api/course.api'
 import { getWeekDates, getCurrentWeekOffset, formatDate } from '../../utils/date'
 import { ROUTES } from '../../constants/routes'
+import { GUIDE_ARTICLE_URL } from '../../constants/external-links'
 import { resolveCourseId } from '../../utils/courseId'
 import {
   buildOffWeekSlotKeys,
@@ -22,6 +23,7 @@ import {
   formatWeeksSummary,
 } from '../../utils/weeks'
 import { groupSchedulesByStudent } from '../../utils/groupSchedulesByStudent'
+import { openOfficialArticle } from '../../utils/openOfficialArticle'
 import ScheduleSwitchDrawer from '../../components/ScheduleSwitchDrawer'
 import { DEFAULT_PERIODS } from '../../constants/periods'
 import type {
@@ -478,6 +480,11 @@ export default function SchedulePage () {
     Taro.navigateTo({ url: ROUTES.COPY_SCHEDULE })
   }
 
+  /** 使用指南 */
+  const onOpenGuide = () => {
+    openOfficialArticle(GUIDE_ARTICLE_URL)
+  }
+
   const onAiRecognize = async () => {
     if (!isLoggedIn) {
       Taro.navigateTo({ url: ROUTES.LOGIN })
@@ -530,7 +537,7 @@ export default function SchedulePage () {
             height: `${headerPaddingTop + menuButtonInfo.height}px`
           }}
         />
-        <EmptyState onAddCourse={onAddCourse} onCopySchedule={onCopySchedule} />
+        <EmptyState onAddCourse={onAddCourse} onCopySchedule={onCopySchedule} onOpenGuide={onOpenGuide} />
       </View>
     )
   }

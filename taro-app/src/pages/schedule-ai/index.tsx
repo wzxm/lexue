@@ -349,9 +349,9 @@ export default function ScheduleAiPage() {
       {step === 'pick' && (
         <View className='card'>
           <View className='pick-tips'>
-            <Text className='pick-tip'>请保证上传的照片内容清晰，包含完整的课程和节次。</Text>
-            <Text className='pick-tip'>⚠️注意：智能功能灰度中，所用模型暂时不是国际领先的（因为贵...٩(•̤̀ᵕ•̤́๑)哈哈哈🤣）</Text>
-            <Text className='pick-tip'>若识别有误，您可动动小手动调整～</Text>
+            <Text className='pick-tip'>1、上传的照片需内容清晰，包含完整课程和节次。</Text>
+            <Text className='pick-tip'>2、如模型识别有误，可在识别后手动调整。</Text>
+            <Text className='pick-tip'>3、模型成本较高，视消耗情况可能会限流或暂停使用。（⚠️请勿频繁操作识别，会触发系统风控限制使用或封号。）</Text>
           </View>
           <Button className='primary-btn' onClick={handlePickImage} disabled={loading || recognizing}>
             {loading || recognizing ? '处理中...' : '拍照/相册'}

@@ -4,6 +4,7 @@ import Taro, { useDidHide, useDidShow, useShareAppMessage, useUnload } from '@ta
 import { tabState } from '../../utils/tabState'
 import { ROUTES } from '../../constants/routes'
 import { SETTINGS_AD_BANNER_MINI_PROGRAM } from '../../constants/external-mini-programs'
+import { GUIDE_ARTICLE_URL } from '../../constants/external-links'
 import { useAuthStore } from '../../store/auth.store'
 import { getSettingsSummary, type SettingsSummary } from '../../api/auth.api'
 import defaultAvatar from '../../assets/default-avatar.png'
@@ -13,6 +14,7 @@ import {
   isCloudFileId,
   resolveCloudAvatarUrl,
 } from '../../utils/avatar'
+import { openOfficialArticle } from '../../utils/openOfficialArticle'
 import AccountMenuSheet from './components/AccountMenuSheet'
 import ContactModal from './components/ContactModal'
 import EditProfileModal from './components/EditProfileModal'
@@ -113,6 +115,10 @@ export default function SettingsPage() {
   }, [logout])
 
   const onMenu = useCallback((row: MenuRow) => {
+    if (row.key === 'guide') {
+      openOfficialArticle(GUIDE_ARTICLE_URL)
+      return
+    }
     if (!isLoggedIn) {
       Taro.navigateTo({ url: ROUTES.LOGIN })
       return

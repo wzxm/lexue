@@ -174,6 +174,24 @@
   color: var(--color-dark-btn, #1a1a2e);
 }
 
+.empty-guide {
+  display: flex;
+  align-items: center;
+  margin-top: 30px;
+  padding: 16px 24px;
+}
+
+.empty-guide-text {
+  color: #666666;
+  font-size: 28px;
+}
+
+.empty-guide-icon {
+  width: 28px;
+  height: 28px;
+  margin-left: 8px;
+}
+
 /* 有数据：课表视图 */
 .schedule-page {
   position: relative;

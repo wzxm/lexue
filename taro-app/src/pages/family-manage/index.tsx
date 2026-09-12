@@ -141,7 +141,7 @@ export default function FamilyManagePage() {
     <View className='family-page'>
       <View className='family-tip'>
         <Text className='family-tip-text'>
-          家人加入后，彼此创建的课表均可互相查看、管理。
+          家人加入后，彼此创建的课表均可互相查看。
         </Text>
       </View>
 

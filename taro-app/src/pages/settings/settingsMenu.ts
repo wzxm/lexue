@@ -7,6 +7,7 @@ export type MenuKey =
   | 'studentManage'
   | 'student'
   | 'shareSchedule'
+  | 'guide'
   | 'feedback'
   | 'recommend'
 
@@ -21,6 +22,7 @@ export const menuRows: MenuRow[] = [
   { key: 'scheduleTab', label: '课表管理', icon: '\ue696' },
   { key: 'studentManage', label: '学生管理', icon: '\ue706' },
   { key: 'shareSchedule', label: '分享小程序', icon: '\ue729' },
+  { key: 'guide', label: '使用指南', icon: '\ue6ad' },
   { key: 'feedback', label: '联系我们', icon: '\ue759' },
 ]
 
