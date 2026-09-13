@@ -36,7 +36,7 @@ function SettingsHeader({
               </View>
               <View className='user-text'>
                 <Text className='name'>登录注册</Text>
-                <Text className='school'>等你来用～</Text>
+                <Text className='school'>🌈开始管理您的课表～</Text>
               </View>
             </View>
           ) : (
