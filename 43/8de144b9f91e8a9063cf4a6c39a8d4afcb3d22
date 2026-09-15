@@ -1,0 +1,28 @@
+cloudfunctions/ai/index.js
+  s_bbd1e2e1d4ca7a::t_301368087b79b8 105,109
+  s_7258c29b406525::t_65225d5d6d0b87 101,114,365-370
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "438de144b9f91e8a9063cf4a6c39a8d4afcb3d22",
+  "prompts": {},
+  "sessions": {
+    "s_7258c29b406525": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0a4e6-8509-7242-a868-0a3d10acd78e",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "王哲 <wangzhe@mogulinker.com>"
+    },
+    "s_bbd1e2e1d4ca7a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0a4e0-a6bc-7f43-8745-dd94abc88777",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "王哲 <wangzhe@mogulinker.com>"
+    }
+  }
+}
