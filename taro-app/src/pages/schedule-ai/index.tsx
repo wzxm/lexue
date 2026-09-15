@@ -12,7 +12,7 @@ import { DEFAULT_PERIODS } from '../../constants/periods'
 import { DEFAULT_COURSE_COLOR, COURSE_COLORS } from '../../constants/colors'
 import { getCurrentWeekOffset, getWeekDates, formatDate } from '../../utils/date'
 import { normalizeRecognitionPeriods, recognitionPeriodConfig } from '../../utils/recognitionPeriods'
-import { chooseMediaSource } from '../../utils/media'
+import { chooseLocalImage, getSafeImageExt, isUserCancel, showMediaFail } from '../../utils/media'
 import { buildAllWeeks, buildOffWeekSlotKeys, findCoursesAtSlot, formatWeeksSummary } from '../../utils/weeks'
 import ScheduleGrid from '../schedule/components/ScheduleGrid'
 import CourseEditModal from './components/CourseEditModal'
@@ -193,30 +193,14 @@ export default function ScheduleAiPage() {
   const handlePickImage = async () => {
     if (recognizing || loading) return
     try {
-      const sourceType = await chooseMediaSource()
-      if (!sourceType) return
-      const media = await Taro.chooseMedia({
-        count: 1,
-        mediaType: ['image'],
-        sizeType: ['compressed'],
-        sourceType: [sourceType],
-      })
-      const file = media.tempFiles?.[0]
-      const filePath = file?.tempFilePath
-      if (!filePath) return
-      const lowerPath = filePath.toLowerCase()
-      const mimeType = lowerPath.endsWith('.png')
-        ? 'image/png'
-        : lowerPath.endsWith('.gif')
-          ? 'image/gif'
-          : lowerPath.endsWith('.webp')
-            ? 'image/webp'
-            : 'image/jpeg'
+      const picked = await chooseLocalImage()
+      if (!picked) return
+      const { filePath, mimeType } = picked
 
       setLoading(true)
       Taro.showLoading({ title: '上传中', mask: true })
 
-      const ext = (filePath.split('.').pop() || 'jpg').toLowerCase()
+      const ext = getSafeImageExt(filePath)
       const { year, month, day } = getDatePathParts()
       const cloudPath = `schedule-ai/${year}-${month}-${day}/${Date.now()}-${Math.floor(Math.random() * 10000)}.${ext}`
       const uploadRes = await Taro.cloud.uploadFile({
@@ -228,10 +212,10 @@ export default function ScheduleAiPage() {
       setPreviewFilePath(filePath)
       Taro.hideLoading()
       await handleRecognize(uploadRes.fileID, mimeType)
-    } catch (err: any) {
+    } catch (err: unknown) {
       Taro.hideLoading()
-      if (err?.errMsg?.includes('cancel')) return
-      Taro.showToast({ title: err?.message || '上传失败', icon: 'none' })
+      if (isUserCancel(err)) return
+      showMediaFail(err, '上传失败')
     } finally {
       setLoading(false)
     }

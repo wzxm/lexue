@@ -5,7 +5,7 @@ import { createStudent, updateStudent, deleteStudent } from '../../api/student.a
 import { useStudentStore } from '../../store/student.store'
 import { useAuthStore } from '../../store/auth.store'
 import type { Student } from '../../types/index'
-import { chooseMediaSource } from '../../utils/media'
+import { chooseLocalImage, getSafeImageExt, isUserCancel, showMediaFail } from '../../utils/media'
 import './index.scss'
 
 const GRADE_OPTIONS = [
@@ -105,36 +105,27 @@ export default function StudentFormPage() {
   const onChooseAvatar = async () => {
     if (avatarUploading) return
     try {
-      const sourceType = await chooseMediaSource()
-      if (!sourceType) return
-      const res = await Taro.chooseMedia({
-        count: 1,
-        mediaType: ['image'],
-        sizeType: ['compressed'],
-        sourceType: [sourceType],
-      })
-      const filePath = res.tempFiles?.[0]?.tempFilePath
-      const fileSize = res.tempFiles?.[0]?.size || 0
-      if (!filePath) return
-      if (fileSize > MAX_AVATAR_SIZE) {
+      const picked = await chooseLocalImage()
+      if (!picked) return
+      if (picked.size > MAX_AVATAR_SIZE) {
         Taro.showToast({ title: '头像不能超过2MB', icon: 'none' })
         return
       }
 
       setAvatarUploading(true)
       Taro.showLoading({ title: '上传中...' })
-      const ext = filePath.split('.').pop() || 'jpg'
+      const ext = getSafeImageExt(picked.filePath)
       const idPrefix = userInfo?.userId?.slice(0, 8) || userInfo?.openId?.slice(0, 8) || 'guest'
       const cloudPath = `student-avatar/${idPrefix}-${Date.now()}-${Math.floor(Math.random() * 10000)}.${ext}`
       const uploadRes = await Taro.cloud.uploadFile({
         cloudPath,
-        filePath,
+        filePath: picked.filePath,
       })
       setAvatar(uploadRes.fileID)
       Taro.showToast({ title: '头像已更新', icon: 'success' })
-    } catch (err: any) {
-      if (err?.errMsg?.includes('cancel')) return
-      Taro.showToast({ title: err?.message || '上传失败', icon: 'none' })
+    } catch (err: unknown) {
+      if (isUserCancel(err)) return
+      showMediaFail(err, '上传失败')
     } finally {
       Taro.hideLoading()
       setAvatarUploading(false)
