@@ -1,0 +1,28 @@
+taro-app/src/utils/media.ts
+  s_47d35b049d2f8e::t_00130ca01369c5 13-19,24-25,28-39,62-64,66-68,73-98,123-124,137
+  s_47d35b049d2f8e::t_8581a56e0775a4 5-12,20-23,26-27,40-61,65,69-72,99-100,108-109,113-122,125-136,138
+taro-app/src/pages/schedule-ai/index.tsx
+  s_47d35b049d2f8e::t_52da4c4ad85bdc 218
+  s_47d35b049d2f8e::t_fbdad8c9076f1b 15
+  s_47d35b049d2f8e::t_4f7d2ccb301b44 196-198,203,215,217
+taro-app/src/pages/student-form/index.tsx
+  s_47d35b049d2f8e::t_6eaa48774bc928 8
+  s_47d35b049d2f8e::t_31a9907af829c5 108-110,117,122,126-127
+  s_47d35b049d2f8e::t_90130530e508bd 128
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "49f401b5a14cfadd054e6202b64a058028409624",
+  "prompts": {},
+  "sessions": {
+    "s_47d35b049d2f8e": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "ff815d2c-4022-420c-9537-a6923a8eb662",
+        "model": "grok-4.6"
+      },
+      "human_author": "王哲 <wangzhe@mogulinker.com>"
+    }
+  }
+}
