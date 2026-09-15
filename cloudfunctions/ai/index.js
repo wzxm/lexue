@@ -98,19 +98,20 @@ function buildPrompt(schedule) {
   const configuredCount = Math.min(Math.max(periods.length || 0, 0), MAX_COURSES);
   return [
     '你是学校课程表图片识别助手。只输出严格 JSON，不要 Markdown、解释或代码块。',
-    '{ "periods": [ { "index": 1, "startTime": "07:05", "endTime": "07:45", "label": "上午1" } ], "courses": [ { "name": "...", "day_of_week": 1, "slot": 1, "teacher": "", "room": "", "contact": "", "remark": "" } ], "warnings": [] }',
+    '{ "periods": [ { "index": 1, "startTime": "07:05", "endTime": "07:45", "label": "上午1", "row_type": "lesson" } ], "courses": [ { "name": "...", "day_of_week": 1, "slot": 1, "row_label": "第1节", "row_type": "lesson", "teacher": "", "room": "", "contact": "", "remark": "" } ], "warnings": [] }',
     '规则：',
     '1. 表头星期（一/周一/星期一）映射 day_of_week=1-7。',
     '2. periods 必须从图片左侧节次列读取开始/结束时间，禁止套用当前课表已有时间，也禁止使用本提示里的示例时间。左侧常见写法是「第1节 / 第一节 / 上午1」「08:35-09:15」「8:20~9:00」「8:20—8:30」，把 - — ~ ～ 时间段拆成 startTime、endTime，统一 HH:mm。',
-    '3. 上课节次写入 periods：第N节、第一节、上午N、下午N、晚上N。大课间、眼保健操、午休、午餐、课后托管等整行作息不要进入 periods，也不要占 slot。早读/午读/晚读若格子里有班会、安全教育等具体科目，要作为上课节次保留并占 slot；若整行空白则忽略。',
+    '3. 上课节次写入 periods：第N节、第一节、上午N、下午N、晚上N。大课间、眼保健操、午休、午餐、午读、课后托管等整行作息不要进入 periods，也不要占 slot。午读按左侧行标签判断，整行所有星期的单元格均不写入 courses，即使格子里写有班会、红领巾广播、安全教育或具体科目也必须忽略。例如第4节与第5节之间的「午读 14:00-14:20」整行跳过，第5节仍对应 slot=5，第6节仍对应 slot=6。正式上课节次里的「阅读」课正常保留，不要当作午读排除。早读/晚读若格子里有班会、安全教育等具体科目，要作为上课节次保留并占 slot；若整行空白则忽略。',
     `4. slot 范围 1-${MAX_COURSES}。每个有课的单元格只输出一条课程，day_of_week 和 slot 对应它所在的列和上课节次（跳过作息行后从 1 连续编号）。跨多节的合并格按实际覆盖的节次分别输出。`,
     '5. name 原样保留单元格文字，包括括号。同一格里的单周/双周（如"体育(单周) 英语(双周)""心理(单周)/综合实践(双周)"）必须写在同一条 name 里，不要拆成两条，也不要输出 weeks。',
     '6. 单元格里的教师、教室、电话分别填 teacher/room/contact；不确定则空字符串。不要输出 weeks、color。',
-    '7. 忽略整行作息以及空白格、斜杠占位、标题、页脚。行标签（早读、第1节）不是课程名；该行单元格里的具体科目仍要输出。',
+    '7. 忽略整行作息以及空白格、斜杠占位、标题、页脚。先按规则3判断是否保留该行，再识别课程；午读等已排除的作息行即使有具体科目也不输出。保留行的行标签（早读、第1节）不是课程名，只输出该行单元格里的具体科目。',
     configuredCount
       ? `8. 当前课表大约配置了 ${configuredCount} 节，仅供理解密度；图片里的上课节数和时间一律以原图为准，不要补齐或套用已有时间。`
       : '8. 按左侧上课节次连续编号 slot。',
     '9. 不确定就不要编造课程名；时间能看清就必须输出。模糊项在 remark 开头加 "[待确认]"，原因写入 warnings。',
+    '10. 每条课程必须附带它所在行的 row_label 和 row_type：正式上课行用 row_type="lesson"，早读/晚读等有课的行也用 lesson；午读、大课间、午休、午餐、眼操、托管等整行作息用 row_type="activity"。本地程序会按 row_label/row_type 强制过滤 activity 行，请务必准确填写，禁止把午读行里的任何文字输出为 lesson。',
   ].join('\n');
 }
 
@@ -361,6 +362,12 @@ function normalizeCourses(payloadCourses, totalWeeks, periodCount) {
 
   for (const raw of payloadCourses) {
     if (!raw || typeof raw !== 'object') continue;
+    const rowLabel = String(raw.row_label || raw.rowLabel || '').replace(/\s/g, '');
+    const rowType = String(raw.row_type || raw.rowType || '').toLowerCase();
+    if (rowType === 'activity' || rowLabel === '午读') {
+      warnings.push(`已忽略作息行「${rowLabel || '活动'}」中的内容`);
+      continue;
+    }
     let name = completeSubjectName(String(raw.name || '').trim().slice(0, 40));
     const dayOfWeek = Number(raw.day_of_week);
     const slot = Number(raw.slot);
