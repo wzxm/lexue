@@ -1,11 +1,13 @@
-import { View, Text, Image } from '@tarojs/components'
+import { View, Text, Image, Switch } from '@tarojs/components'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { useAuthStore } from '../../store/auth.store'
 import { useScheduleStore } from '../../store/schedule.store'
 import { useStudentStore } from '../../store/student.store'
 import { ROUTES } from '../../constants/routes'
 import { listSchedules, deleteSchedule } from '../../api/schedule.api'
+import { getProfile, updateDisplaySettings } from '../../api/auth.api'
 import { loadUserId } from '../../utils/storage'
+import { WEEKEND_SWITCH_COPY, isWeekendVisible } from '../../utils/weekendDisplay'
 import noDataImg from '../../assets/noData.png'
 import './index.scss'
 import { useMemo, useState } from 'react'
@@ -35,12 +37,15 @@ function formatSemesterDisplay(value?: string): string {
 
 export default function ScheduleManagePage() {
   const userInfo = useAuthStore(s => s.userInfo)
+  const setUserInfo = useAuthStore(s => s.setUserInfo)
   const currentUserId = userInfo?.userId || loadUserId() || ''
   const schedules = useScheduleStore(s => s.schedules)
   const setSchedules = useScheduleStore(s => s.setSchedules)
   const students = useStudentStore(s => s.students)
 
   const [loading, setLoading] = useState(false)
+  const [savingWeekend, setSavingWeekend] = useState(false)
+  const showWeekend = isWeekendVisible(userInfo?.settings?.hide_weekend)
 
   const fetchSchedules = async () => {
     setLoading(true)
@@ -99,6 +104,30 @@ export default function ScheduleManagePage() {
   const handleShare = (e: any, schedule: Schedule) => {
     e.stopPropagation()
     Taro.navigateTo({ url: `${ROUTES.SHARE_SCHEDULE}?id=${schedule.id || schedule._id}` })
+  }
+
+  const handleToggleWeekend = async (checked: boolean) => {
+    if (savingWeekend || !userInfo) return
+    const nextHideWeekend = !checked
+    const prevUserInfo = userInfo
+    setUserInfo({
+      ...userInfo,
+      settings: {
+        ...userInfo.settings,
+        hide_weekend: nextHideWeekend,
+      },
+    })
+    setSavingWeekend(true)
+    try {
+      await updateDisplaySettings({ hideWeekend: nextHideWeekend })
+      const updated = await getProfile()
+      setUserInfo(updated)
+    } catch {
+      setUserInfo(prevUserInfo)
+      Taro.showToast({ title: '保存失败', icon: 'none' })
+    } finally {
+      setSavingWeekend(false)
+    }
   }
 
   const groupedSchedules = useMemo(() => {
@@ -207,6 +236,24 @@ export default function ScheduleManagePage() {
             </View>
           </View>
         )}
+      </View>
+
+      <View className='weekend-toggle'>
+        <View className='weekend-toggle-left'>
+            <Text className='weekend-toggle-label'>
+              {showWeekend ? WEEKEND_SWITCH_COPY.on.title : WEEKEND_SWITCH_COPY.off.title}
+            </Text>
+            <Text className='weekend-toggle-desc'>
+              {showWeekend ? WEEKEND_SWITCH_COPY.on.desc : WEEKEND_SWITCH_COPY.off.desc}
+            </Text>
+        </View>
+        <Switch
+          checked={showWeekend}
+          disabled={savingWeekend}
+          color='#3b82f6'
+          style={{ transform: 'scale(0.8)' }}
+          onChange={e => handleToggleWeekend(e.detail.value)}
+        />
       </View>
     </View>
   )

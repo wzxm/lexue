@@ -5,8 +5,6 @@ import './EmptySchedule.scss'
 
 interface Props {
   scheduleId?: string;
-  /** true = redirectTo（替换页面栈），false = navigateTo（默认） */
-  useRedirect?: boolean;
   onAddLater?: () => void;
   onAiRecognize: () => void;
   /** 点击添加方式时触发（用于关闭弹窗等） */
@@ -15,12 +13,12 @@ interface Props {
   hideTitle?: boolean;
 }
 
-export default function EmptySchedule({ scheduleId, useRedirect, onAddLater, onAiRecognize, onSelectMethod, hideTitle }: Props) {
+export default function EmptySchedule({ scheduleId, onAddLater, onAiRecognize, onSelectMethod, hideTitle }: Props) {
   const goToCourseForm = () => {
     onSelectMethod?.()
     if (!scheduleId) return
-    const url = `${ROUTES.COURSE_FORM}?mode=add&scheduleId=${scheduleId}`
-    useRedirect ? Taro.redirectTo({ url }) : Taro.navigateTo({ url })
+    // 必须用 navigateTo 保留本页，否则课程表单返回时会跳过「添加课程方式」
+    Taro.navigateTo({ url: `${ROUTES.COURSE_FORM}?mode=add&scheduleId=${scheduleId}` })
   }
 
   const handleAiRecognize = () => {

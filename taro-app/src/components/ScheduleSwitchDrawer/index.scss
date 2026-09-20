@@ -160,6 +160,27 @@
   font-weight: bold;
 }
 
+.ssd-add-schedule-wrap {
+  flex-shrink: 0;
+  padding: 0 32px;
+}
+
+.ssd-add-schedule-btn {
+  height: 88px;
+  border-radius: 44px;
+  background: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ssd-add-schedule-text {
+  font-size: 30px;
+  font-weight: 500;
+  color: #ffffff;
+  line-height: 1;
+}
+
 .ssd-footer {
   flex-shrink: 0;
   padding: 24px 32px;

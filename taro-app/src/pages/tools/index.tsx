@@ -146,6 +146,12 @@ export default function ToolsPage () {
     Taro.navigateTo({ url: ROUTES.SCHEDULE_MANAGE })
   }
 
+  // 新增课表
+  const goAddSchedule = () => {
+    closeDrawer()
+    Taro.navigateTo({ url: ROUTES.SCHEDULE_FORM })
+  }
+
   // 跳转学生管理
   const goManageStudent = () => {
     closeDrawer()
@@ -259,6 +265,7 @@ export default function ToolsPage () {
         groupedSchedules={groupedSchedules}
         currentScheduleId={currentSchedule?.id}
         onSelectSchedule={handleSelectSchedule}
+        onAddSchedule={goAddSchedule}
         onManageSchedule={goManageSchedule}
         onManageStudent={goManageStudent}
       />

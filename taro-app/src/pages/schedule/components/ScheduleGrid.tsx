@@ -28,7 +28,7 @@ interface Props {
   onCourseClick?: (course: Course, index: number) => void;
   /** 是否为 remark 含 [待确认] 的课程添加特殊样式 */
   highlightUncertain?: boolean;
-  /** 课表卡片下方附加内容（如「共享给家人」） */
+  /** 课表卡片下方附加内容（如「调整课表」「共享给家人」） */
   footer?: ReactNode;
 }
 

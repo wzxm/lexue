@@ -11,6 +11,7 @@ import { goScheduleWithFamilyInvite } from '../../utils/goScheduleWithFamilyInvi
 import { DEFAULT_PERIODS } from '../../constants/periods'
 import { DEFAULT_COURSE_COLOR, COURSE_COLORS } from '../../constants/colors'
 import { getCurrentWeekOffset, getWeekDates, formatDate } from '../../utils/date'
+import { isWeekendVisible } from '../../utils/weekendDisplay'
 import { normalizeRecognitionPeriods, recognitionPeriodConfig } from '../../utils/recognitionPeriods'
 import { chooseLocalImage, getSafeImageExt, isUserCancel, showMediaFail } from '../../utils/media'
 import { buildAllWeeks, buildOffWeekSlotKeys, findCoursesAtSlot, formatWeeksSummary } from '../../utils/weeks'
@@ -67,7 +68,7 @@ export default function ScheduleAiPage() {
   const totalWeeks = schedule?.total_weeks || schedule?.totalWeeks || 20
   const periods = schedule?.periods?.length ? schedule.periods : DEFAULT_PERIODS
   const previewPeriods = recognizedPeriods.length ? recognizedPeriods : periods
-  const hideWeekend = userInfo?.settings?.hide_weekend ?? false
+  const hideWeekend = !isWeekendVisible(userInfo?.settings?.hide_weekend)
   const normalizedDraftCourses = useMemo(() => {
     const weeksFallback = buildAllWeeks(totalWeeks)
     return (draftCourses || []).map(course => ({

@@ -11,6 +11,7 @@ export interface ScheduleSwitchDrawerProps {
   groupedSchedules: GroupedSchedules[]
   currentScheduleId: string | undefined
   onSelectSchedule: (schedule: Schedule) => void | Promise<void>
+  onAddSchedule: () => void
   onManageSchedule: () => void
   onManageStudent: () => void
 }
@@ -31,6 +32,7 @@ export default function ScheduleSwitchDrawer ({
   groupedSchedules,
   currentScheduleId,
   onSelectSchedule,
+  onAddSchedule,
   onManageSchedule,
   onManageStudent
 }: ScheduleSwitchDrawerProps) {
@@ -102,6 +104,12 @@ export default function ScheduleSwitchDrawer ({
                 ))}
               </View>
             )}
+          </View>
+
+          <View className='ssd-add-schedule-wrap'>
+            <View className='ssd-add-schedule-btn' onClick={onAddSchedule}>
+              <Text className='ssd-add-schedule-text'>新增课表</Text>
+            </View>
           </View>
 
           <View

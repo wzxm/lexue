@@ -1,6 +1,9 @@
-import { View, Text, PageContainer, PageMeta } from '@tarojs/components'
+import { View, Text, Image, PageContainer, PageMeta } from '@tarojs/components'
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import Taro from '@tarojs/taro'
+import adjustScheduleIcon from '../../assets/adjust-schedule.png'
+import shareFamilyIcon from '../../assets/share-family.png'
+import switchStudentIcon from '../../assets/switch-student.png'
 import { tabState } from '../../utils/tabState'
 import { useScheduleStore, buildGrid } from '../../store/schedule.store'
 import { useStudentStore } from '../../store/student.store'
@@ -14,6 +17,7 @@ import {
 } from '../../api/schedule.api'
 import { deleteCourse } from '../../api/course.api'
 import { getWeekDates, getCurrentWeekOffset, formatDate } from '../../utils/date'
+import { isWeekendVisible } from '../../utils/weekendDisplay'
 import { ROUTES } from '../../constants/routes'
 import { GUIDE_ARTICLE_URL } from '../../constants/external-links'
 import { resolveCourseId } from '../../utils/courseId'
@@ -78,7 +82,7 @@ export default function SchedulePage () {
   const periods = currentSchedule?.periods || DEFAULT_PERIODS
   const totalWeeks = currentSchedule?.total_weeks || currentSchedule?.totalWeeks || 20
   const today = formatDate(new Date(), 'YYYY-MM-DD')
-  const hideWeekend = userInfo?.settings?.hide_weekend ?? false
+  const hideWeekend = !isWeekendVisible(userInfo?.settings?.hide_weekend)
 
   const groupedSchedules = useMemo(
     () => groupSchedulesByStudent(schedules, students),
@@ -178,6 +182,11 @@ export default function SchedulePage () {
     Taro.navigateTo({ url: ROUTES.SCHEDULE_MANAGE })
   }
 
+  const goAddSchedule = () => {
+    closeDrawer()
+    Taro.navigateTo({ url: ROUTES.SCHEDULE_FORM })
+  }
+
   const goManageStudent = () => {
     closeDrawer()
     Taro.navigateTo({ url: ROUTES.STUDENT_MANAGE })
@@ -185,6 +194,15 @@ export default function SchedulePage () {
 
   const goFamilyManage = () => {
     Taro.navigateTo({ url: ROUTES.FAMILY_MANAGE })
+  }
+
+  const goAdjustSchedule = () => {
+    const scheduleId = currentSchedule?.id || currentSchedule?._id
+    if (!scheduleId) {
+      Taro.showToast({ title: '课表信息异常', icon: 'none' })
+      return
+    }
+    Taro.navigateTo({ url: `${ROUTES.SCHEDULE_FORM}?id=${scheduleId}` })
   }
 
   const windowInfo = useMemo(() => Taro.getWindowInfo(), [])
@@ -581,10 +599,10 @@ export default function SchedulePage () {
                 transform: 'translateX(-50%)'
               }}
             >
-              <Text className='student-name'>
+              <View className='student-name'>
                 <Text>{headerStudent?.name || '未选择学生'}</Text>
-                <Text className='student-sub-icon'>⇌</Text>
-              </Text>
+                <Image className='student-sub-icon' src={switchStudentIcon} mode='aspectFit' />
+              </View>
               <Text className='student-sub'>{currentSchedule.name}</Text>
             </View>
           {/* 仅为占位保持中间居中不跑偏 */}
@@ -634,9 +652,15 @@ export default function SchedulePage () {
           offWeekSlotKeys={offWeekSlotKeys}
           hideWeekend={hideWeekend}
           footer={(
-            <View className='share-family-btn' onClick={goFamilyManage}>
-              <Text className='iconfont share-family-btn-icon'>{'\ue841'}</Text>
-              <Text className='share-family-btn-text'>共享给家人</Text>
+            <View className='schedule-footer-actions'>
+              <View className='share-family-btn' onClick={goAdjustSchedule}>
+                <Image className='share-family-btn-img' src={adjustScheduleIcon} mode='aspectFit' />
+                <Text className='share-family-btn-text'>调整课表</Text>
+              </View>
+              <View className='share-family-btn' onClick={goFamilyManage}>
+                <Image className='share-family-btn-img' src={shareFamilyIcon} mode='aspectFit' />
+                <Text className='share-family-btn-text'>共享给家人</Text>
+              </View>
             </View>
           )}
         />
@@ -663,6 +687,7 @@ export default function SchedulePage () {
           groupedSchedules={groupedSchedules}
           currentScheduleId={currentSchedule?.id}
           onSelectSchedule={handleSelectSchedule}
+          onAddSchedule={goAddSchedule}
           onManageSchedule={goManageSchedule}
           onManageStudent={goManageStudent}
         />
@@ -690,7 +715,6 @@ export default function SchedulePage () {
           </View>
           <EmptySchedule
             scheduleId={currentSchedule?.id}
-            useRedirect={false}
             onAiRecognize={onAiRecognize}
             onSelectMethod={() => { setShowAddCourseSheet(false); tabState.setVisible(true) }}
             hideTitle

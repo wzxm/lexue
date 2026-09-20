@@ -3,13 +3,11 @@ import { useState, useEffect } from 'react'
 import Taro from '@tarojs/taro'
 import { getProfile, updateDisplaySettings } from '../../api/auth.api'
 import { useAuthStore } from '../../store/auth.store'
-import { useScheduleStore } from '../../store/schedule.store'
 import './index.scss'
 
 export default function DisplaySettingsPage() {
   const userInfo = useAuthStore(s => s.userInfo)
   const setUserInfo = useAuthStore(s => s.setUserInfo)
-  const currentSchedule = useScheduleStore(s => s.currentSchedule)
   const [hideWeekend, setHideWeekend] = useState(false)
   const [saving, setSaving] = useState(false)
 
@@ -19,22 +17,6 @@ export default function DisplaySettingsPage() {
   }, [userInfo])
 
   const handleToggle = async (val: boolean) => {
-    // 仅在开启时校验：当前课表周六/周日有课程则不允许开启
-    if (val) {
-      const hasWeekendCourses = (currentSchedule?.courses || []).some(
-        course => course.day_of_week === 6 || course.day_of_week === 7
-      )
-      if (hasWeekendCourses) {
-        Taro.showModal({
-          title: '',
-          content: '你当前课表周六日有课程数据，暂不支持隐藏周末。',
-          showCancel: false,
-          confirmText: '知道了'
-        })
-        return
-      }
-    }
-
     setHideWeekend(val)
     setSaving(true)
     try {

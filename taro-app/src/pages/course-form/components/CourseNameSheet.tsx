@@ -59,12 +59,27 @@ export default function CourseNameSheet({
       Taro.showToast({ title: '请输入课程名称', icon: 'none' })
       return
     }
+
+    // 当前学龄段下已有同名课程时直接复用，不再重复创建
+    const existed =
+      systemSet.has(name) ||
+      userForGrade.some(p => p.name.trim() === name)
+    if (existed) {
+      pickName(name)
+      return
+    }
+
     setSaving(true)
     try {
       await addCoursePreset(name, gradeLevel)
       await loadPresets()
       pickName(name)
     } catch (e: any) {
+      // 其他端刚创建过同名，同样直接复用
+      if (String(e?.message || '').includes('已有同名课程')) {
+        pickName(name)
+        return
+      }
       Taro.showToast({ title: e?.message || '保存失败', icon: 'none' })
     } finally {
       setSaving(false)

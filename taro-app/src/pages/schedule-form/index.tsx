@@ -492,7 +492,6 @@ export default function ScheduleFormPage() {
       {step === 2 && (
         <EmptySchedule
           scheduleId={currentScheduleId ?? undefined}
-          useRedirect
           onAiRecognize={handleAiRecognize}
           onAddLater={() => Taro.navigateBack()}
         />
