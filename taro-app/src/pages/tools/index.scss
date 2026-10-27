@@ -25,78 +25,20 @@
   width: 100%;
 }
 
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.guest-avatar-small {
-  width: 76px;
-  height: 76px;
-  border-radius: 50%;
-  overflow: hidden;
-  flex-shrink: 0;
-}
-
-.guest-avatar-small-img {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-}
-
-.avatar {
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  background: #FFFFFF;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 32px;
-  font-weight: bold;
-  color: #333;
-}
-
-.avatar--student {
-  border: 2px solid rgba(255, 255, 255, 0.6);
-}
-
-.avatar-img {
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.6);
-  background: #fff;
-  flex-shrink: 0;
-}
-
-.user-text {
+.explore-header {
   display: flex;
   flex-direction: column;
 }
 
-.name-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.name {
+.explore-title {
   font-size: 32px;
   font-weight: bold;
   color: #333;
 }
 
-.student-sub-icon {
-  font-size: 28px;
-  color: var(--color-primary);
-  margin-left: 14px;
-}
-
-.school {
+.explore-subtitle {
   font-size: 24px;
-  color: #666;
+  color: #999;
   margin-top: 4px;
 }
 

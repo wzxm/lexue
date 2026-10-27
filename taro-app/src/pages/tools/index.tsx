@@ -1,18 +1,8 @@
-import { useState, useMemo } from 'react'
 import { View, Text, Image } from '@tarojs/components'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { tabState } from '../../utils/tabState'
-import { useAuthStore } from '../../store/auth.store'
-import { useScheduleStore } from '../../store/schedule.store'
-import { useStudentStore } from '../../store/student.store'
-import { getSchedule, setDefaultSchedule } from '../../api/schedule.api'
-import { listStudents } from '../../api/student.api'
-import { ROUTES } from '../../constants/routes'
-import { groupSchedulesByStudent } from '../../utils/groupSchedulesByStudent'
-import ScheduleSwitchDrawer from '../../components/ScheduleSwitchDrawer'
 import noDataImg from '../../assets/noData.png'
 import ziliaoIcon from '../../assets/ziliao.svg'
-import defaultAvatar from '../../assets/default-avatar.png'
 import './index.scss'
 
 interface Tool {
@@ -41,18 +31,6 @@ const toolList: Tool[] = [
 ]
 
 export default function ToolsPage () {
-  const isLoggedIn = useAuthStore(s => s.isLoggedIn)
-  const userInfo = useAuthStore(s => s.userInfo)
-  const schedules = useScheduleStore(s => s.schedules)
-  const currentSchedule = useScheduleStore(s => s.currentSchedule)
-  const setCurrentSchedule = useScheduleStore(s => s.setCurrentSchedule)
-  const students = useStudentStore(s => s.students)
-  const currentStudent = useStudentStore(s => s.currentStudent)
-  const setStudents = useStudentStore(s => s.setStudents)
-  const setCurrentStudent = useStudentStore(s => s.setCurrentStudent)
-
-  const [showDrawer, setShowDrawer] = useState(false)
-
   const windowInfo = Taro.getWindowInfo()
   const menuButtonInfo = Taro.getMenuButtonBoundingClientRect()
 
@@ -65,98 +43,7 @@ export default function ToolsPage () {
   useDidShow(() => {
     tabState.setVisible(true)
     tabState.setSelected(1)
-    if (useAuthStore.getState().isLoggedIn && useStudentStore.getState().students.length === 0) {
-      listStudents()
-        .then(setStudents)
-        .catch(() => {})
-    }
   })
-
-  const goLogin = () => {
-    Taro.navigateTo({ url: ROUTES.LOGIN })
-  }
-
-  const groupedSchedules = useMemo(
-    () => groupSchedulesByStudent(schedules, students),
-    [schedules, students]
-  )
-
-  /** 当前课表对应学生（与抽屉分组逻辑一致） */
-  const headerStudent = useMemo(() => {
-    const sid = currentSchedule?.student_id
-    if (sid) {
-      const fromList = students.find(s => s.id === sid)
-      if (fromList) return fromList
-    }
-    return currentStudent
-  }, [currentSchedule, students, currentStudent])
-
-  const headerStudentName = headerStudent?.name || '未命名学生'
-  const headerStudentAvatar = headerStudent?.avatar || ''
-  const headerStudentInitial = headerStudentName === '默认学生'
-    ? '默'
-    : (headerStudentName?.charAt(0) || '学')
-  const headerSchoolLine = [headerStudent?.school, headerStudent?.grade]
-    .filter(Boolean)
-    .join('\uFF0C')
-
-  // 打开抽屉
-  const openDrawer = () => {
-    if (!isLoggedIn) {
-      goLogin()
-      return
-    }
-    setShowDrawer(true)
-  }
-
-  // 关闭抽屉
-  const closeDrawer = () => {
-    setShowDrawer(false)
-  }
-
-  const handleSelectSchedule = async (schedule: (typeof schedules)[0]) => {
-    if (currentSchedule?.id === schedule.id) {
-      closeDrawer()
-      return
-    }
-    try {
-      Taro.showLoading({ title: '切换中', mask: true })
-      const full = await getSchedule(schedule.id)
-      const sid = full.student_id
-      if (sid) {
-        const st = students.find(s => s.id === sid)
-        if (st) setCurrentStudent(st)
-      }
-      const userId = userInfo?.userId
-      if (userId && schedule.owner_user_id === userId) {
-        await setDefaultSchedule(schedule.id)
-      }
-      setCurrentSchedule(full)
-      closeDrawer()
-    } catch (err: any) {
-      Taro.showToast({ title: err?.message || '切换失败', icon: 'none' })
-    } finally {
-      Taro.hideLoading()
-    }
-  }
-
-  // 跳转管理课表
-  const goManageSchedule = () => {
-    closeDrawer()
-    Taro.navigateTo({ url: ROUTES.SCHEDULE_MANAGE })
-  }
-
-  // 新增课表
-  const goAddSchedule = () => {
-    closeDrawer()
-    Taro.navigateTo({ url: ROUTES.SCHEDULE_FORM })
-  }
-
-  // 跳转学生管理
-  const goManageStudent = () => {
-    closeDrawer()
-    Taro.navigateTo({ url: ROUTES.STUDENT_MANAGE })
-  }
 
   return (
     <View className='page-container'>
@@ -172,46 +59,10 @@ export default function ToolsPage () {
         }}
       >
         <View className='nav-title-wrap'>
-          {!isLoggedIn ? (
-            <View className='user-info' onClick={goLogin}>
-              <View className='guest-avatar-small'>
-                <Image
-                  className='guest-avatar-small-img'
-                  src={defaultAvatar}
-                  mode='aspectFill'
-                />
-              </View>
-              <View className='user-text'>
-                <Text className='name'>登录注册</Text>
-                <Text className='school'>等你来用～</Text>
-              </View>
-            </View>
-          ) : (
-            <View className='user-info' onClick={openDrawer}>
-              {headerStudentAvatar ? (
-                <Image
-                  className='avatar-img'
-                  src={headerStudentAvatar}
-                  mode='aspectFill'
-                />
-              ) : (
-                <View className='avatar avatar--student'>{headerStudentInitial}</View>
-              )}
-              <View className='user-text'>
-                <View className='name-row'>
-                  <Text className='name'>
-                    {currentSchedule ? headerStudentName : '暂无课表'}
-                  </Text>
-                  <Text className='student-sub-icon'>⇌</Text>
-                </View>
-                <Text className='school'>
-                  {currentSchedule
-                    ? headerSchoolLine || `家长：${userInfo?.nickname || '未设置昵称'}`
-                    : `家长：${userInfo?.nickname || '未设置昵称'}`}
-                </Text>
-              </View>
-            </View>
-          )}
+          <View className='explore-header'>
+            <Text className='explore-title'>💡探索世界</Text>
+            <Text className='explore-subtitle'>陪伴孩子成长～</Text>
+          </View>
         </View>
       </View>
 
@@ -257,18 +108,6 @@ export default function ToolsPage () {
           <Text className='empty-text'>暂无内容</Text>
         </View>
       </View>
-
-      <ScheduleSwitchDrawer
-        visible={showDrawer}
-        onClose={closeDrawer}
-        schedules={schedules}
-        groupedSchedules={groupedSchedules}
-        currentScheduleId={currentSchedule?.id}
-        onSelectSchedule={handleSelectSchedule}
-        onAddSchedule={goAddSchedule}
-        onManageSchedule={goManageSchedule}
-        onManageStudent={goManageStudent}
-      />
     </View>
   )
 }
