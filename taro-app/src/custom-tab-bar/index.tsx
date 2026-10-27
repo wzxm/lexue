@@ -1,13 +1,23 @@
 import { Component } from 'react'
 import Taro from '@tarojs/taro'
-import { View, Text } from '@tarojs/components'
+import { View, Text, Image } from '@tarojs/components'
 import { tabState } from '../utils/tabState'
 import { ROUTES } from '../constants/routes'
+import exploreIcon from '../assets/tabbar/explore.png'
+import exploreActiveIcon from '../assets/tabbar/explore-active.png'
 import './index.scss'
 
-const LIST = [
+interface TabItem {
+  pagePath: string
+  text: string
+  icon?: string
+  imgIcon?: string
+  imgIconActive?: string
+}
+
+const LIST: TabItem[] = [
   { pagePath: '/pages/schedule/index', text: '课表', icon: '\ue696' },
-  // { pagePath: '/pages/tools/index', text: '工具', icon: '\ue6ad' },
+  { pagePath: '/pages/tools/index', text: '探索', imgIcon: exploreIcon, imgIconActive: exploreActiveIcon },
   { pagePath: '/pages/settings/index', text: '设置', icon: '\ue657' },
 ]
 
@@ -118,7 +128,15 @@ export default class CustomTabBar extends Component {
               className={`tab-item ${selected === idx ? 'tab-item--active' : ''}`}
               onClick={() => this.switchTab(idx, item.pagePath)}
             >
-              <Text className='iconfont tab-icon'>{item.icon}</Text>
+              {item.imgIcon ? (
+                <Image
+                  className='tab-img-icon'
+                  src={selected === idx ? item.imgIconActive : item.imgIcon}
+                  mode='aspectFit'
+                />
+              ) : (
+                <Text className='iconfont tab-icon'>{item.icon}</Text>
+              )}
               <Text className='tab-text'>{item.text}</Text>
             </View>
           ))}

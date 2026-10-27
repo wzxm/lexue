@@ -76,7 +76,7 @@ export default function SettingsPage() {
 
   useDidShow(() => {
     tabState.setVisible(true)
-    tabState.setSelected(1)
+    tabState.setSelected(2)
     loadSettingsSummary()
   })
 

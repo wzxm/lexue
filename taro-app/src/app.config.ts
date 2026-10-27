@@ -27,7 +27,7 @@ export default defineAppConfig({
     borderStyle: 'white',
     list: [
       { pagePath: 'pages/schedule/index', text: '课表' },
-      // { pagePath: 'pages/tools/index', text: '工具' },
+      { pagePath: 'pages/tools/index', text: '探索' },
       { pagePath: 'pages/settings/index', text: '设置' },
     ],
   },

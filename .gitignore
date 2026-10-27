@@ -27,3 +27,8 @@ qrcode.jpg
 # Qoder 工作树
 .qoder/
 .env.local
+# CloudBase 本地缓存
+.cloudbase/
+
+# SWC 平台插件缓存
+.swc/
