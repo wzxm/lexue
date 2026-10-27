@@ -57,18 +57,12 @@
 
 .section-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
   margin-top: 48px;
   margin-bottom: 24px;
 
   .section-title {
     margin-bottom: 0;
-  }
-
-  .section-more {
-    font-size: 24px;
-    color: #999;
   }
 }
 
@@ -163,21 +157,41 @@
   color: #999;
 }
 
-.empty-state {
+.entry-card {
+  display: flex;
+  align-items: center;
+  background: #FFFFFF;
+  border-radius: 24px;
+  padding: 28px 32px;
+  box-shadow: rgba(0, 0, 0, 0.08) 0px 4px 6px;
+}
+
+.entry-icon {
+  width: 88px;
+  height: 88px;
+  flex-shrink: 0;
+}
+
+.entry-info {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding-top: 120px;
+  margin-left: 24px;
 }
 
-.empty-img {
-  width: 240px;
-  height: 240px;
-  margin-bottom: 24px;
+.entry-name {
+  font-size: 30px;
+  font-weight: bold;
+  color: #333;
 }
 
-.empty-text {
-  font-size: 28px;
+.entry-desc {
+  font-size: 24px;
   color: #999;
+  margin-top: 6px;
+}
+
+.entry-arrow {
+  font-size: 32px;
+  color: #C8C8CC;
 }

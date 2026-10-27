@@ -1,8 +1,8 @@
 import { View, Text, Image } from '@tarojs/components'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { tabState } from '../../utils/tabState'
-import noDataImg from '../../assets/noData.png'
 import ziliaoIcon from '../../assets/ziliao.svg'
+import starIcon from '../../assets/xiaoxinyuan-star.png'
 import './index.scss'
 
 interface Tool {
@@ -44,6 +44,11 @@ export default function ToolsPage () {
     tabState.setVisible(true)
     tabState.setSelected(1)
   })
+
+  // 小星愿入口（跳转目标待定，先占位）
+  const goXiaoxinyuan = () => {
+    Taro.showToast({ title: '敬请期待', icon: 'none' })
+  }
 
   return (
     <View className='page-container'>
@@ -100,12 +105,15 @@ export default function ToolsPage () {
 
         <View className='section-header'>
           <Text className='section-title'>大家在看</Text>
-          <Text className='section-more'>栏目介绍 {'>'}</Text>
         </View>
 
-        <View className='empty-state'>
-          <Image className='empty-img' src={noDataImg} mode='aspectFit' />
-          <Text className='empty-text'>暂无内容</Text>
+        <View className='entry-card' onClick={goXiaoxinyuan}>
+          <Image className='entry-icon' src={starIcon} mode='aspectFit' />
+          <View className='entry-info'>
+            <Text className='entry-name'>小星愿</Text>
+            <Text className='entry-desc'>记录孩子努力的过程</Text>
+          </View>
+          <Text className='entry-arrow'>›</Text>
         </View>
       </View>
     </View>
