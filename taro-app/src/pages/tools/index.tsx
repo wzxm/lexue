@@ -1,6 +1,7 @@
 import { View, Text, Image } from '@tarojs/components'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { tabState } from '../../utils/tabState'
+import { ROUTES } from '../../constants/routes'
 import ziliaoIcon from '../../assets/ziliao.svg'
 import starIcon from '../../assets/xiaoxinyuan-star.png'
 import './index.scss'
@@ -45,9 +46,9 @@ export default function ToolsPage () {
     tabState.setSelected(1)
   })
 
-  // 小星愿入口（跳转目标待定，先占位）
+  // 小星愿入口
   const goXiaoxinyuan = () => {
-    Taro.showToast({ title: '敬请期待', icon: 'none' })
+    Taro.navigateTo({ url: ROUTES.WISH_HOME })
   }
 
   return (

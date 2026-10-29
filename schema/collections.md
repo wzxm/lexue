@@ -183,3 +183,52 @@
 | tags | array | 否 | 标签列表（string[]） |
 | created_at | date | 是 | 创建时间 |
 | updated_at | date | 是 | 最后更新时间 |
+
+---
+
+## wish_accounts（小星愿账户）
+
+| 字段名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| _id | string | 是 | 云数据库自动生成的文档 ID |
+| student_id | string | 是 | 关联的学生 ID，唯一 |
+| balance | number | 是 | 当前星愿币余额（非负整数） |
+| version | number | 是 | 乐观锁版本号，每次余额变动递增 |
+| created_at | date | 是 | 创建时间 |
+| updated_at | date | 是 | 最后更新时间 |
+
+---
+
+## wish_quick_items（小星愿快捷项）
+
+| 字段名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| _id | string | 是 | 云数据库自动生成的文档 ID |
+| student_id | string | 是 | 关联的学生 ID |
+| type | string | 是 | 类型：`earn`（赚取）或 `spend`（消费） |
+| name | string | 是 | 快捷项名称（最长 20 字符） |
+| amount | number | 是 | 金额（1-999 的正整数） |
+| sort_order | number | 是 | 排序序号（整数，越小越靠前） |
+| created_at | date | 是 | 创建时间 |
+| updated_at | date | 是 | 最后更新时间 |
+
+---
+
+## wish_transactions（小星愿交易记录）
+
+| 字段名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| _id | string | 是 | 云数据库自动生成的文档 ID |
+| student_id | string | 是 | 关联的学生 ID |
+| type | string | 是 | 类型：`earn`（赚取）或 `spend`（消费） |
+| amount | number | 是 | 金额（总是正整数） |
+| reason | string | 是 | 原因/说明（最长 50 字符） |
+| operator_user_id | string | 是 | 操作人 userId |
+| request_id | string | 是 | 请求幂等 ID（客户端生成，唯一） |
+| created_at | date | 是 | 创建时间 |
+
+> **小星愿说明**：
+> - 固定币名「星愿币」
+> - 每个学生一个账户，家庭成员共同管理
+> - 交易记录只增不改，不支持撤销/编辑（需纠正时通过反向交易）
+> - 删除学生时级联删除该学生的 `wish_accounts`、`wish_quick_items`、`wish_transactions`

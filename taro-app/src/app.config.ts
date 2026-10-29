@@ -18,6 +18,9 @@ export default defineAppConfig({
     'pages/tools/index',
     'pages/schedule-manage/index',
     'pages/invite-accept/index',
+    'pages/wish/home/index',
+    'pages/wish/ledger/index',
+    'pages/wish/quick-items/index',
   ],
   tabBar: {
     custom: true,

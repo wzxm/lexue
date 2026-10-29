@@ -18,4 +18,7 @@ export const ROUTES = {
   TOOLS: '/pages/tools/index',
   SCHEDULE_MANAGE: '/pages/schedule-manage/index',
   INVITE_ACCEPT: '/pages/invite-accept/index',
+  WISH_HOME: '/pages/wish/home/index',
+  WISH_LEDGER: '/pages/wish/ledger/index',
+  WISH_QUICK_ITEMS: '/pages/wish/quick-items/index',
 } as const;

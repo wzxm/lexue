@@ -77,6 +77,11 @@ npm run create-indexes -- --skip-drop
 | `reminders` | `course_id` | 否 | `course_id` 升序 |
 | `course_name_presets` | `user_created_at` | 否 | `user_id` ↑ → `created_at` ↓ |
 | `course_name_presets` | `user_grade_name` | 是 | `user_id` ↑ → `grade_level` ↑ → `name` ↑ |
+| `wish_accounts` | `student_id` | 是 | `student_id` 升序 |
+| `wish_quick_items` | `student_type_sort` | 否 | `student_id` ↑ → `type` ↑ → `sort_order` ↑ |
+| `wish_transactions` | `request_id` | 是 | `request_id` 升序 |
+| `wish_transactions` | `student_created_at` | 否 | `student_id` ↑ → `created_at` ↓ |
+| `wish_transactions` | `student_type_created` | 否 | `student_id` ↑ → `type` ↑ → `created_at` ↓ |
 
 `tools_data` 暂无业务查询，暂不建索引。
 
