@@ -10,7 +10,7 @@ import './index.scss';
 
 export default function WishHomePage() {
   const { students, currentStudent, setCurrentStudent } = useStudentStore();
-  const { homeData, setHomeData, currentStudentId, setCurrentStudentId } = useWishStore();
+  const { homeData, setHomeData, currentStudentId, setCurrentStudentId, quickItems, setQuickItems } = useWishStore();
 
   const [loading, setLoading] = useState(false);
   const [showIntro, setShowIntro] = useState(false);
@@ -22,6 +22,8 @@ export default function WishHomePage() {
   const [spendReason, setSpendReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [currentYearMonth, setCurrentYearMonth] = useState(new Date().toISOString().substring(0, 7));
+  const [calendarData, setCalendarData] = useState<Record<string, { has_earn: boolean; has_spend: boolean }>>({});
 
   // 可管理的学生（owner 或家庭成员）
   const manageableStudents = students.filter(
@@ -41,15 +43,28 @@ export default function WishHomePage() {
   useEffect(() => {
     if (activeStudent && activeStudent.id !== currentStudentId) {
       setCurrentStudentId(activeStudent.id);
-      loadHomeData(activeStudent.id);
+      const today = new Date().toISOString().split('T')[0];
+      const thisMonth = new Date().toISOString().substring(0, 7);
+      setSelectedDate(today);
+      setCurrentYearMonth(thisMonth);
+      loadHomeData(activeStudent.id, today);
+      loadCalendarData(activeStudent.id, thisMonth);
     }
   }, [activeStudent?.id]);
 
   useDidShow(() => {
     if (activeStudent) {
-      loadHomeData(activeStudent.id);
+      loadHomeData(activeStudent.id, selectedDate);
+      loadCalendarData(activeStudent.id, currentYearMonth);
     }
   });
+
+  // 月份变化时加载日历数据
+  useEffect(() => {
+    if (activeStudent) {
+      loadCalendarData(activeStudent.id, currentYearMonth);
+    }
+  }, [currentYearMonth, activeStudent?.id]);
 
   const checkIntro = async () => {
     try {
@@ -72,12 +87,13 @@ export default function WishHomePage() {
     }
   };
 
-  const loadHomeData = async (studentId: string) => {
+  const loadHomeData = async (studentId: string, date?: string) => {
     if (!studentId) return;
     setLoading(true);
     try {
       await wishApi.ensureAccount(studentId);
-      const data = await wishApi.getHome(studentId, selectedDate);
+      const targetDate = date || selectedDate;
+      const data = await wishApi.getHome(studentId, targetDate);
       setHomeData(data);
     } catch (e: any) {
       Taro.showToast({ title: e.message || '加载失败', icon: 'none' });
@@ -86,20 +102,48 @@ export default function WishHomePage() {
     }
   };
 
+  const loadCalendarData = async (studentId: string, yearMonth: string) => {
+    if (!studentId || !yearMonth) return;
+    try {
+      const result = await wishApi.getMonthCalendar(studentId, yearMonth);
+      setCalendarData(result.days || {});
+    } catch (e: any) {
+      console.error('loadCalendarData error:', e);
+    }
+  };
+
   const handleSelectStudent = (student: Student) => {
     setCurrentStudent(student);
   };
 
-  const handleEarn = () => {
+  const handleEarn = async () => {
     setShowEarnSheet(true);
     setEarnAmount('');
     setEarnReason('');
+    // 加载快捷项
+    if (activeStudent) {
+      try {
+        const items = await wishApi.listQuickItems(activeStudent.id);
+        setQuickItems(items);
+      } catch (e) {
+        console.error('loadQuickItems error:', e);
+      }
+    }
   };
 
-  const handleSpend = () => {
+  const handleSpend = async () => {
     setShowSpendSheet(true);
     setSpendAmount('');
     setSpendReason('');
+    // 加载快捷项
+    if (activeStudent) {
+      try {
+        const items = await wishApi.listQuickItems(activeStudent.id);
+        setQuickItems(items);
+      } catch (e) {
+        console.error('loadQuickItems error:', e);
+      }
+    }
   };
 
   const handleSubmitEarn = async () => {
@@ -120,7 +164,8 @@ export default function WishHomePage() {
       await wishApi.addTransaction(activeStudent.id, 'earn', amount, earnReason, requestId);
       Taro.showToast({ title: '赚取成功', icon: 'success' });
       setShowEarnSheet(false);
-      loadHomeData(activeStudent.id);
+      loadHomeData(activeStudent.id, selectedDate);
+      loadCalendarData(activeStudent.id, currentYearMonth);
     } catch (e: any) {
       Taro.showToast({ title: e.message || '操作失败', icon: 'none' });
     } finally {
@@ -146,12 +191,89 @@ export default function WishHomePage() {
       await wishApi.addTransaction(activeStudent.id, 'spend', amount, spendReason, requestId);
       Taro.showToast({ title: '消费成功', icon: 'success' });
       setShowSpendSheet(false);
-      loadHomeData(activeStudent.id);
+      loadHomeData(activeStudent.id, selectedDate);
+      loadCalendarData(activeStudent.id, currentYearMonth);
     } catch (e: any) {
       Taro.showToast({ title: e.message || '操作失败', icon: 'none' });
     } finally {
       setSubmitting(false);
     }
+  };
+
+  // 快捷项点击处理
+  const handleQuickItemClick = (type: WishTransactionType, name: string, amount: number) => {
+    if (type === 'earn') {
+      setEarnAmount(amount.toString());
+      setEarnReason(name);
+    } else {
+      setSpendAmount(amount.toString());
+      setSpendReason(name);
+    }
+  };
+
+  // 日历导航
+  const handlePrevMonth = () => {
+    const [year, month] = currentYearMonth.split('-').map(Number);
+    const prevDate = new Date(year, month - 2, 1);
+    const prevYM = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
+    setCurrentYearMonth(prevYM);
+  };
+
+  const handleNextMonth = () => {
+    const [year, month] = currentYearMonth.split('-').map(Number);
+    const nextDate = new Date(year, month, 1);
+    const nextYM = `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, '0')}`;
+    setCurrentYearMonth(nextYM);
+  };
+
+  const handleDateClick = (date: string) => {
+    setSelectedDate(date);
+    if (activeStudent) {
+      loadHomeData(activeStudent.id, date);
+    }
+  };
+
+  // 生成日历格子
+  const generateCalendarDays = () => {
+    const [year, month] = currentYearMonth.split('-').map(Number);
+    const firstDay = new Date(year, month - 1, 1);
+    const lastDay = new Date(year, month, 0);
+    const daysInMonth = lastDay.getDate();
+    const startWeekday = firstDay.getDay() || 7; // 0=Sunday -> 7
+
+    const days: Array<{ date: string; day: number; hasEarn: boolean; hasSpend: boolean; isToday: boolean; isSelected: boolean }> = [];
+    
+    // 填充前面的空格
+    for (let i = 1; i < startWeekday; i++) {
+      days.push({ date: '', day: 0, hasEarn: false, hasSpend: false, isToday: false, isSelected: false });
+    }
+
+    // 填充日期
+    const today = new Date().toISOString().split('T')[0];
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const dayData = calendarData[dateStr] || { has_earn: false, has_spend: false };
+      days.push({
+        date: dateStr,
+        day,
+        hasEarn: dayData.has_earn,
+        hasSpend: dayData.has_spend,
+        isToday: dateStr === today,
+        isSelected: dateStr === selectedDate,
+      });
+    }
+
+    return days;
+  };
+
+  // 格式化明细标题
+  const formatDayTitle = () => {
+    const today = new Date().toISOString().split('T')[0];
+    if (selectedDate === today) {
+      return '今日明细';
+    }
+    const date = new Date(selectedDate);
+    return `${date.getMonth() + 1}月${date.getDate()}日明细`;
   };
 
   const goToLedger = () => {
@@ -220,16 +342,53 @@ export default function WishHomePage() {
         </View>
       </View>
 
+      {/* 月历 */}
+      <View className='calendar-section'>
+        <View className='calendar-header'>
+          <Text className='prev-month' onClick={handlePrevMonth}>‹</Text>
+          <Text className='calendar-title'>{currentYearMonth}</Text>
+          <Text className='next-month' onClick={handleNextMonth}>›</Text>
+        </View>
+        <View className='calendar-weekdays'>
+          {['一', '二', '三', '四', '五', '六', '日'].map(day => (
+            <View key={day} className='weekday-label'>
+              <Text>{day}</Text>
+            </View>
+          ))}
+        </View>
+        <View className='calendar-days'>
+          {generateCalendarDays().map((item, idx) => (
+            <View
+              key={idx}
+              className={`calendar-day ${item.date ? '' : 'empty'} ${item.isToday ? 'today' : ''} ${item.isSelected ? 'selected' : ''}`}
+              onClick={() => item.date && handleDateClick(item.date)}
+            >
+              {item.date && (
+                <>
+                  <Text className='day-number'>{item.day}</Text>
+                  {(item.hasEarn || item.hasSpend) && (
+                    <View className='day-dots'>
+                      {item.hasEarn && <View className='dot earn' />}
+                      {item.hasSpend && <View className='dot spend' />}
+                    </View>
+                  )}
+                </>
+              )}
+            </View>
+          ))}
+        </View>
+      </View>
+
       {/* 操作按钮 */}
       <View className='action-buttons'>
         <Button className='earn-btn' onClick={handleEarn}>赚取</Button>
         <Button className='spend-btn' onClick={handleSpend}>消费</Button>
       </View>
 
-      {/* 今日明细 */}
+      {/* 当日明细 */}
       <View className='today-section'>
         <View className='section-header'>
-          <Text className='section-title'>今日明细</Text>
+          <Text className='section-title'>{formatDayTitle()}</Text>
           <Text className='view-all' onClick={goToLedger}>查看全部 ›</Text>
         </View>
         {homeData?.dayItems && homeData.dayItems.length > 0 ? (
@@ -289,6 +448,32 @@ export default function WishHomePage() {
               <Text className='sheet-close' onClick={() => setShowEarnSheet(false)}>✕</Text>
             </View>
             <View className='sheet-body'>
+              {/* 快捷项 */}
+              {quickItems.filter(item => item.type === 'earn').length > 0 ? (
+                <View className='quick-items-section'>
+                  <Text className='quick-items-label'>快捷项</Text>
+                  <View className='quick-items-list'>
+                    {quickItems
+                      .filter(item => item.type === 'earn')
+                      .map(item => (
+                        <View
+                          key={item.id}
+                          className='quick-item-chip'
+                          onClick={() => handleQuickItemClick('earn', item.name, item.amount)}
+                        >
+                          <Text className='chip-text'>{item.name} {item.amount}</Text>
+                        </View>
+                      ))}
+                  </View>
+                </View>
+              ) : (
+                <View className='no-quick-items'>
+                  <Text className='hint-text'>暂无快捷项，去</Text>
+                  <Text className='hint-link' onClick={goToQuickItems}>管理页</Text>
+                  <Text className='hint-text'>添加</Text>
+                </View>
+              )}
+              
               <View className='form-item'>
                 <Text className='form-label'>数量</Text>
                 <input
@@ -330,6 +515,32 @@ export default function WishHomePage() {
               <Text className='sheet-close' onClick={() => setShowSpendSheet(false)}>✕</Text>
             </View>
             <View className='sheet-body'>
+              {/* 快捷项 */}
+              {quickItems.filter(item => item.type === 'spend').length > 0 ? (
+                <View className='quick-items-section'>
+                  <Text className='quick-items-label'>快捷项</Text>
+                  <View className='quick-items-list'>
+                    {quickItems
+                      .filter(item => item.type === 'spend')
+                      .map(item => (
+                        <View
+                          key={item.id}
+                          className='quick-item-chip'
+                          onClick={() => handleQuickItemClick('spend', item.name, item.amount)}
+                        >
+                          <Text className='chip-text'>{item.name} {item.amount}</Text>
+                        </View>
+                      ))}
+                  </View>
+                </View>
+              ) : (
+                <View className='no-quick-items'>
+                  <Text className='hint-text'>暂无快捷项，去</Text>
+                  <Text className='hint-link' onClick={goToQuickItems}>管理页</Text>
+                  <Text className='hint-text'>添加</Text>
+                </View>
+              )}
+
               <View className='form-item'>
                 <Text className='form-label'>数量</Text>
                 <input
