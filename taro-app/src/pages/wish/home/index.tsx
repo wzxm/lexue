@@ -12,6 +12,15 @@ export default function WishHomePage() {
   const { students, currentStudent, setCurrentStudent } = useStudentStore();
   const { homeData, setHomeData, currentStudentId, setCurrentStudentId, quickItems, setQuickItems } = useWishStore();
 
+  // 自定义导航（透明）：与 tools 页同一套胶囊避让算法
+  const windowInfo = Taro.getWindowInfo();
+  const menuButtonInfo = Taro.getMenuButtonBoundingClientRect();
+  const statusBarHeight = windowInfo.statusBarHeight || 0;
+  const rawNavBar =
+    (menuButtonInfo.top - statusBarHeight) * 2 + (menuButtonInfo.height || 0);
+  const navBarHeight =
+    Number.isFinite(rawNavBar) && rawNavBar > 0 ? rawNavBar : 88;
+
   const [loading, setLoading] = useState(false);
   const [showIntro, setShowIntro] = useState(false);
   const [showEarnSheet, setShowEarnSheet] = useState(false);
@@ -290,6 +299,39 @@ export default function WishHomePage() {
     Taro.navigateTo({ url: ROUTES.STUDENT_FORM });
   };
 
+  const goBack = () => {
+    if (Taro.getCurrentPages().length > 1) {
+      Taro.navigateBack();
+    } else {
+      Taro.reLaunch({ url: ROUTES.TOOLS });
+    }
+  };
+
+  // 统计标签月份：跟随所选日期所在月份
+  const statMonth = Number(selectedDate.split('-')[1]) || 1;
+
+  // 罐内星星：按余额计算数量与排布（存钱罐视觉）
+  const jarStars = (() => {
+    const balance = Math.max(0, homeData?.balance ?? 0);
+    const count = Math.min(48, Math.ceil(Math.sqrt(balance) * 3));
+    const colors = ['#FFD36C', '#FFC5AD', '#D5B2F5', '#FFE593'];
+    return Array.from({ length: count }, (_, i) => {
+      const col = i % 7;
+      const row = Math.floor(i / 7);
+      return {
+        left: 6 + col * 12.6 + (row % 2) * 3.2 + (i % 3) * 0.8,
+        bottom: 7 + row * 12.4 + (i % 4) * 1.2,
+        size: 26 + (i % 3) * 6,
+        color: colors[i % 4],
+        rotate: (i % 5) * 14 - 28,
+        // 伪随机（按序号确定）：延迟 0~900ms、时长 1.1~1.8s、两套掉落轨迹交替
+        delay: Math.round((((i * 137) % 100) / 100) * 900),
+        duration: (1.1 + (((i * 61) % 100) / 100) * 0.7).toFixed(2),
+        anim: i % 2 === 0 ? 'star-drop-a' : 'star-drop-b',
+      };
+    });
+  })();
+
   if (!activeStudent) {
     return (
       <View className='wish-home-page'>
@@ -303,10 +345,20 @@ export default function WishHomePage() {
 
   return (
     <View className='wish-home-page'>
-      {/* 顶部学生选择 */}
-      {manageableStudents.length > 1 && (
-        <View className='student-selector'>
-          <ScrollView scrollX className='student-list'>
+      {/* 自定义导航区（透明，融入页面渐变背景） */}
+      <View className='custom-nav' style={{ height: `${statusBarHeight + navBarHeight}px` }}>
+        <View className='nav-inner' style={{ paddingTop: `${menuButtonInfo.top}px` }}>
+          <View className='nav-back' onClick={goBack}>
+            <Text className='nav-back-icon'>‹</Text>
+          </View>
+          <Text className='nav-title'>小星愿</Text>
+        </View>
+      </View>
+
+      {/* 学生行：横向滑动选择，右侧固定「管理快捷项」按钮 */}
+      <View className='student-row'>
+        <ScrollView scrollX enhanced showScrollbar={false} className='student-scroll'>
+          <View className='student-chips'>
             {manageableStudents.map(s => (
               <View
                 key={s.id}
@@ -316,34 +368,71 @@ export default function WishHomePage() {
                 <Text className='student-name'>{s.name}</Text>
               </View>
             ))}
-          </ScrollView>
+          </View>
+        </ScrollView>
+        <View className='quick-manage-btn' onClick={goToQuickItems}>
+          <Text className='quick-manage-icon'>⚙️</Text>
         </View>
-      )}
+      </View>
 
-      {/* 罐子视觉 + 余额 */}
-      <View className='jar-section'>
-        <View className='jar-container'>
-          <View className='jar-body'>
+      {/* 星愿储蓄罐 */}
+      <View className='jar-hero'>
+        <Text className='hero-eyebrow'>每天攒一点，努力会发光✨</Text>
+        <View className='jar-flex'>
+          <View className='jar-wrap'>
+          <View className='jar-lid' />
+          <View className='jar-jar'>
+            <View className='jar-stars'>
+              {jarStars.map((st, i) => (
+                <View
+                  key={`${activeStudent?.id ?? 'star'}-${i}`}
+                  className='jar-star'
+                  style={{
+                    left: `${st.left}%`,
+                    bottom: `${st.bottom}%`,
+                    animation: `${st.anim} ${st.duration}s cubic-bezier(0.3, 0.7, 0.4, 1) ${st.delay}ms backwards`
+                  }}
+                >
+                  <Text
+                    className='jar-star-icon'
+                    style={{
+                      fontSize: `${st.size}rpx`,
+                      color: st.color,
+                      transform: `rotate(${st.rotate}deg)`
+                    }}
+                  >★</Text>
+                </View>
+              ))}
+            </View>
+            <View className='jar-shine' />
+          </View>
+        </View>
+          <View className='balance-side'>
             <Text className='balance'>{homeData?.balance ?? 0}</Text>
             <Text className='coin-label'>星愿币</Text>
+            <Text className='ledger-link' onClick={goToLedger}>存取明细 ›</Text>
           </View>
         </View>
       </View>
 
-      {/* 本月统计 */}
-      <View className='month-stats'>
-        <View className='stat-item earn'>
-          <Text className='stat-label'>本月赚取</Text>
-          <Text className='stat-value'>+{homeData?.monthEarn ?? 0}</Text>
-        </View>
-        <View className='stat-item spend'>
-          <Text className='stat-label'>本月消费</Text>
-          <Text className='stat-value'>-{homeData?.monthSpend ?? 0}</Text>
-        </View>
+      {/* 存取按钮 */}
+      <View className='action-buttons'>
+        <Button className='action-btn earn-btn' onClick={handleEarn}>存</Button>
+        <Button className='action-btn spend-btn' onClick={handleSpend}>取</Button>
       </View>
 
-      {/* 月历 */}
+      {/* 月历（顶部融合本月存取统计） */}
       <View className='calendar-section'>
+        <View className='calendar-stats'>
+          <View className='calendar-stat earn'>
+            <Text className='calendar-stat-label'>{statMonth}月共存</Text>
+            <Text className='calendar-stat-value'>+{homeData?.monthEarn ?? 0}</Text>
+          </View>
+          <View className='calendar-stat spend'>
+            <Text className='calendar-stat-label'>{statMonth}月共取</Text>
+            <Text className='calendar-stat-value'>-{homeData?.monthSpend ?? 0}</Text>
+          </View>
+        </View>
         <View className='calendar-header'>
           <Text className='prev-month' onClick={handlePrevMonth}>‹</Text>
           <Text className='calendar-title'>{currentYearMonth}</Text>
@@ -379,12 +468,6 @@ export default function WishHomePage() {
         </View>
       </View>
 
-      {/* 操作按钮 */}
-      <View className='action-buttons'>
-        <Button className='earn-btn' onClick={handleEarn}>赚取</Button>
-        <Button className='spend-btn' onClick={handleSpend}>消费</Button>
-      </View>
-
       {/* 当日明细 */}
       <View className='today-section'>
         <View className='section-header'>
@@ -417,13 +500,6 @@ export default function WishHomePage() {
         )}
       </View>
 
-      {/* 快捷入口 */}
-      <View className='quick-links'>
-        <View className='link-item' onClick={goToQuickItems}>
-          <Text className='link-text'>管理快捷项</Text>
-        </View>
-      </View>
-
       {/* 引导弹窗 */}
       {showIntro && (
         <View className='intro-modal'>
@@ -444,7 +520,7 @@ export default function WishHomePage() {
         <View className='sheet-mask' onClick={() => setShowEarnSheet(false)}>
           <View className='sheet-content' onClick={(e) => e.stopPropagation()}>
             <View className='sheet-header'>
-              <Text className='sheet-title'>赚取星愿币</Text>
+              <Text className='sheet-title'>存入</Text>
               <Text className='sheet-close' onClick={() => setShowEarnSheet(false)}>✕</Text>
             </View>
             <View className='sheet-body'>
@@ -511,7 +587,7 @@ export default function WishHomePage() {
         <View className='sheet-mask' onClick={() => setShowSpendSheet(false)}>
           <View className='sheet-content' onClick={(e) => e.stopPropagation()}>
             <View className='sheet-header'>
-              <Text className='sheet-title'>消费星愿币</Text>
+              <Text className='sheet-title'>取出</Text>
               <Text className='sheet-close' onClick={() => setShowSpendSheet(false)}>✕</Text>
             </View>
             <View className='sheet-body'>
