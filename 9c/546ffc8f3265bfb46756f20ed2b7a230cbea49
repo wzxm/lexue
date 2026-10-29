@@ -1,0 +1,18 @@
+cloudfunctions/wish/config.json
+  h_1811824342b47a 4-6
+cloudfunctions/wish/index.js
+  h_1811824342b47a 508-510
+schema/indexes.config.json
+  h_1811824342b47a 9-50,52-54,59-78,88-99,106-113,120-127,134-141,153-160,167-174,182-191,196-213,219-224,235-246,249-258,268-275,278-287,293-302,307-314,326-343,346-355,365-372,379-475
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9c546ffc8f3265bfb46756f20ed2b7a230cbea49",
+  "prompts": {},
+  "humans": {
+    "h_1811824342b47a": {
+      "author": "王哲 <wangzhe@mogulinker.com>"
+    }
+  }
+}
