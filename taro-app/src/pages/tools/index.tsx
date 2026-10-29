@@ -23,14 +23,11 @@ interface Tool {
 const GUSHICI_APP_ID = 'wxd0f3bc0fc13834d2'
 
 const openMiniProgram = (appId: string, path = '') => {
-  Taro.navigateToMiniProgram({
-    appId,
-    path,
-    fail: (err) => {
-      const errMsg = err?.errMsg || ''
-      if (errMsg.includes('cancel')) return
-      Taro.showToast({ title: '打开失败，请稍后再试', icon: 'none' })
-    }
+  return Taro.navigateToMiniProgram({ appId, path }).catch((err) => {
+    // Taro 在调用失败时也会 reject；用户取消应静默结束。
+    const errMsg = String(err?.errMsg || err?.message || '')
+    if (/cancel|user\s+den(?:y|ied)|用户取消/i.test(errMsg)) return
+    Taro.showToast({ title: '打开失败，请稍后再试', icon: 'none' })
   })
 }
 

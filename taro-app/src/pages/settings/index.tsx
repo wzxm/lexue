@@ -191,7 +191,7 @@ export default function SettingsPage() {
 
   const handleGuestBannerClick = useCallback(() => {
     const { appId, path } = SETTINGS_AD_BANNER_MINI_PROGRAM
-    Taro.navigateToMiniProgram({ appId, path, fail: () => {} })
+    Taro.navigateToMiniProgram({ appId, path }).catch(() => {})
   }, [])
 
   return (
