@@ -6,24 +6,76 @@
     "_creator_openid_1"
   ],
   "legacy_drop_by_collection": {
-    "users": ["_openid_1"],
-    "sms_codes": ["phone", "request_openid"],
-    "students": ["owner_user_id", "owner_openid"],
-    "schedules": ["owner_user_id", "owner_openid", "shared_with.openid"],
-    "courses": ["schedule_id", "owner_openid", "student_id"],
-    "families": ["owner_user_id", "member_user_id", "owner_openid", "member_openid"],
-    "share_codes": ["code"],
-    "reminders": ["openid", "user_id"],
-    "course_name_presets": ["openid", "user_id"],
-    "tools_data": ["openid", "user_id"]
+    "users": [
+      "_openid_1"
+    ],
+    "sms_codes": [
+      "phone",
+      "request_openid"
+    ],
+    "students": [
+      "owner_user_id",
+      "owner_openid"
+    ],
+    "schedules": [
+      "owner_user_id",
+      "owner_openid",
+      "shared_with.openid"
+    ],
+    "courses": [
+      "schedule_id",
+      "owner_openid",
+      "student_id"
+    ],
+    "families": [
+      "owner_user_id",
+      "member_user_id",
+      "owner_openid",
+      "member_openid"
+    ],
+    "share_codes": [
+      "code"
+    ],
+    "reminders": [
+      "openid",
+      "user_id"
+    ],
+    "course_name_presets": [
+      "openid",
+      "user_id"
+    ],
+    "tools_data": [
+      "openid",
+      "user_id"
+    ]
   },
-  "legacy_only_collections": ["tools_data"],
+  "legacy_only_collections": [
+    "tools_data"
+  ],
   "collections": [
     {
       "name": "users",
       "indexes": [
-        { "name": "phone", "unique": true, "keys": [{ "name": "phone", "direction": "1" }] },
-        { "name": "openid", "unique": true, "keys": [{ "name": "openid", "direction": "1" }] }
+        {
+          "name": "phone",
+          "unique": true,
+          "keys": [
+            {
+              "name": "phone",
+              "direction": "1"
+            }
+          ]
+        },
+        {
+          "name": "openid",
+          "unique": true,
+          "keys": [
+            {
+              "name": "openid",
+              "direction": "1"
+            }
+          ]
+        }
       ]
     },
     {
@@ -33,33 +85,60 @@
           "name": "phone_status_expires_at",
           "unique": false,
           "keys": [
-            { "name": "phone", "direction": "1" },
-            { "name": "status", "direction": "1" },
-            { "name": "expires_at", "direction": "-1" }
+            {
+              "name": "phone",
+              "direction": "1"
+            },
+            {
+              "name": "status",
+              "direction": "1"
+            },
+            {
+              "name": "expires_at",
+              "direction": "-1"
+            }
           ]
         },
         {
           "name": "phone_createTime",
           "unique": false,
           "keys": [
-            { "name": "phone", "direction": "1" },
-            { "name": "createTime", "direction": "-1" }
+            {
+              "name": "phone",
+              "direction": "1"
+            },
+            {
+              "name": "createTime",
+              "direction": "-1"
+            }
           ]
         },
         {
           "name": "request_openid_createTime",
           "unique": false,
           "keys": [
-            { "name": "request_openid", "direction": "1" },
-            { "name": "createTime", "direction": "-1" }
+            {
+              "name": "request_openid",
+              "direction": "1"
+            },
+            {
+              "name": "createTime",
+              "direction": "-1"
+            }
           ]
         },
         {
           "name": "status_expires_at",
           "unique": false,
           "keys": [
-            { "name": "status", "direction": "1" },
-            { "name": "expires_at", "direction": "1" }
+            {
+              "name": "status",
+              "direction": "1"
+            },
+            {
+              "name": "expires_at",
+              "direction": "1"
+            }
           ]
         }
       ]
@@ -71,16 +150,28 @@
           "name": "owner_createTime",
           "unique": false,
           "keys": [
-            { "name": "owner_user_id", "direction": "1" },
-            { "name": "createTime", "direction": "-1" }
+            {
+              "name": "owner_user_id",
+              "direction": "1"
+            },
+            {
+              "name": "createTime",
+              "direction": "-1"
+            }
           ]
         },
         {
           "name": "owner_source",
           "unique": false,
           "keys": [
-            { "name": "owner_user_id", "direction": "1" },
-            { "name": "source", "direction": "1" }
+            {
+              "name": "owner_user_id",
+              "direction": "1"
+            },
+            {
+              "name": "source",
+              "direction": "1"
+            }
           ]
         }
       ]
@@ -88,20 +179,49 @@
     {
       "name": "schedules",
       "indexes": [
-        { "name": "invite_code", "unique": true, "keys": [{ "name": "invite_code", "direction": "1" }] },
+        {
+          "name": "invite_code",
+          "unique": true,
+          "keys": [
+            {
+              "name": "invite_code",
+              "direction": "1"
+            }
+          ]
+        },
         {
           "name": "owner_createTime",
           "unique": false,
           "keys": [
-            { "name": "owner_user_id", "direction": "1" },
-            { "name": "createTime", "direction": "-1" }
+            {
+              "name": "owner_user_id",
+              "direction": "1"
+            },
+            {
+              "name": "createTime",
+              "direction": "-1"
+            }
           ]
         },
-        { "name": "student_id", "unique": false, "keys": [{ "name": "student_id", "direction": "1" }] },
+        {
+          "name": "student_id",
+          "unique": false,
+          "keys": [
+            {
+              "name": "student_id",
+              "direction": "1"
+            }
+          ]
+        },
         {
           "name": "shared_user",
           "unique": false,
-          "keys": [{ "name": "shared_with.user_id", "direction": "1" }]
+          "keys": [
+            {
+              "name": "shared_with.user_id",
+              "direction": "1"
+            }
+          ]
         }
       ]
     },
@@ -112,12 +232,30 @@
           "name": "schedule_day_slot",
           "unique": false,
           "keys": [
-            { "name": "schedule_id", "direction": "1" },
-            { "name": "day_of_week", "direction": "1" },
-            { "name": "slot", "direction": "1" }
+            {
+              "name": "schedule_id",
+              "direction": "1"
+            },
+            {
+              "name": "day_of_week",
+              "direction": "1"
+            },
+            {
+              "name": "slot",
+              "direction": "1"
+            }
           ]
         },
-        { "name": "day_of_week", "unique": false, "keys": [{ "name": "day_of_week", "direction": "1" }] }
+        {
+          "name": "day_of_week",
+          "unique": false,
+          "keys": [
+            {
+              "name": "day_of_week",
+              "direction": "1"
+            }
+          ]
+        }
       ]
     },
     {
@@ -127,23 +265,53 @@
           "name": "owner_member",
           "unique": true,
           "keys": [
-            { "name": "owner_user_id", "direction": "1" },
-            { "name": "member_user_id", "direction": "1" }
+            {
+              "name": "owner_user_id",
+              "direction": "1"
+            },
+            {
+              "name": "member_user_id",
+              "direction": "1"
+            }
           ]
         },
-        { "name": "member_user_id", "unique": false, "keys": [{ "name": "member_user_id", "direction": "1" }] }
+        {
+          "name": "member_user_id",
+          "unique": false,
+          "keys": [
+            {
+              "name": "member_user_id",
+              "direction": "1"
+            }
+          ]
+        }
       ]
     },
     {
       "name": "share_codes",
       "indexes": [
-        { "name": "code", "unique": true, "keys": [{ "name": "code", "direction": "1" }] },
+        {
+          "name": "code",
+          "unique": true,
+          "keys": [
+            {
+              "name": "code",
+              "direction": "1"
+            }
+          ]
+        },
         {
           "name": "schedule_type",
           "unique": false,
           "keys": [
-            { "name": "schedule_id", "direction": "1" },
-            { "name": "type", "direction": "1" }
+            {
+              "name": "schedule_id",
+              "direction": "1"
+            },
+            {
+              "name": "type",
+              "direction": "1"
+            }
           ]
         }
       ]
@@ -155,12 +323,36 @@
           "name": "status_trigger_time",
           "unique": false,
           "keys": [
-            { "name": "status", "direction": "1" },
-            { "name": "trigger_time", "direction": "1" }
+            {
+              "name": "status",
+              "direction": "1"
+            },
+            {
+              "name": "trigger_time",
+              "direction": "1"
+            }
           ]
         },
-        { "name": "schedule_id", "unique": false, "keys": [{ "name": "schedule_id", "direction": "1" }] },
-        { "name": "course_id", "unique": false, "keys": [{ "name": "course_id", "direction": "1" }] }
+        {
+          "name": "schedule_id",
+          "unique": false,
+          "keys": [
+            {
+              "name": "schedule_id",
+              "direction": "1"
+            }
+          ]
+        },
+        {
+          "name": "course_id",
+          "unique": false,
+          "keys": [
+            {
+              "name": "course_id",
+              "direction": "1"
+            }
+          ]
+        }
       ]
     },
     {
@@ -170,17 +362,117 @@
           "name": "user_created_at",
           "unique": false,
           "keys": [
-            { "name": "user_id", "direction": "1" },
-            { "name": "created_at", "direction": "-1" }
+            {
+              "name": "user_id",
+              "direction": "1"
+            },
+            {
+              "name": "created_at",
+              "direction": "-1"
+            }
           ]
         },
         {
           "name": "user_grade_name",
           "unique": true,
           "keys": [
-            { "name": "user_id", "direction": "1" },
-            { "name": "grade_level", "direction": "1" },
-            { "name": "name", "direction": "1" }
+            {
+              "name": "user_id",
+              "direction": "1"
+            },
+            {
+              "name": "grade_level",
+              "direction": "1"
+            },
+            {
+              "name": "name",
+              "direction": "1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "wish_accounts",
+      "indexes": [
+        {
+          "name": "student_id",
+          "unique": true,
+          "keys": [
+            {
+              "name": "student_id",
+              "direction": "1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "wish_quick_items",
+      "indexes": [
+        {
+          "name": "student_type_sort",
+          "unique": false,
+          "keys": [
+            {
+              "name": "student_id",
+              "direction": "1"
+            },
+            {
+              "name": "type",
+              "direction": "1"
+            },
+            {
+              "name": "sort_order",
+              "direction": "1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "wish_transactions",
+      "indexes": [
+        {
+          "name": "request_id",
+          "unique": true,
+          "keys": [
+            {
+              "name": "request_id",
+              "direction": "1"
+            }
+          ]
+        },
+        {
+          "name": "student_created_at",
+          "unique": false,
+          "keys": [
+            {
+              "name": "student_id",
+              "direction": "1"
+            },
+            {
+              "name": "created_at",
+              "direction": "-1"
+            }
+          ]
+        },
+        {
+          "name": "student_type_created",
+          "unique": false,
+          "keys": [
+            {
+              "name": "student_id",
+              "direction": "1"
+            },
+            {
+              "name": "type",
+              "direction": "1"
+            },
+            {
+              "name": "created_at",
+              "direction": "-1"
+            }
           ]
         }
       ]

@@ -505,7 +505,8 @@ exports.main = async (event, context) => {
     }
   } catch (e) {
     if (e && typeof e.code === 'number') return e;
-    logger.error(FN, event.action, e);
-    return fail(ERRORS.INTERNAL_ERROR);
+    const detail = (e && (e.message || e.errMsg || e.errmsg)) || String(e);
+    logger.error(FN, event && event.action, e);
+    return fail(ERRORS.INTERNAL_ERROR, detail);
   }
 };
