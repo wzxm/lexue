@@ -1,26 +1,32 @@
 .wish-ledger-page {
   min-height: 100vh;
-  background: #f5f5f5;
+  background: var(--color-bg);
   display: flex;
   flex-direction: column;
 
   .tabs {
     display: flex;
-    background: white;
+    background: var(--color-card);
     padding: 16px 32px;
-    border-bottom: 1px solid #e5e5e5;
+    border-bottom: 1px solid var(--color-border-light);
+    box-shadow: var(--shadow-card);
+    position: sticky;
+    top: 0;
+    z-index: 10;
 
     .tab-item {
       flex: 1;
       text-align: center;
       padding: 16px 0;
       font-size: 30px;
-      color: #999;
+      color: var(--color-text-gray);
       position: relative;
+      font-weight: 500;
+      transition: color 0.3s;
 
       &.active {
-        color: #6366f1;
-        font-weight: bold;
+        color: var(--color-primary);
+        font-weight: 600;
 
         &::after {
           content: '';
@@ -30,7 +36,7 @@
           transform: translateX(-50%);
           width: 60px;
           height: 4px;
-          background: #6366f1;
+          background: var(--color-primary);
           border-radius: 2px;
         }
       }
@@ -43,42 +49,64 @@
 
     .transaction-list {
       .transaction-item {
-        background: white;
-        border-radius: 16px;
-        padding: 32px;
+        background: var(--color-card);
+        border-radius: var(--radius-md);
+        padding: 28px 24px;
         margin-bottom: 16px;
         display: flex;
         justify-content: space-between;
         align-items: center;
+        box-shadow: var(--shadow-card);
+        position: relative;
+        overflow: hidden;
+
+        &::before {
+          content: '';
+          position: absolute;
+          left: 0;
+          top: 0;
+          bottom: 0;
+          width: 4px;
+        }
+
+        &.earn::before {
+          background: var(--color-primary);
+        }
+
+        &.spend::before {
+          background: #fbbf24;
+        }
 
         .item-main {
           flex: 1;
+          padding-left: 16px;
 
           .item-amount {
             display: block;
-            font-size: 40px;
-            font-weight: bold;
-            margin-bottom: 12px;
+            font-size: 38px;
+            font-weight: 600;
+            margin-bottom: 10px;
 
             &.earn {
-              color: #10b981;
+              color: var(--color-primary);
             }
 
             &.spend {
-              color: #f59e0b;
+              color: #d97706;
             }
           }
 
           .item-reason {
             display: block;
             font-size: 28px;
-            color: #666;
+            color: var(--color-text-main);
+            font-weight: 500;
           }
         }
 
         .item-time {
           font-size: 24px;
-          color: #999;
+          color: var(--color-text-gray);
           margin-left: 16px;
         }
       }
@@ -87,18 +115,34 @@
       .no-more {
         text-align: center;
         padding: 32px 0;
-        font-size: 28px;
-        color: #999;
+        font-size: 26px;
+        color: var(--color-text-muted);
       }
     }
 
     .empty-state {
-      padding: 200px 0;
+      padding: 200px 0 100px;
       text-align: center;
 
+      .empty-icon {
+        font-size: 80px;
+        margin-bottom: 24px;
+        opacity: 0.3;
+      }
+
       .empty-text {
-        font-size: 32px;
-        color: #999;
+        font-size: 28px;
+        color: var(--color-text-muted);
+        margin-bottom: 32px;
+      }
+
+      .back-home-btn {
+        background: var(--color-primary);
+        color: white;
+        border-radius: var(--radius-pill);
+        padding: 20px 48px;
+        font-size: 28px;
+        display: inline-block;
       }
     }
   }

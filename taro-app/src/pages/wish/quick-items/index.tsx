@@ -10,6 +10,7 @@ export default function WishQuickItemsPage() {
   const [items, setItems] = useState<WishQuickItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
   useLoad((options) => {
     const sid = options.studentId || '';
@@ -38,6 +39,7 @@ export default function WishQuickItemsPage() {
       amount: 1,
     };
     setItems([...items, newItem]);
+    setEditingIndex(items.length);
   };
 
   const handleRemoveItem = (index: number) => {
@@ -83,27 +85,50 @@ export default function WishQuickItemsPage() {
           <Text className='section-title'>赚取项</Text>
           <Button className='add-btn earn' onClick={() => handleAddItem('earn')}>+ 添加</Button>
         </View>
-        {earnItems.map((item, idx) => {
-          const globalIdx = items.findIndex(i => i === item);
-          return (
-            <View key={globalIdx} className='item-row'>
-              <Input
-                className='item-name'
-                placeholder='名称'
-                value={item.name}
-                onInput={(e) => handleUpdateItem(globalIdx, 'name', e.detail.value)}
-              />
-              <Input
-                className='item-amount'
-                type='number'
-                placeholder='1-999'
-                value={item.amount.toString()}
-                onInput={(e) => handleUpdateItem(globalIdx, 'amount', parseInt(e.detail.value, 10) || 1)}
-              />
-              <Text className='item-remove' onClick={() => handleRemoveItem(globalIdx)}>删除</Text>
-            </View>
-          );
-        })}
+        {earnItems.length > 0 ? (
+          <View className='items-grid'>
+            {earnItems.map((item, idx) => {
+              const globalIdx = items.findIndex(i => i === item);
+              return (
+                <View
+                  key={globalIdx}
+                  className={`item-card ${editingIndex === globalIdx ? 'editing' : ''}`}
+                  onClick={() => setEditingIndex(globalIdx)}
+                >
+                  <View className='card-header'>
+                    <Text className='card-type earn'>赚取</Text>
+                    <Text className='card-remove' onClick={(e) => {
+                      e.stopPropagation();
+                      handleRemoveItem(globalIdx);
+                    }}>删除</Text>
+                  </View>
+                  <Input
+                    className='card-name'
+                    placeholder='名称（如：洗碗）'
+                    value={item.name}
+                    onInput={(e) => handleUpdateItem(globalIdx, 'name', e.detail.value)}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                  <View className='card-amount-wrapper'>
+                    <Text className='amount-label'>金额</Text>
+                    <Input
+                      className='card-amount'
+                      type='number'
+                      placeholder='1-999'
+                      value={item.amount.toString()}
+                      onInput={(e) => handleUpdateItem(globalIdx, 'amount', parseInt(e.detail.value, 10) || 1)}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        ) : (
+          <View className='empty-hint'>
+            <Text>点击右上角添加快捷项</Text>
+          </View>
+        )}
       </View>
 
       <View className='section'>
@@ -111,27 +136,50 @@ export default function WishQuickItemsPage() {
           <Text className='section-title'>消费项</Text>
           <Button className='add-btn spend' onClick={() => handleAddItem('spend')}>+ 添加</Button>
         </View>
-        {spendItems.map((item, idx) => {
-          const globalIdx = items.findIndex(i => i === item);
-          return (
-            <View key={globalIdx} className='item-row'>
-              <Input
-                className='item-name'
-                placeholder='名称'
-                value={item.name}
-                onInput={(e) => handleUpdateItem(globalIdx, 'name', e.detail.value)}
-              />
-              <Input
-                className='item-amount'
-                type='number'
-                placeholder='1-999'
-                value={item.amount.toString()}
-                onInput={(e) => handleUpdateItem(globalIdx, 'amount', parseInt(e.detail.value, 10) || 1)}
-              />
-              <Text className='item-remove' onClick={() => handleRemoveItem(globalIdx)}>删除</Text>
-            </View>
-          );
-        })}
+        {spendItems.length > 0 ? (
+          <View className='items-grid'>
+            {spendItems.map((item, idx) => {
+              const globalIdx = items.findIndex(i => i === item);
+              return (
+                <View
+                  key={globalIdx}
+                  className={`item-card ${editingIndex === globalIdx ? 'editing' : ''}`}
+                  onClick={() => setEditingIndex(globalIdx)}
+                >
+                  <View className='card-header'>
+                    <Text className='card-type spend'>消费</Text>
+                    <Text className='card-remove' onClick={(e) => {
+                      e.stopPropagation();
+                      handleRemoveItem(globalIdx);
+                    }}>删除</Text>
+                  </View>
+                  <Input
+                    className='card-name'
+                    placeholder='名称（如：冰淇淋）'
+                    value={item.name}
+                    onInput={(e) => handleUpdateItem(globalIdx, 'name', e.detail.value)}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                  <View className='card-amount-wrapper'>
+                    <Text className='amount-label'>金额</Text>
+                    <Input
+                      className='card-amount'
+                      type='number'
+                      placeholder='1-999'
+                      value={item.amount.toString()}
+                      onInput={(e) => handleUpdateItem(globalIdx, 'amount', parseInt(e.detail.value, 10) || 1)}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        ) : (
+          <View className='empty-hint'>
+            <Text>点击右上角添加快捷项</Text>
+          </View>
+        )}
       </View>
 
       <View className='footer'>

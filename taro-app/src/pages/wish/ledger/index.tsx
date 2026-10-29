@@ -1,7 +1,8 @@
-import { View, Text, ScrollView } from '@tarojs/components';
+import { View, Text, ScrollView, Button } from '@tarojs/components';
 import Taro, { useLoad } from '@tarojs/taro';
 import { useState } from 'react';
 import * as wishApi from '../../../api/wish.api';
+import { ROUTES } from '../../../constants/routes';
 import type { WishTransaction, WishTransactionType } from '../../../types/index';
 import './index.scss';
 
@@ -114,7 +115,7 @@ export default function WishLedgerPage() {
         {items.length > 0 ? (
           <View className='transaction-list'>
             {items.map(item => (
-              <View key={item.transactionId} className='transaction-item'>
+              <View key={item.transactionId} className={`transaction-item ${item.type}`}>
                 <View className='item-main'>
                   <Text className={`item-amount ${item.type}`}>
                     {item.type === 'earn' ? '+' : '-'}{item.amount}
@@ -131,7 +132,15 @@ export default function WishLedgerPage() {
           </View>
         ) : (
           <View className='empty-state'>
-            <Text className='empty-text'>暂无记录</Text>
+            <Text className='empty-icon'>📝</Text>
+            <Text className='empty-text'>
+              {activeTab === 'all' ? '还没有记录\n开始记录孩子的成长吧' : 
+               activeTab === 'earn' ? '还没有赚取记录\n完成任务可以赚取星愿币' :
+               '还没有消费记录\n可以用星愿币兑换奖励'}
+            </Text>
+            <Button className='back-home-btn' onClick={() => Taro.navigateBack()}>
+              回首页
+            </Button>
           </View>
         )}
       </ScrollView>

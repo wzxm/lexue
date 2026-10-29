@@ -24,6 +24,7 @@ export default function WishHomePage() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [currentYearMonth, setCurrentYearMonth] = useState(new Date().toISOString().substring(0, 7));
   const [calendarData, setCalendarData] = useState<Record<string, { has_earn: boolean; has_spend: boolean }>>({});
+  const [calendarExpanded, setCalendarExpanded] = useState(false);
 
   // 可管理的学生（owner 或家庭成员）
   const manageableStudents = students.filter(
@@ -49,13 +50,24 @@ export default function WishHomePage() {
       setCurrentYearMonth(thisMonth);
       loadHomeData(activeStudent.id, today);
       loadCalendarData(activeStudent.id, thisMonth);
+      loadQuickItems(activeStudent.id);
     }
   }, [activeStudent?.id]);
+
+  const loadQuickItems = async (studentId: string) => {
+    try {
+      const items = await wishApi.listQuickItems(studentId);
+      setQuickItems(items);
+    } catch (e) {
+      console.error('loadQuickItems error:', e);
+    }
+  };
 
   useDidShow(() => {
     if (activeStudent) {
       loadHomeData(activeStudent.id, selectedDate);
       loadCalendarData(activeStudent.id, currentYearMonth);
+      loadQuickItems(activeStudent.id);
     }
   });
 
@@ -320,69 +332,111 @@ export default function WishHomePage() {
         </View>
       )}
 
-      {/* 罐子视觉 + 余额 */}
-      <View className='jar-section'>
-        <View className='jar-container'>
-          <View className='jar-body'>
+      {/* 英雄区 */}
+      <View className='hero-section'>
+        <View className='hero-card'>
+          <View className='balance-area'>
+            <View className='coin-icon' />
             <Text className='balance'>{homeData?.balance ?? 0}</Text>
             <Text className='coin-label'>星愿币</Text>
           </View>
-        </View>
-      </View>
-
-      {/* 本月统计 */}
-      <View className='month-stats'>
-        <View className='stat-item earn'>
-          <Text className='stat-label'>本月赚取</Text>
-          <Text className='stat-value'>+{homeData?.monthEarn ?? 0}</Text>
-        </View>
-        <View className='stat-item spend'>
-          <Text className='stat-label'>本月消费</Text>
-          <Text className='stat-value'>-{homeData?.monthSpend ?? 0}</Text>
-        </View>
-      </View>
-
-      {/* 月历 */}
-      <View className='calendar-section'>
-        <View className='calendar-header'>
-          <Text className='prev-month' onClick={handlePrevMonth}>‹</Text>
-          <Text className='calendar-title'>{currentYearMonth}</Text>
-          <Text className='next-month' onClick={handleNextMonth}>›</Text>
-        </View>
-        <View className='calendar-weekdays'>
-          {['一', '二', '三', '四', '五', '六', '日'].map(day => (
-            <View key={day} className='weekday-label'>
-              <Text>{day}</Text>
+          <View className='progress-area'>
+            <View className='progress-item'>
+              <Text className='progress-label'>本月赚取</Text>
+              <Text className='progress-value earn'>+{homeData?.monthEarn ?? 0}</Text>
             </View>
-          ))}
-        </View>
-        <View className='calendar-days'>
-          {generateCalendarDays().map((item, idx) => (
-            <View
-              key={idx}
-              className={`calendar-day ${item.date ? '' : 'empty'} ${item.isToday ? 'today' : ''} ${item.isSelected ? 'selected' : ''}`}
-              onClick={() => item.date && handleDateClick(item.date)}
-            >
-              {item.date && (
-                <>
-                  <Text className='day-number'>{item.day}</Text>
-                  {(item.hasEarn || item.hasSpend) && (
-                    <View className='day-dots'>
-                      {item.hasEarn && <View className='dot earn' />}
-                      {item.hasSpend && <View className='dot spend' />}
-                    </View>
-                  )}
-                </>
-              )}
+            <View className='progress-item'>
+              <Text className='progress-label'>本月消费</Text>
+              <Text className='progress-value spend'>-{homeData?.monthSpend ?? 0}</Text>
             </View>
-          ))}
+          </View>
         </View>
       </View>
 
       {/* 操作按钮 */}
       <View className='action-buttons'>
         <Button className='earn-btn' onClick={handleEarn}>赚取</Button>
-        <Button className='spend-btn' onClick={handleSpend}>消费</Button>
+        <Button className='spend-btn' onClick={handleSpend}>兑换</Button>
+      </View>
+
+      {/* 快捷操作 */}
+      <View className='quick-actions'>
+        <View className='quick-header'>
+          <Text className='quick-title'>快捷操作</Text>
+          <Text className='quick-manage' onClick={goToQuickItems}>管理 ›</Text>
+        </View>
+        {quickItems.length > 0 ? (
+          <View className='quick-chips'>
+            {quickItems.slice(0, 6).map((item) => (
+              <View
+                key={item.id || `${item.type}-${item.name}`}
+                className={`quick-chip ${item.type}`}
+                onClick={() => {
+                  if (item.type === 'earn') {
+                    handleEarn();
+                    setTimeout(() => handleQuickItemClick('earn', item.name, item.amount), 100);
+                  } else {
+                    handleSpend();
+                    setTimeout(() => handleQuickItemClick('spend', item.name, item.amount), 100);
+                  }
+                }}
+              >
+                <Text className='chip-name'>{item.name}</Text>
+                <Text className='chip-amount'>{item.amount}</Text>
+              </View>
+            ))}
+          </View>
+        ) : (
+          <View className='quick-empty'>
+            <Text>暂无快捷项，点击右上角管理添加</Text>
+          </View>
+        )}
+      </View>
+
+      {/* 月历（可折叠） */}
+      <View className='calendar-section'>
+        <View className='calendar-toggle' onClick={() => setCalendarExpanded(!calendarExpanded)}>
+          <View className='toggle-left'>
+            <Text className='toggle-title'>本月概览</Text>
+            <Text className='toggle-subtitle'>{currentYearMonth}</Text>
+          </View>
+          <Text className={`toggle-icon ${calendarExpanded ? 'expanded' : ''}`}>▼</Text>
+        </View>
+        <View className={`calendar-content ${calendarExpanded ? '' : 'collapsed'}`}>
+          <View className='calendar-header'>
+            <Text className='prev-month' onClick={handlePrevMonth}>‹</Text>
+            <Text className='calendar-title'>{currentYearMonth}</Text>
+            <Text className='next-month' onClick={handleNextMonth}>›</Text>
+          </View>
+          <View className='calendar-weekdays'>
+            {['一', '二', '三', '四', '五', '六', '日'].map(day => (
+              <View key={day} className='weekday-label'>
+                <Text>{day}</Text>
+              </View>
+            ))}
+          </View>
+          <View className='calendar-days'>
+            {generateCalendarDays().map((item, idx) => (
+              <View
+                key={idx}
+                className={`calendar-day ${item.date ? '' : 'empty'} ${item.isToday ? 'today' : ''} ${item.isSelected ? 'selected' : ''}`}
+                onClick={() => item.date && handleDateClick(item.date)}
+              >
+                {item.date && (
+                  <>
+                    <Text className='day-number'>{item.day}</Text>
+                    {(item.hasEarn || item.hasSpend) && (
+                      <View className='day-dots'>
+                        {item.hasEarn && <View className='dot earn' />}
+                        {item.hasSpend && <View className='dot spend' />}
+                      </View>
+                    )}
+                  </>
+                )}
+              </View>
+            ))}
+          </View>
+        </View>
       </View>
 
       {/* 当日明细 */}
@@ -394,7 +448,7 @@ export default function WishHomePage() {
         {homeData?.dayItems && homeData.dayItems.length > 0 ? (
           <View className='transaction-list'>
             {homeData.dayItems.map(item => (
-              <View key={item.transactionId} className='transaction-item'>
+              <View key={item.transactionId} className={`transaction-item ${item.type}`}>
                 <View className='item-left'>
                   <Text className={`item-type ${item.type}`}>
                     {item.type === 'earn' ? '+' : '-'}{item.amount}
@@ -415,13 +469,6 @@ export default function WishHomePage() {
             <Text className='empty-text'>今天还没有记录</Text>
           </View>
         )}
-      </View>
-
-      {/* 快捷入口 */}
-      <View className='quick-links'>
-        <View className='link-item' onClick={goToQuickItems}>
-          <Text className='link-text'>管理快捷项</Text>
-        </View>
       </View>
 
       {/* 引导弹窗 */}

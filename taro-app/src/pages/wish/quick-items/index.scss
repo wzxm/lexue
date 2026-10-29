@@ -1,77 +1,168 @@
 .wish-quick-items-page {
   min-height: 100vh;
-  background: #f5f5f5;
+  background: var(--color-bg);
   padding: 32px;
   padding-bottom: 160px;
 
   .section {
-    background: white;
-    border-radius: 24px;
-    padding: 32px;
     margin-bottom: 32px;
 
     .section-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 24px;
+      margin-bottom: 16px;
 
       .section-title {
         font-size: 32px;
-        font-weight: bold;
-        color: #333;
+        font-weight: 600;
+        color: var(--color-text-main);
       }
 
       .add-btn {
-        padding: 12px 24px;
-        border-radius: 24px;
+        padding: 14px 28px;
+        border-radius: var(--radius-pill);
         font-size: 26px;
         color: white;
+        font-weight: 500;
 
         &.earn {
-          background: #10b981;
+          background: var(--color-primary);
         }
 
         &.spend {
-          background: #f59e0b;
+          background: #fbbf24;
         }
       }
     }
 
-    .item-row {
+    .items-grid {
       display: flex;
-      align-items: center;
-      padding: 20px 0;
-      border-bottom: 1px solid #f5f5f5;
+      flex-wrap: wrap;
+      gap: 16px;
 
-      &:last-child {
-        border-bottom: none;
+      .item-card {
+        background: var(--color-card);
+        border-radius: var(--radius-md);
+        padding: 24px;
+        width: calc(50% - 8px);
+        box-shadow: var(--shadow-card);
+        border: 2px solid transparent;
+        transition: all 0.3s;
+        position: relative;
+
+        &.selected {
+          border-color: var(--color-primary);
+          box-shadow: var(--shadow-primary);
+        }
+
+        &.editing {
+          border-color: var(--color-primary-light);
+          background: var(--color-primary-subtle);
+        }
+
+        .card-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          margin-bottom: 16px;
+
+          .card-type {
+            padding: 6px 16px;
+            border-radius: var(--radius-pill);
+            font-size: 22px;
+            font-weight: 500;
+
+            &.earn {
+              background: rgba(59, 130, 246, 0.1);
+              color: var(--color-primary);
+            }
+
+            &.spend {
+              background: rgba(251, 191, 36, 0.15);
+              color: #d97706;
+            }
+          }
+
+          .card-remove {
+            font-size: 24px;
+            color: var(--color-danger);
+            padding: 4px 12px;
+            font-weight: 500;
+          }
+        }
+
+        .card-name {
+          width: 100%;
+          padding: 16px;
+          font-size: 28px;
+          border: 1px solid var(--color-border);
+          border-radius: var(--radius-sm);
+          background: var(--color-card);
+          margin-bottom: 12px;
+          color: var(--color-text-main);
+
+          &:focus {
+            border-color: var(--color-primary);
+          }
+        }
+
+        .card-amount-wrapper {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+
+          .amount-label {
+            font-size: 26px;
+            color: var(--color-text-sub);
+            font-weight: 500;
+          }
+
+          .card-amount {
+            flex: 1;
+            padding: 16px;
+            font-size: 28px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-sm);
+            background: var(--color-card);
+            text-align: center;
+            color: var(--color-text-main);
+
+            &:focus {
+              border-color: var(--color-primary);
+            }
+          }
+        }
       }
 
-      .item-name {
-        flex: 1;
-        padding: 16px;
-        font-size: 28px;
-        background: #f9f9f9;
-        border-radius: 12px;
-        margin-right: 16px;
-      }
+      .add-card {
+        background: transparent;
+        border: 2px dashed var(--color-border);
+        border-radius: var(--radius-md);
+        width: calc(50% - 8px);
+        min-height: 200px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: var(--color-text-gray);
 
-      .item-amount {
-        width: 150px;
-        padding: 16px;
-        font-size: 28px;
-        background: #f9f9f9;
-        border-radius: 12px;
-        margin-right: 16px;
-        text-align: center;
-      }
+        .add-icon {
+          font-size: 48px;
+          margin-bottom: 8px;
+        }
 
-      .item-remove {
-        font-size: 26px;
-        color: #ef4444;
-        padding: 0 16px;
+        .add-text {
+          font-size: 24px;
+        }
       }
+    }
+
+    .empty-hint {
+      text-align: center;
+      padding: 80px 0;
+      color: var(--color-text-muted);
+      font-size: 26px;
     }
   }
 
@@ -80,19 +171,23 @@
     bottom: 0;
     left: 0;
     right: 0;
-    padding: 32px;
-    background: white;
-    border-top: 1px solid #e5e5e5;
+    padding: 24px 32px;
+    background: var(--color-card);
+    border-top: 1px solid var(--color-border-light);
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
+    z-index: 10;
 
     .save-btn {
-      background: #6366f1;
+      background: var(--color-primary);
       color: white;
-      border-radius: 48px;
-      padding: 28px 0;
-      font-size: 32px;
+      border-radius: var(--radius-md);
+      padding: 32px 0;
+      font-size: 34px;
+      font-weight: 600;
+      box-shadow: var(--shadow-card);
 
       &:disabled {
-        opacity: 0.6;
+        opacity: 0.5;
       }
     }
   }
