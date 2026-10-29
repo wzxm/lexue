@@ -103,6 +103,8 @@ export async function listTransactions(
       type: WishTransactionType;
       amount: number;
       reason: string;
+      operator_name?: string;
+      operator_avatar?: string;
       created_at: string | Date;
     }>;
     next_cursor: string | null;
@@ -115,6 +117,8 @@ export async function listTransactions(
       type: item.type,
       amount: item.amount,
       reason: item.reason,
+      operatorName: item.operator_name,
+      operatorAvatar: item.operator_avatar,
       createdAt: typeof item.created_at === 'string' ? new Date(item.created_at) : item.created_at,
     })),
     nextCursor: result.next_cursor,

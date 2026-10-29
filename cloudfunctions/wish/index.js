@@ -354,13 +354,43 @@ async function listTransactions(userId, payload) {
     ? list[list.length - 1].created_at.toISOString()
     : null;
 
-  const result = list.map(tx => ({
-    transaction_id: tx._id,
-    type: tx.type,
-    amount: tx.amount,
-    reason: tx.reason || '',
-    created_at: tx.created_at,
-  }));
+  // 查询操作人昵称 & 家庭角色 & 头像（与 getHome 口径一致）
+  const operatorIds = Array.from(new Set(list.map(tx => tx.operator_user_id).filter(Boolean)));
+  const operators = operatorIds.length > 0 ? await db.getList('users', { _id: _.in(operatorIds) }) : [];
+  const operatorMap = {};
+  operators.forEach(u => { operatorMap[u._id] = u; });
+
+  const student = check.student;
+  const ownerId = student.owner_user_id || '';
+  const familyRelations = ownerId && operatorIds.length > 0
+    ? await db.getList('families', { owner_user_id: ownerId, member_user_id: _.in(operatorIds) })
+    : [];
+  const familyRoleMap = {};
+  familyRelations.forEach(rel => {
+    if (rel.member_user_id) familyRoleMap[rel.member_user_id] = rel.role || '';
+  });
+
+  const result = list.map(tx => {
+    const opUser = operatorMap[tx.operator_user_id] || {};
+    let operatorName = '家庭成员';
+    if (tx.operator_user_id === ownerId) {
+      operatorName = familyRoleMap[tx.operator_user_id] || opUser.nickname || '家庭成员';
+    } else if (familyRoleMap[tx.operator_user_id]) {
+      operatorName = familyRoleMap[tx.operator_user_id];
+    } else if (opUser.nickname) {
+      operatorName = opUser.nickname;
+    }
+
+    return {
+      transaction_id: tx._id,
+      type: tx.type,
+      amount: tx.amount,
+      reason: tx.reason || '',
+      operator_name: operatorName,
+      operator_avatar: opUser.avatar_url || '',
+      created_at: tx.created_at,
+    };
+  });
 
   return success({ items: result, next_cursor: nextCursor, has_more: hasMore });
 }

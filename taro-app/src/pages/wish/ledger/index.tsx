@@ -1,4 +1,4 @@
-import { View, Text, ScrollView } from '@tarojs/components';
+import { View, Text, Image, ScrollView } from '@tarojs/components';
 import Taro, { useLoad } from '@tarojs/taro';
 import { useState } from 'react';
 import * as wishApi from '../../../api/wish.api';
@@ -115,13 +115,27 @@ export default function WishLedgerPage() {
           <View className='transaction-list'>
             {items.map(item => (
               <View key={item.transactionId} className='transaction-item'>
+                {item.operatorAvatar ? (
+                  <Image
+                    className='operator-avatar'
+                    src={item.operatorAvatar}
+                    mode='aspectFill'
+                  />
+                ) : (
+                  <View className='operator-avatar operator-avatar--fallback'>
+                    <Text>{(item.operatorName || '家').charAt(0)}</Text>
+                  </View>
+                )}
                 <View className='item-main'>
-                  <Text className={`item-amount ${item.type}`}>
-                    {item.type === 'earn' ? '+' : '-'}{item.amount}
-                  </Text>
                   <Text className='item-reason'>{item.reason}</Text>
+                  <View className='item-meta'>
+                    <Text className='item-operator'>{item.operatorName || '家庭成员'}</Text>
+                    <Text className='item-time'>{formatDate(item.createdAt)}</Text>
+                  </View>
                 </View>
-                <Text className='item-time'>{formatDate(item.createdAt)}</Text>
+                <Text className={`item-amount ${item.type}`}>
+                  {item.type === 'earn' ? '+' : '-'}{item.amount}
+                </Text>
               </View>
             ))}
             {loading && <View className='loading'>加载中...</View>}

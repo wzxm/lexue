@@ -182,6 +182,7 @@ export interface WishTransaction {
   amount: number;
   reason: string;
   operatorName?: string;
+  operatorAvatar?: string;
   createdAt: Date;
 }
 

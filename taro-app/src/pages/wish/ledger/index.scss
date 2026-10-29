@@ -1,105 +1,148 @@
 .wish-ledger-page {
   min-height: 100vh;
-  background: #f5f5f5;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
+  background:
+    radial-gradient(circle at 12% 6%, rgba(255, 231, 241, 0.9), transparent 34%),
+    radial-gradient(circle at 88% 14%, rgba(232, 226, 255, 0.9), transparent 36%),
+    #FCF9FF;
 
   .tabs {
     display: flex;
-    background: white;
-    padding: 16px 32px;
-    border-bottom: 1px solid #e5e5e5;
+    background: rgba(255, 253, 254, 0.96);
+    padding: 16rpx 32rpx;
+    border-bottom: 2rpx solid #F1EAFA;
 
     .tab-item {
       flex: 1;
       text-align: center;
-      padding: 16px 0;
-      font-size: 30px;
-      color: #999;
+      padding: 16rpx 0;
+      font-size: 30rpx;
+      color: #A79AB2;
       position: relative;
 
       &.active {
-        color: #6366f1;
+        color: #9875DC;
         font-weight: bold;
 
         &::after {
           content: '';
           position: absolute;
-          bottom: -16px;
+          bottom: -16rpx;
           left: 50%;
           transform: translateX(-50%);
-          width: 60px;
-          height: 4px;
-          background: #6366f1;
-          border-radius: 2px;
+          width: 60rpx;
+          height: 6rpx;
+          background: #9875DC;
+          border-radius: 4rpx;
         }
       }
     }
   }
 
+  /* padding 不放在 scroll-view 上（小程序滚动容器右侧 padding 不生效，导致贴边遮挡） */
   .transaction-scroll {
     flex: 1;
-    padding: 32px;
+  }
 
-    .transaction-list {
-      .transaction-item {
-        background: white;
-        border-radius: 16px;
-        padding: 32px;
-        margin-bottom: 16px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
+  .transaction-list {
+    padding: 24rpx 32rpx calc(48rpx + env(safe-area-inset-bottom));
+    box-sizing: border-box;
+  }
 
-        .item-main {
-          flex: 1;
+  .transaction-item {
+    background: rgba(255, 253, 254, 0.98);
+    border: 2rpx solid #F1EAFA;
+    border-radius: 28rpx;
+    padding: 28rpx;
+    margin-bottom: 20rpx;
+    display: flex;
+    align-items: center;
+    gap: 20rpx;
+    box-shadow: 0 10rpx 26rpx rgba(117, 99, 150, 0.07);
+  }
 
-          .item-amount {
-            display: block;
-            font-size: 40px;
-            font-weight: bold;
-            margin-bottom: 12px;
+  .operator-avatar {
+    width: 72rpx;
+    height: 72rpx;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: #F4EFFB;
 
-            &.earn {
-              color: #10b981;
-            }
+    &--fallback {
+      display: flex;
+      align-items: center;
+      justify-content: center;
 
-            &.spend {
-              color: #f59e0b;
-            }
-          }
-
-          .item-reason {
-            display: block;
-            font-size: 28px;
-            color: #666;
-          }
-        }
-
-        .item-time {
-          font-size: 24px;
-          color: #999;
-          margin-left: 16px;
-        }
-      }
-
-      .loading,
-      .no-more {
-        text-align: center;
-        padding: 32px 0;
-        font-size: 28px;
-        color: #999;
+      text {
+        font-size: 28rpx;
+        font-weight: 800;
+        color: #9875DC;
       }
     }
+  }
 
-    .empty-state {
-      padding: 200px 0;
-      text-align: center;
+  .item-main {
+    flex: 1;
+    min-width: 0;
 
-      .empty-text {
-        font-size: 32px;
-        color: #999;
+    .item-reason {
+      display: block;
+      font-size: 28rpx;
+      font-weight: 700;
+      color: #5A4A6E;
+      margin-bottom: 8rpx;
+    }
+
+    .item-meta {
+      display: flex;
+      align-items: center;
+      gap: 12rpx;
+
+      .item-operator {
+        font-size: 22rpx;
+        color: #8A7A9E;
+        font-weight: 600;
+      }
+
+      .item-time {
+        font-size: 22rpx;
+        color: #B3A5BF;
       }
     }
+  }
+
+  .item-amount {
+    flex-shrink: 0;
+    font-size: 36rpx;
+    font-weight: 900;
+
+    &.earn {
+      color: #3DBD95;
+    }
+
+    &.spend {
+      color: #E392AC;
+    }
+  }
+
+  .loading,
+  .no-more {
+    text-align: center;
+    padding: 24rpx 0;
+    font-size: 24rpx;
+    color: #B3A5BF;
+  }
+
+  .empty-state {
+    display: flex;
+    justify-content: center;
+    padding-top: 200rpx;
+  }
+
+  .empty-text {
+    font-size: 28rpx;
+    color: #9C86AD;
   }
 }
