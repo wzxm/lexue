@@ -26,7 +26,11 @@ const openMiniProgram = (appId: string, path = '') => {
   Taro.navigateToMiniProgram({
     appId,
     path,
-    fail: () => Taro.showToast({ title: '打开失败，请稍后再试', icon: 'none' })
+    fail: (err) => {
+      const errMsg = err?.errMsg || ''
+      if (errMsg.includes('cancel')) return
+      Taro.showToast({ title: '打开失败，请稍后再试', icon: 'none' })
+    }
   })
 }
 
