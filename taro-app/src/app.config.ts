@@ -21,6 +21,7 @@ export default defineAppConfig({
     'pages/wish/home/index',
     'pages/wish/ledger/index',
     'pages/wish/quick-items/index',
+    'pages/webview/index',
   ],
   tabBar: {
     custom: true,
