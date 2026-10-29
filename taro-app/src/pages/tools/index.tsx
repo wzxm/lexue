@@ -2,8 +2,12 @@ import { View, Text, Image } from '@tarojs/components'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { tabState } from '../../utils/tabState'
 import { ROUTES } from '../../constants/routes'
-import ziliaoIcon from '../../assets/ziliao.svg'
+import gushiciIcon from '../../assets/gushici.png'
+import xuepingxianIcon from '../../assets/xuepingxian.png'
+import aiIcon from '../../assets/ai.png'
+import saomiaoIcon from '../../assets/saomiao.png'
 import starIcon from '../../assets/xiaoxinyuan-star.png'
+import aiQimengIcon from '../../assets/ai-qimeng.png'
 import './index.scss'
 
 interface Tool {
@@ -12,23 +16,49 @@ interface Tool {
   imgIcon?: string
   bgColor: string
   iconColor?: string
+  onClick?: () => void
+}
+
+// 「古诗词」小程序 AppID（wx 开头，拿到后填入即可跳转）
+const GUSHICI_APP_ID = 'wxd0f3bc0fc13834d2'
+
+const openMiniProgram = (appId: string, path = '') => {
+  Taro.navigateToMiniProgram({
+    appId,
+    path,
+    fail: () => Taro.showToast({ title: '打开失败，请稍后再试', icon: 'none' })
+  })
 }
 
 const toolList: Tool[] = [
   {
-    name: '视力测试',
-    icon: '\ue603',
+    name: '扫描试卷',
+    imgIcon: saomiaoIcon,
     bgColor: '#FFF3E0',
-    iconColor: '#FF9800'
+    onClick: () => openMiniProgram('wx9a1d82a0e399420a')
   },
   {
-    name: '学生赛事',
-    icon: '\ue602',
+    name: 'AI启蒙',
+    imgIcon: aiIcon,
     bgColor: '#E3F2FD',
-    iconColor: '#2196F3'
+    onClick: () => {
+      Taro.navigateTo({
+        url: `/pages/webview/index?src=${encodeURIComponent('https://mp.weixin.qq.com/s/w2cyWKW2kIgQfGr6e1Deng')}&title=${encodeURIComponent('AI启蒙')}`
+      })
+    }
   },
-  { name: '学平险', icon: '\ue601', bgColor: '#F3E5F5', iconColor: '#9C27B0' },
-  { name: '练习资料', imgIcon: ziliaoIcon, bgColor: '#FFEBEE' }
+  {
+    name: '学平险',
+    imgIcon: xuepingxianIcon,
+    bgColor: '#F3E5F5',
+    onClick: () => openMiniProgram('wxe186f230ce102b30', 'pages/middle/middle?id=1098274')
+  },
+  {
+    name: '古诗词',
+    imgIcon: gushiciIcon,
+    bgColor: '#FFEBEE',
+    onClick: () => openMiniProgram(GUSHICI_APP_ID)
+  }
 ]
 
 export default function ToolsPage () {
@@ -49,6 +79,13 @@ export default function ToolsPage () {
   // 小星愿入口
   const goXiaoxinyuan = () => {
     Taro.navigateTo({ url: ROUTES.WISH_HOME })
+  }
+
+  // 孩子AI启蒙入口（公众号文章）
+  const goAiQimeng = () => {
+    Taro.navigateTo({
+      url: `/pages/webview/index?src=${encodeURIComponent('https://mp.weixin.qq.com/s/w2cyWKW2kIgQfGr6e1Deng')}&title=${encodeURIComponent('孩子AI启蒙')}`
+    })
   }
 
   return (
@@ -79,7 +116,7 @@ export default function ToolsPage () {
         <View className='section-title'>百宝箱</View>
         <View className='tools-grid'>
           {toolList.map(item => (
-            <View key={item.name} className='tool-card'>
+            <View key={item.name} className='tool-card' onClick={item.onClick}>
               <View
                 className='tool-icon-wrap'
                 // style={{ background: item.bgColor }}
@@ -105,7 +142,7 @@ export default function ToolsPage () {
         </View>
 
         <View className='section-header'>
-          <Text className='section-title'>大家在看</Text>
+          <Text className='section-title'>成长护航</Text>
         </View>
 
         <View className='entry-card' onClick={goXiaoxinyuan}>
@@ -113,6 +150,15 @@ export default function ToolsPage () {
           <View className='entry-info'>
             <Text className='entry-name'>小星愿</Text>
             <Text className='entry-desc'>记录孩子努力的过程</Text>
+          </View>
+          <Text className='entry-arrow'>›</Text>
+        </View>
+
+        <View className='entry-card' onClick={goAiQimeng}>
+          <Image className='entry-icon' src={aiQimengIcon} mode='aspectFit' />
+          <View className='entry-info'>
+            <Text className='entry-name'>孩子AI启蒙</Text>
+            <Text className='entry-desc'>5天打卡计划，萌芽心智</Text>
           </View>
           <Text className='entry-arrow'>›</Text>
         </View>
