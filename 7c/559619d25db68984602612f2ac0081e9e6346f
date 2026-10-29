@@ -1,0 +1,21 @@
+taro-app/src/pages/tools/index.tsx
+  s_e832a6937e3b60::t_7e0735ce69ef1d 26-30
+taro-app/src/pages/settings/index.tsx
+  s_e832a6937e3b60::t_7e0735ce69ef1d 194
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7c559619d25db68984602612f2ac0081e9e6346f",
+  "prompts": {},
+  "sessions": {
+    "s_e832a6937e3b60": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1877e-1df7-7ca2-bde8-17084c751736",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "王哲 <wangzhe@mogulinker.com>"
+    }
+  }
+}
