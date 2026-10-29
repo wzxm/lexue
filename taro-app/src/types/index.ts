@@ -157,3 +157,44 @@ export interface ApiResponse<T> {
 
 // grid[period-1][weekday-1] = Course | null
 export type ScheduleGrid = (Course | null)[][];
+
+// ========== 小星愿类型 ==========
+
+export type WishTransactionType = 'earn' | 'spend';
+
+export interface WishAccount {
+  accountId: string;
+  balance: number;
+  version: number;
+}
+
+export interface WishQuickItem {
+  id?: string;
+  type: WishTransactionType;
+  name: string;
+  amount: number;
+  sortOrder?: number;
+}
+
+export interface WishTransaction {
+  transactionId: string;
+  type: WishTransactionType;
+  amount: number;
+  reason: string;
+  operatorName?: string;
+  createdAt: Date;
+}
+
+export interface WishHomeData {
+  balance: number;
+  version: number;
+  monthEarn: number;
+  monthSpend: number;
+  dayItems: WishTransaction[];
+}
+
+export interface WishMonthCalendar {
+  monthEarn: number;
+  monthSpend: number;
+  days: Record<string, { has_earn: boolean; has_spend: boolean }>;
+}

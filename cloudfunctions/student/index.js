@@ -161,6 +161,11 @@ async function remove(userId, payload) {
   // 删除所有课表
   await db.removeWhere('schedules', { student_id: payload.studentId });
 
+  // 删除小星愿相关数据
+  await db.removeWhere('wish_accounts', { student_id: payload.studentId });
+  await db.removeWhere('wish_quick_items', { student_id: payload.studentId });
+  await db.removeWhere('wish_transactions', { student_id: payload.studentId });
+
   // 最后删学生本体
   await db.remove('students', payload.studentId);
   await cleanupAvatarFile(student.avatar_url);
