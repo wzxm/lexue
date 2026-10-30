@@ -53,7 +53,8 @@
 }
 
 .day-list-bottom-padding {
-  height: 24px;
+  /* 日视图内容区已延伸到 TabBar 之下，这里预留 TabBar 高度，保证最后一张卡片能完整滚出遮挡区 */
+  height: calc(120px + env(safe-area-inset-bottom));
 }
 
 .day-row {

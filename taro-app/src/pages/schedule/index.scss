@@ -209,6 +209,35 @@
   overflow: hidden;
 }
 
+/* 日视图：内容区向下延伸融入页面，底部不再有卡片圆角边界与灰色空隙 */
+.schedule-page--day .schedule-view {
+  padding-bottom: 0;
+}
+
+.schedule-page--day .grid-wrap {
+  border-radius: 32px 32px 0 0;
+}
+
+/* 周视图微调：仅课表页生效，不影响 schedule-ai 复用的预览网格
+   课程名字号 23px，最多换行 3 行、超出才显示省略号；课程格最小高 120px -> 128px */
+.schedule-page .course-chip-name {
+  font-size: 23px;
+  -webkit-line-clamp: 3;
+}
+
+.schedule-page .course-cell {
+  min-height: 128px;
+}
+
+/* 周视图左侧色条宽度：非今天 0px、今天 1px；颜色仍由组件行内样式按列给色（今天蓝/非今天绿） */
+.schedule-page .course-chip {
+  border-left-width: 0;
+}
+
+.schedule-page .course-cell--today .course-chip {
+  border-left-width: 1px;
+}
+
 @keyframes viewFadeIn {
   from {
     opacity: 0;
@@ -221,7 +250,7 @@
 }
 
 .schedule-view {
-  padding: 0 24px;
+  padding: 0;
   position: relative;
   z-index: 1;
   display: flex;
