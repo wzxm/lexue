@@ -520,8 +520,10 @@ export default function WishHomePage() {
         </View>
       )}
 
-      {/* 赚取底部弹窗：常驻挂载、show 类控制显隐，避免每次打开整棵弹层重新挂载造成卡顿 */}
+      {/* 赚取底部弹窗：常驻挂载 + hidden/.show 控制显隐，避免重新挂载卡顿；
+          hidden 是框架级隐藏，能隐藏降级到原生层的 input（仅靠 CSS visibility 会透出占位文案） */}
       <View
+        hidden={!showEarnSheet}
         className={`sheet-mask${showEarnSheet ? ' show' : ''}`}
         catchMove
         onClick={() => setShowEarnSheet(false)}
@@ -592,8 +594,9 @@ export default function WishHomePage() {
           </View>
         </View>
 
-      {/* 消费底部弹窗：同上，常驻挂载 */}
+      {/* 消费底部弹窗：同上 */}
       <View
+        hidden={!showSpendSheet}
         className={`sheet-mask${showSpendSheet ? ' show' : ''}`}
         catchMove
         onClick={() => setShowSpendSheet(false)}

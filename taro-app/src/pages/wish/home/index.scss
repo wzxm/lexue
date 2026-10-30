@@ -714,19 +714,16 @@
   bottom: 0;
   background: rgba(59, 43, 89, 0.5);
   z-index: 1000;
-  display: flex;
+  /* 常驻挂载：默认 display:none，配合节点上的 hidden 属性（框架级隐藏）——
+     两者缺一不可：CSS 负责同层渲染的 input，hidden 兜底降级到原生层的 input，
+     否则隐藏面板的输入框占位文案会透出到打开的面板上（真机已复现） */
+  display: none;
   align-items: flex-end;
-  /* 常驻挂载、.show 类控制显隐：消除条件渲染在打开瞬间整棵弹层挂载的卡顿；
-     visibility 延迟到淡出结束再切换，保证关闭动画完整 */
-  visibility: hidden;
-  opacity: 0;
-  transition: opacity 0.2s ease-out, visibility 0s linear 0.2s;
 }
 
 .sheet-mask.show {
-  visibility: visible;
-  opacity: 1;
-  transition: opacity 0.2s ease-out;
+  display: flex;
+  animation: sheet-fade 0.2s ease-out both;
 }
 
 .sheet-content {
@@ -735,15 +732,22 @@
   border-radius: 40rpx 40rpx 0 0;
   padding: 32rpx 36rpx calc(40rpx + env(safe-area-inset-bottom));
   box-sizing: border-box;
-  /* 上滑入场：由 .show 驱动 transition，打开/关闭均有动画 */
-  transform: translateY(48rpx);
-  opacity: 0.4;
-  transition: transform 0.24s ease-out, opacity 0.24s ease-out;
 }
 
+/* 入场只用透明度：祖先常驻 transform 会让 input 退出同层渲染降级到原生层，
+   原生层不受 visibility/display 祖先状态控制，正是占位文案重复出现的根源 */
 .sheet-mask.show .sheet-content {
-  transform: translateY(0);
-  opacity: 1;
+  animation: sheet-fade 0.24s ease-out both;
+}
+
+@keyframes sheet-fade {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .sheet-header {
