@@ -1,4 +1,4 @@
-import { View, Text, Button, Image, ScrollView } from '@tarojs/components';
+import { View, Text, Button, Image, ScrollView, PageMeta } from '@tarojs/components';
 import Taro, { useDidShow } from '@tarojs/taro';
 import { useState, useEffect, useMemo } from 'react';
 import { useStudentStore } from '../../../store/student.store';
@@ -348,6 +348,8 @@ export default function WishHomePage() {
 
   return (
     <View className='wish-home-page'>
+      {/* 弹层打开时锁定页面滚动，防止遮罩滚动穿透（背后的页面跟手滑动、原生输入框占位文案漂移） */}
+      <PageMeta pageStyle={showEarnSheet || showSpendSheet ? 'overflow: hidden;' : ''} />
       {/* 自定义导航区（透明，融入页面渐变背景） */}
       <View className='custom-nav' style={{ height: `${statusBarHeight + navBarHeight}px` }}>
         <View className='nav-inner' style={{ paddingTop: `${menuButtonInfo.top}px` }}>
@@ -521,6 +523,7 @@ export default function WishHomePage() {
       {/* 赚取底部弹窗：常驻挂载、show 类控制显隐，避免每次打开整棵弹层重新挂载造成卡顿 */}
       <View
         className={`sheet-mask${showEarnSheet ? ' show' : ''}`}
+        catchMove
         onClick={() => setShowEarnSheet(false)}
       >
           <View className='sheet-content' onClick={(e) => e.stopPropagation()}>
@@ -592,6 +595,7 @@ export default function WishHomePage() {
       {/* 消费底部弹窗：同上，常驻挂载 */}
       <View
         className={`sheet-mask${showSpendSheet ? ' show' : ''}`}
+        catchMove
         onClick={() => setShowSpendSheet(false)}
       >
           <View className='sheet-content' onClick={(e) => e.stopPropagation()}>
