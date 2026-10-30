@@ -38,9 +38,10 @@ export default function WishQuickItemsPage() {
     const newItem: WishQuickItem = {
       type,
       name: '',
-      amount: 1,
+      amount: 0, // 新行留空待输入，避免"想输 2 却变成 12"
     };
-    setItems([...items, newItem]);
+    // 新增的项排在最前：管理页列表与主页存/取面板的快捷项都按此顺序展示
+    setItems([newItem, ...items]);
   };
 
   const handleRemoveItem = (index: number) => {
@@ -123,13 +124,20 @@ export default function WishQuickItemsPage() {
                   value={item.name}
                   onInput={(e) => handleUpdateItem(globalIdx, 'name', e.detail.value)}
                 />
-                <Input
-                  className='item-amount'
-                  type='number'
-                  placeholder='1-999'
-                  value={item.amount.toString()}
-                  onInput={(e) => handleUpdateItem(globalIdx, 'amount', parseInt(e.detail.value, 10) || 1)}
-                />
+                <View className='amount-field'>
+                  <Text className='amount-sign'>{activeTab === 'earn' ? '+' : '-'}</Text>
+                  <Input
+                    className='item-amount'
+                    type='number'
+                    placeholder='1-999'
+                    value={item.amount > 0 ? item.amount.toString() : ''}
+                    onInput={(e) => {
+                      // 允许彻底清空再输入：清空/非法时存 0（输入框显示为空），保存时仍按 1-999 校验过滤
+                      const num = parseInt(e.detail.value, 10);
+                      handleUpdateItem(globalIdx, 'amount', Number.isNaN(num) ? 0 : num);
+                    }}
+                  />
+                </View>
                 <Text className='item-remove' onClick={() => handleRemoveItem(globalIdx)}>删除</Text>
               </View>
             );

@@ -1,6 +1,6 @@
 import { View, Text, Button, Image, ScrollView } from '@tarojs/components';
 import Taro, { useDidShow } from '@tarojs/taro';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useStudentStore } from '../../../store/student.store';
 import { useWishStore } from '../../../store/wish.store';
 import * as wishApi from '../../../api/wish.api';
@@ -61,10 +61,27 @@ export default function WishHomePage() {
     }
   }, [activeStudent?.id]);
 
+  /** 静默刷新快捷项：面板打开时先用缓存渲染，避免等网络造成卡顿；数据未变化时跳过 set，避免面板刚打开就整页重渲染 */
+  const loadQuickItemsSilently = async () => {
+    if (!activeStudent) return;
+    try {
+      const items = await wishApi.listQuickItems(activeStudent.id);
+      const unchanged =
+        quickItems.length === items.length &&
+        JSON.stringify(quickItems) === JSON.stringify(items);
+      if (!unchanged) {
+        setQuickItems(items);
+      }
+    } catch (e) {
+      console.error('loadQuickItems error:', e);
+    }
+  };
+
   useDidShow(() => {
     if (activeStudent) {
       loadHomeData(activeStudent.id, selectedDate);
       loadCalendarData(activeStudent.id, currentYearMonth);
+      loadQuickItemsSilently();
     }
   });
 
@@ -125,34 +142,20 @@ export default function WishHomePage() {
     setCurrentStudent(student);
   };
 
-  const handleEarn = async () => {
+  const handleEarn = () => {
+    // 面板立即打开：快捷项用缓存先行渲染，后台静默刷新
     setShowEarnSheet(true);
     setEarnAmount('');
     setEarnReason('');
-    // 加载快捷项
-    if (activeStudent) {
-      try {
-        const items = await wishApi.listQuickItems(activeStudent.id);
-        setQuickItems(items);
-      } catch (e) {
-        console.error('loadQuickItems error:', e);
-      }
-    }
+    loadQuickItemsSilently();
   };
 
-  const handleSpend = async () => {
+  const handleSpend = () => {
+    // 面板立即打开：快捷项用缓存先行渲染，后台静默刷新
     setShowSpendSheet(true);
     setSpendAmount('');
     setSpendReason('');
-    // 加载快捷项
-    if (activeStudent) {
-      try {
-        const items = await wishApi.listQuickItems(activeStudent.id);
-        setQuickItems(items);
-      } catch (e) {
-        console.error('loadQuickItems error:', e);
-      }
-    }
+    loadQuickItemsSilently();
   };
 
   const handleSubmitEarn = async () => {
@@ -311,7 +314,7 @@ export default function WishHomePage() {
   const statMonth = Number(selectedDate.split('-')[1]) || 1;
 
   // 罐内星星：按余额计算数量与排布（存钱罐视觉）
-  const jarStars = (() => {
+  const jarStars = useMemo(() => {
     const balance = Math.max(0, homeData?.balance ?? 0);
     const count = Math.min(48, Math.ceil(Math.sqrt(balance) * 3));
     const colors = ['#FFD36C', '#FFC5AD', '#D5B2F5', '#FFE593'];
@@ -330,7 +333,7 @@ export default function WishHomePage() {
         anim: i % 2 === 0 ? 'star-drop-a' : 'star-drop-b',
       };
     });
-  })();
+  }, [homeData?.balance]);
 
   if (!activeStudent) {
     return (
@@ -515,9 +518,11 @@ export default function WishHomePage() {
         </View>
       )}
 
-      {/* 赚取底部弹窗 */}
-      {showEarnSheet && (
-        <View className='sheet-mask' onClick={() => setShowEarnSheet(false)}>
+      {/* 赚取底部弹窗：常驻挂载、show 类控制显隐，避免每次打开整棵弹层重新挂载造成卡顿 */}
+      <View
+        className={`sheet-mask${showEarnSheet ? ' show' : ''}`}
+        onClick={() => setShowEarnSheet(false)}
+      >
           <View className='sheet-content' onClick={(e) => e.stopPropagation()}>
             <View className='sheet-header'>
               <Text className='sheet-title'>存入</Text>
@@ -537,7 +542,7 @@ export default function WishHomePage() {
                           className='quick-item-chip'
                           onClick={() => handleQuickItemClick('earn', item.name, item.amount)}
                         >
-                          <Text className='chip-text'>{item.name} {item.amount}</Text>
+                          <Text className='chip-text'>{item.name} +{item.amount}</Text>
                         </View>
                       ))}
                   </View>
@@ -552,13 +557,16 @@ export default function WishHomePage() {
               
               <View className='form-item'>
                 <Text className='form-label'>数量</Text>
-                <input
-                  className='form-input'
-                  type='number'
-                  placeholder='1-999'
-                  value={earnAmount}
-                  onInput={(e) => setEarnAmount(e.detail.value)}
-                />
+                <View className='amount-field'>
+                  {earnAmount !== '' && <Text className='amount-sign'>+</Text>}
+                  <input
+                    className={`form-input${earnAmount !== '' ? ' has-sign' : ''}`}
+                    type='number'
+                    placeholder='1-999'
+                    value={earnAmount}
+                    onInput={(e) => setEarnAmount(e.detail.value)}
+                  />
+                </View>
               </View>
               <View className='form-item'>
                 <Text className='form-label'>原因</Text>
@@ -580,11 +588,12 @@ export default function WishHomePage() {
             </View>
           </View>
         </View>
-      )}
 
-      {/* 消费底部弹窗 */}
-      {showSpendSheet && (
-        <View className='sheet-mask' onClick={() => setShowSpendSheet(false)}>
+      {/* 消费底部弹窗：同上，常驻挂载 */}
+      <View
+        className={`sheet-mask${showSpendSheet ? ' show' : ''}`}
+        onClick={() => setShowSpendSheet(false)}
+      >
           <View className='sheet-content' onClick={(e) => e.stopPropagation()}>
             <View className='sheet-header'>
               <Text className='sheet-title'>取出</Text>
@@ -604,7 +613,7 @@ export default function WishHomePage() {
                           className='quick-item-chip'
                           onClick={() => handleQuickItemClick('spend', item.name, item.amount)}
                         >
-                          <Text className='chip-text'>{item.name} {item.amount}</Text>
+                          <Text className='chip-text'>{item.name} -{item.amount}</Text>
                         </View>
                       ))}
                   </View>
@@ -619,13 +628,16 @@ export default function WishHomePage() {
 
               <View className='form-item'>
                 <Text className='form-label'>数量</Text>
-                <input
-                  className='form-input'
-                  type='number'
-                  placeholder='1-999'
-                  value={spendAmount}
-                  onInput={(e) => setSpendAmount(e.detail.value)}
-                />
+                <View className='amount-field'>
+                  {spendAmount !== '' && <Text className='amount-sign'>-</Text>}
+                  <input
+                    className={`form-input${spendAmount !== '' ? ' has-sign' : ''}`}
+                    type='number'
+                    placeholder='1-999'
+                    value={spendAmount}
+                    onInput={(e) => setSpendAmount(e.detail.value)}
+                  />
+                </View>
               </View>
               <View className='form-item'>
                 <Text className='form-label'>原因</Text>
@@ -647,7 +659,6 @@ export default function WishHomePage() {
             </View>
           </View>
         </View>
-      )}
     </View>
   );
 }

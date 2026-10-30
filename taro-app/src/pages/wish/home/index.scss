@@ -22,7 +22,8 @@
   display: flex;
   align-items: center;
   gap: 16rpx;
-  padding-left: 32rpx;
+  /* 与屏幕左缘间距缩小 6px：32rpx -> 20rpx */
+  padding-left: 20rpx;
   box-sizing: border-box;
 }
 
@@ -159,6 +160,9 @@
   position: relative;
   width: 340rpx;
   flex-shrink: 0;
+  /* 整体图形缩小 10% */
+  transform: scale(0.9);
+  transform-origin: left center;
 }
 
 /* 罐盖（两层粉色圆角条） */
@@ -297,7 +301,8 @@
 .balance-side {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  /* 数值/星愿币/存取明细 改为左对齐 */
+  align-items: flex-start;
   gap: 6rpx;
 }
 
@@ -711,6 +716,17 @@
   z-index: 1000;
   display: flex;
   align-items: flex-end;
+  /* 常驻挂载、.show 类控制显隐：消除条件渲染在打开瞬间整棵弹层挂载的卡顿；
+     visibility 延迟到淡出结束再切换，保证关闭动画完整 */
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.2s ease-out, visibility 0s linear 0.2s;
+}
+
+.sheet-mask.show {
+  visibility: visible;
+  opacity: 1;
+  transition: opacity 0.2s ease-out;
 }
 
 .sheet-content {
@@ -719,6 +735,15 @@
   border-radius: 40rpx 40rpx 0 0;
   padding: 32rpx 36rpx calc(40rpx + env(safe-area-inset-bottom));
   box-sizing: border-box;
+  /* 上滑入场：由 .show 驱动 transition，打开/关闭均有动画 */
+  transform: translateY(48rpx);
+  opacity: 0.4;
+  transition: transform 0.24s ease-out, opacity 0.24s ease-out;
+}
+
+.sheet-mask.show .sheet-content {
+  transform: translateY(0);
+  opacity: 1;
 }
 
 .sheet-header {
@@ -815,6 +840,28 @@
   padding: 20rpx 24rpx;
   font-size: 28rpx;
   color: #514362;
+}
+
+/* 数量输入：已输入时在数值前显示 + / - 符号 */
+.amount-field {
+  position: relative;
+}
+
+.amount-sign {
+  position: absolute;
+  left: 24rpx;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 28rpx;
+  font-weight: 800;
+  color: #8566B4;
+  line-height: 1;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.form-input.has-sign {
+  padding-left: 60rpx;
 }
 
 .submit-btn {
