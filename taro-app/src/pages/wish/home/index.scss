@@ -806,6 +806,25 @@
   color: #8566B4;
 }
 
+/* 快捷项末尾的编辑入口：虚线圆形，视觉与快捷项 chip 同族但有区分 */
+.quick-item-edit {
+  width: 60rpx;
+  height: 60rpx;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #F9F5FF;
+  border: 2rpx dashed #C9B6EC;
+  border-radius: 999rpx;
+  box-sizing: border-box;
+}
+
+.chip-edit-icon {
+  font-size: 26rpx;
+  line-height: 1;
+}
+
 .no-quick-items {
   margin-bottom: 24rpx;
 }

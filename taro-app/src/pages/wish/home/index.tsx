@@ -293,9 +293,14 @@ export default function WishHomePage() {
     Taro.navigateTo({ url: `${ROUTES.WISH_LEDGER}?studentId=${activeStudent.id}` });
   };
 
-  const goToQuickItems = () => {
+  const goToQuickItems = (type?: WishTransactionType) => {
     if (!activeStudent) return;
-    Taro.navigateTo({ url: `${ROUTES.WISH_QUICK_ITEMS}?studentId=${activeStudent.id}` });
+    // 仅接受字面量类型：student-row 的 ⚙️ 按钮会把事件对象当首参传入，此处过滤掉
+    const typeQuery =
+      type === 'earn' || type === 'spend' ? `&type=${type}` : '';
+    Taro.navigateTo({
+      url: `${ROUTES.WISH_QUICK_ITEMS}?studentId=${activeStudent.id}${typeQuery}`,
+    });
   };
 
   const goToStudentForm = () => {
@@ -375,7 +380,7 @@ export default function WishHomePage() {
             ))}
           </View>
         </ScrollView>
-        <View className='quick-manage-btn' onClick={goToQuickItems}>
+        <View className='quick-manage-btn' onClick={() => goToQuickItems()}>
           <Text className='quick-manage-icon'>⚙️</Text>
         </View>
       </View>
@@ -550,12 +555,19 @@ export default function WishHomePage() {
                           <Text className='chip-text'>{item.name} +{item.amount}</Text>
                         </View>
                       ))}
+                    {/* 编辑入口：去快捷项管理页，返回后 useDidShow 会静默刷新本列表 */}
+                    <View
+                      className='quick-item-edit'
+                      onClick={() => goToQuickItems('earn')}
+                    >
+                      <Text className='chip-edit-icon'>✏️</Text>
+                    </View>
                   </View>
                 </View>
               ) : (
                 <View className='no-quick-items'>
                   <Text className='hint-text'>暂无快捷项，去</Text>
-                  <Text className='hint-link' onClick={goToQuickItems}>管理页</Text>
+                  <Text className='hint-link' onClick={() => goToQuickItems()}>管理页</Text>
                   <Text className='hint-text'>添加</Text>
                 </View>
               )}
@@ -623,12 +635,19 @@ export default function WishHomePage() {
                           <Text className='chip-text'>{item.name} -{item.amount}</Text>
                         </View>
                       ))}
+                    {/* 编辑入口：同上 */}
+                    <View
+                      className='quick-item-edit'
+                      onClick={() => goToQuickItems('spend')}
+                    >
+                      <Text className='chip-edit-icon'>✏️</Text>
+                    </View>
                   </View>
                 </View>
               ) : (
                 <View className='no-quick-items'>
                   <Text className='hint-text'>暂无快捷项，去</Text>
-                  <Text className='hint-link' onClick={goToQuickItems}>管理页</Text>
+                  <Text className='hint-link' onClick={() => goToQuickItems()}>管理页</Text>
                   <Text className='hint-text'>添加</Text>
                 </View>
               )}

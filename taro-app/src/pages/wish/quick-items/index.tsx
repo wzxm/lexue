@@ -15,6 +15,10 @@ export default function WishQuickItemsPage() {
   useLoad((options) => {
     const sid = options.studentId || '';
     setStudentId(sid);
+    // 支持从存/取面板的编辑入口进入时，直接落在对应 tab
+    if (options.type === 'earn' || options.type === 'spend') {
+      setActiveTab(options.type);
+    }
     if (sid) {
       loadQuickItems(sid);
     } else {
