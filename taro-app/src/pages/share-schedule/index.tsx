@@ -53,8 +53,9 @@ export default function ShareSchedulePage() {
       await Taro.setClipboardData({ data: code })
       Taro.showToast({ title: '复制成功，快去分享吧～', icon: 'none' })
     } catch (err: any) {
-      // 剪贴板失败必须可见，避免真机上出现"点了没反应"的静默失败
-      Taro.showToast({ title: err?.message || '复制失败，请重试', icon: 'none' })
+      // 剪贴板失败必须可见，避免真机上出现"点了没反应"的静默失败；
+      // Taro 的失败对象携带 errMsg（如 errno 112 隐私协议未声明），优先透出真实原因
+      Taro.showToast({ title: err?.errMsg || err?.message || '复制失败，请重试', icon: 'none' })
     }
   }
 
