@@ -43,16 +43,19 @@ export default function ShareSchedulePage() {
     fetchData()
   })
 
-  const handleCopyCode = (code?: string) => {
+  const handleCopyCode = async (code?: string) => {
     if (!code) {
       Taro.showToast({ title: '该课表暂未生成口令', icon: 'none' })
       return
     }
 
-    Taro.setClipboardData({
-      data: code,
-      success: () => Taro.showToast({ title: '口令已复制', icon: 'success' }),
-    })
+    try {
+      await Taro.setClipboardData({ data: code })
+      Taro.showToast({ title: '复制成功，快去分享吧～', icon: 'none' })
+    } catch (err: any) {
+      // 剪贴板失败必须可见，避免真机上出现"点了没反应"的静默失败
+      Taro.showToast({ title: err?.message || '复制失败，请重试', icon: 'none' })
+    }
   }
 
   const handleRefreshCode = (schedule: Schedule) => {
