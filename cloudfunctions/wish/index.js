@@ -36,6 +36,21 @@ const DEFAULT_SPEND_ITEMS = [
 
 // ========== 权限辅助 ==========
 
+// 管理员白名单手机号（去除空格和可能的 +86 前缀后比较）
+const ADMIN_PHONES = ['18680588948'];
+
+function normalizePhone(phone) {
+  if (!phone) return '';
+  return String(phone).replace(/\s+/g, '').replace(/^\+86/, '');
+}
+
+async function isAdmin(userId) {
+  const user = await db.getOne('users', userId);
+  if (!user) return false;
+  const userPhone = normalizePhone(user.phone);
+  return ADMIN_PHONES.includes(userPhone);
+}
+
 async function checkStudentWritable(userId, studentId) {
   const student = await db.getOne('students', studentId);
   if (!student) return { ok: false, error: fail(ERRORS.NOT_FOUND, '学生不存在') };
@@ -512,6 +527,125 @@ async function saveQuickItems(userId, payload) {
   return success(null);
 }
 
+// ========== 管理员功能 ==========
+
+async function checkAdminAccess(userId) {
+  logger.info(FN, 'checkAdminAccess', { userId });
+  const adminFlag = await isAdmin(userId);
+  return success({ is_admin: adminFlag });
+}
+
+async function adminGrantAll(userId, payload) {
+  // 权限校验
+  const adminFlag = await isAdmin(userId);
+  if (!adminFlag) {
+    logger.warn(FN, 'adminGrantAll:forbidden', { userId });
+    return fail(ERRORS.FORBIDDEN, '无权限执行此操作');
+  }
+
+  validator.requireFields(payload, ['amount', 'reason']);
+  const { amount, reason, batchId } = payload;
+
+  if (!Number.isInteger(amount) || amount <= 0 || amount > 999) {
+    return fail(ERRORS.PARAM_ERROR, '金额必须为 1-999 的正整数');
+  }
+  validator.maxLength(reason, 50, '原因');
+
+  const effectiveBatchId = batchId || `admin_grant_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  logger.info(FN, 'adminGrantAll:start', { userId, amount, reason, batchId: effectiveBatchId });
+
+  // 获取所有 wish_accounts（分页获取，防止数据量过大）
+  const allAccounts = [];
+  let skip = 0;
+  const batchSize = 100;
+  
+  while (true) {
+    const batch = await db.getList('wish_accounts', {}, { limit: batchSize, skip });
+    if (batch.length === 0) break;
+    allAccounts.push(...batch);
+    skip += batch.length;
+    if (batch.length < batchSize) break;
+  }
+
+  logger.info(FN, 'adminGrantAll:accounts_loaded', { total: allAccounts.length });
+
+  let grantedCount = 0;
+  let skippedCount = 0;
+  const failedAccounts = [];
+  const now = new Date();
+
+  // 逐个账户发放
+  for (const account of allAccounts) {
+    const studentId = account.student_id;
+    const requestId = `${effectiveBatchId}:${account._id}`;
+
+    try {
+      // 幂等检查：同一批次针对同一账户的记录
+      const existingTx = await db.findOne('wish_transactions', { request_id: requestId });
+      if (existingTx) {
+        logger.info(FN, 'adminGrantAll:skip_existing', { studentId, requestId });
+        skippedCount++;
+        continue;
+      }
+
+      const currentBalance = account.balance || 0;
+      const newBalance = currentBalance + amount;
+      const currentVersion = account.version || 1;
+      const newVersion = currentVersion + 1;
+
+      // 写交易记录
+      const { _id: txId } = await db.create('wish_transactions', {
+        student_id: studentId,
+        type: 'earn',
+        amount,
+        reason,
+        operator_user_id: userId,
+        request_id: requestId,
+        created_at: now,
+      });
+
+      // 更新账户余额（乐观锁）
+      const updateResult = await db.updateWhere('wish_accounts', {
+        _id: account._id,
+        version: currentVersion,
+      }, {
+        balance: newBalance,
+        version: newVersion,
+        updated_at: now,
+      });
+
+      if (updateResult.updated === 0) {
+        // 版本冲突，删除刚才的交易记录
+        await db.remove('wish_transactions', txId);
+        logger.warn(FN, 'adminGrantAll:version_conflict', { studentId, accountId: account._id });
+        skippedCount++;
+      } else {
+        grantedCount++;
+      }
+    } catch (e) {
+      logger.error(FN, 'adminGrantAll:grant_failed', { studentId, error: e });
+      failedAccounts.push({ student_id: studentId, error: String(e.message || e) });
+      skippedCount++;
+    }
+  }
+
+  const summary = {
+    granted_count: grantedCount,
+    skipped_count: skippedCount,
+    total_accounts: allAccounts.length,
+    amount,
+    total_amount: grantedCount * amount,
+    batch_id: effectiveBatchId,
+  };
+
+  if (failedAccounts.length > 0) {
+    summary.failed = failedAccounts;
+  }
+
+  logger.info(FN, 'adminGrantAll:done', summary);
+  return success(summary);
+}
+
 // ========== 入口 ==========
 
 exports.main = async (event, context) => {
@@ -531,6 +665,8 @@ exports.main = async (event, context) => {
       case 'getMonthCalendar':  return await getMonthCalendar(userId, payload);
       case 'listQuickItems':    return await listQuickItems(userId, payload);
       case 'saveQuickItems':    return await saveQuickItems(userId, payload);
+      case 'checkAdminAccess':  return await checkAdminAccess(userId);
+      case 'adminGrantAll':     return await adminGrantAll(userId, payload);
       default:                  return fail(ERRORS.PARAM_ERROR, `未知的 action: ${action}`);
     }
   } catch (e) {

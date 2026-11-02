@@ -33,6 +33,13 @@ export default function WishHomePage() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [currentYearMonth, setCurrentYearMonth] = useState(new Date().toISOString().substring(0, 7));
   const [calendarData, setCalendarData] = useState<Record<string, { has_earn: boolean; has_spend: boolean }>>({});
+  
+  // 管理员功能
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [showAdminSheet, setShowAdminSheet] = useState(false);
+  const [adminAmount, setAdminAmount] = useState('');
+  const [adminReason, setAdminReason] = useState('系统赠送');
+  const [adminSubmitting, setAdminSubmitting] = useState(false);
 
   // 可管理的学生（owner 或家庭成员）
   const manageableStudents = students.filter(
@@ -43,10 +50,20 @@ export default function WishHomePage() {
     ? currentStudent
     : manageableStudents[0] || null;
 
-  // 检查引导
+  // 检查引导 & 管理员权限
   useEffect(() => {
     checkIntro();
+    checkAdminPrivilege();
   }, []);
+
+  const checkAdminPrivilege = async () => {
+    try {
+      const { isAdmin: adminFlag } = await wishApi.checkAdminAccess();
+      setIsAdmin(adminFlag);
+    } catch (e) {
+      console.error('checkAdminAccess error:', e);
+    }
+  };
 
   // 切换学生
   useEffect(() => {
@@ -212,6 +229,64 @@ export default function WishHomePage() {
     }
   };
 
+  // 管理员批量发放
+  const handleAdminGrant = () => {
+    setShowAdminSheet(true);
+    setAdminAmount('');
+    setAdminReason('系统赠送');
+  };
+
+  const handleSubmitAdminGrant = async () => {
+    const amount = parseInt(adminAmount, 10);
+    if (!amount || amount <= 0 || amount > 999) {
+      Taro.showToast({ title: '金额必须为 1-999', icon: 'none' });
+      return;
+    }
+    if (!adminReason.trim()) {
+      Taro.showToast({ title: '请填写原因', icon: 'none' });
+      return;
+    }
+
+    Taro.showModal({
+      title: '确认发放',
+      content: `确定要给所有学生发放 ${amount} 个星愿币吗？`,
+      success: async (res) => {
+        if (!res.confirm) return;
+
+        setAdminSubmitting(true);
+        Taro.showLoading({ title: '发放中...', mask: true });
+        try {
+          const result = await wishApi.adminGrantAll(amount, adminReason);
+          Taro.hideLoading();
+          
+          let msg = `发放完成！\n成功：${result.grantedCount}个账户\n跳过：${result.skippedCount}个账户\n总计发放：${result.totalAmount}个星愿币`;
+          if (result.failed && result.failed.length > 0) {
+            msg += `\n失败：${result.failed.length}个账户`;
+          }
+          
+          Taro.showModal({
+            title: '发放结果',
+            content: msg,
+            showCancel: false,
+            success: () => {
+              setShowAdminSheet(false);
+              // 刷新当前页面数据
+              if (activeStudent) {
+                loadHomeData(activeStudent.id, selectedDate);
+                loadCalendarData(activeStudent.id, currentYearMonth);
+              }
+            },
+          });
+        } catch (e: any) {
+          Taro.hideLoading();
+          Taro.showToast({ title: e.message || '发放失败', icon: 'none', duration: 2000 });
+        } finally {
+          setAdminSubmitting(false);
+        }
+      },
+    });
+  };
+
   // 快捷项点击处理
   const handleQuickItemClick = (type: WishTransactionType, name: string, amount: number) => {
     if (type === 'earn') {
@@ -354,7 +429,7 @@ export default function WishHomePage() {
   return (
     <View className='wish-home-page'>
       {/* 弹层打开时锁定页面滚动，防止遮罩滚动穿透（背后的页面跟手滑动、原生输入框占位文案漂移） */}
-      <PageMeta pageStyle={showEarnSheet || showSpendSheet ? 'overflow: hidden;' : ''} />
+      <PageMeta pageStyle={showEarnSheet || showSpendSheet || showAdminSheet ? 'overflow: hidden;' : ''} />
       {/* 自定义导航区（透明，融入页面渐变背景） */}
       <View className='custom-nav' style={{ height: `${statusBarHeight + navBarHeight}px` }}>
         <View className='nav-inner' style={{ paddingTop: `${menuButtonInfo.top}px` }}>
@@ -364,6 +439,14 @@ export default function WishHomePage() {
           <Text className='nav-title'>小星愿</Text>
         </View>
       </View>
+
+      {/* 管理员入口：仅对白名单手机号显示 */}
+      {isAdmin && (
+        <View className='admin-banner' onClick={handleAdminGrant}>
+          <Text className='admin-banner-icon'>👑</Text>
+          <Text className='admin-banner-text'>管理员：批量发放星愿币</Text>
+        </View>
+      )}
 
       {/* 学生行：横向滑动选择，右侧固定「管理快捷项」按钮 */}
       <View className='student-row'>
@@ -685,6 +768,59 @@ export default function WishHomePage() {
             </View>
           </View>
         </View>
+
+      {/* 管理员批量发放弹窗 */}
+      {isAdmin && (
+        <View
+          hidden={!showAdminSheet}
+          className={`sheet-mask${showAdminSheet ? ' show' : ''}`}
+          catchMove
+          onClick={() => setShowAdminSheet(false)}
+        >
+          <View className='sheet-content' onClick={(e) => e.stopPropagation()}>
+            <View className='sheet-header'>
+              <Text className='sheet-title'>👑 批量发放星愿币</Text>
+              <Text className='sheet-close' onClick={() => setShowAdminSheet(false)}>✕</Text>
+            </View>
+            <View className='sheet-body'>
+              <View className='admin-notice'>
+                <Text className='notice-text'>⚠️ 将给所有已有星愿账户的学生发放指定数量的星愿币</Text>
+              </View>
+              
+              <View className='form-item'>
+                <Text className='form-label'>数量（每个账户）</Text>
+                <View className='amount-field'>
+                  {adminAmount !== '' && <Text className='amount-sign'>+</Text>}
+                  <input
+                    className={`form-input${adminAmount !== '' ? ' has-sign' : ''}`}
+                    type='number'
+                    placeholder='1-999'
+                    value={adminAmount}
+                    onInput={(e) => setAdminAmount(e.detail.value)}
+                  />
+                </View>
+              </View>
+              <View className='form-item'>
+                <Text className='form-label'>原因</Text>
+                <input
+                  className='form-input'
+                  type='text'
+                  placeholder='如：系统赠送'
+                  value={adminReason}
+                  onInput={(e) => setAdminReason(e.detail.value)}
+                />
+              </View>
+              <Button
+                className='submit-btn admin-submit'
+                disabled={adminSubmitting}
+                onClick={handleSubmitAdminGrant}
+              >
+                {adminSubmitting ? '发放中...' : '确认发放'}
+              </Button>
+            </View>
+          </View>
+        </View>
+      )}
     </View>
   );
 }

@@ -168,3 +168,46 @@ export async function saveQuickItems(studentId: string, items: WishQuickItem[]):
   };
   return cloud.call('wish', { action: 'saveQuickItems', payload });
 }
+
+// ========== 管理员功能 ==========
+
+export async function checkAdminAccess(): Promise<{ isAdmin: boolean }> {
+  const result = await cloud.call<{ is_admin: boolean }>('wish', { action: 'checkAdminAccess' });
+  return { isAdmin: result.is_admin };
+}
+
+export interface AdminGrantSummary {
+  grantedCount: number;
+  skippedCount: number;
+  totalAccounts: number;
+  amount: number;
+  totalAmount: number;
+  batchId: string;
+  failed?: Array<{ student_id: string; error: string }>;
+}
+
+export async function adminGrantAll(
+  amount: number,
+  reason: string,
+  batchId?: string
+): Promise<AdminGrantSummary> {
+  const result = await cloud.call<{
+    granted_count: number;
+    skipped_count: number;
+    total_accounts: number;
+    amount: number;
+    total_amount: number;
+    batch_id: string;
+    failed?: Array<{ student_id: string; error: string }>;
+  }>('wish', { action: 'adminGrantAll', payload: { amount, reason, batchId } });
+
+  return {
+    grantedCount: result.granted_count,
+    skippedCount: result.skipped_count,
+    totalAccounts: result.total_accounts,
+    amount: result.amount,
+    totalAmount: result.total_amount,
+    batchId: result.batch_id,
+    failed: result.failed,
+  };
+}
